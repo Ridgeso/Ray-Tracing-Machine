@@ -34,7 +34,7 @@ namespace RT
 		renderer(createRenderer()),
 		rtShader(createShader()),
 		screenBuff(),
-		frameBuffer(),
+		renderPass(),
 		lastWinSize(0),
 		camera(45.0f, 0.01f, 100.0f)
 	{
@@ -43,6 +43,7 @@ namespace RT
 
 		WindowSpecs winSpecs = { specs.name, 1280, 720, false };
 		mainWindow->init(winSpecs);
+		lastWinSize = mainWindow->getSize();
 
 		glm::ivec2 windowSize = mainWindow->getSize();
 		RenderSpecs renderSpecs = { };
@@ -84,7 +85,7 @@ namespace RT
 		rtShader->setUniform("MaxBounces", 1, maxBounces);
 		rtShader->setUniform("MaxFrames", 1, maxFrames);
 		rtShader->setUniform("FrameIndex", 1, framesCount);
-		rtShader->setUniform("Resolution", 1, (glm::vec2)glm::ivec2(0));
+		rtShader->setUniform("Resolution", 1, (glm::vec2)lastWinSize);
 		rtShader->setUniform("CameraBuffer", sizeof(Camera::Spec), camera.GetSpec());
 		rtShader->setUniform("MaterialsCount", 1, scene.materials.size());
 		rtShader->setUniform("MaterialsBuffer", sizeof(Material) * scene.materials.size(), scene.materials.data());
@@ -95,7 +96,12 @@ namespace RT
 		screenBuff = VertexBuffer::create(sizeof(screenVertices), screenVertices);
 		screenBuff->registerAttributes({ VertexElement::Float2, VertexElement::Float2 });
 
-		frameBuffer = FrameBuffer::create(windowSize, 2);
+		auto renderPassSpec = RenderPassSpec{};
+		renderPassSpec.size = lastWinSize;
+		renderPassSpec.attachmentsFormats.push_back(ImageFormat::RGBA32F);
+		renderPassSpec.attachmentsFormats.push_back(ImageFormat::RGBA32F);
+		renderPassSpec.attachmentsFormats.push_back(ImageFormat::Depth);
+		renderPass = RenderPass::create(renderPassSpec);
 
 		lastMousePos = windowSize / 2;
 	}
@@ -104,6 +110,7 @@ namespace RT
 	{
 		rtShader->destroy();
 		screenBuff.reset();
+		renderPass.reset();
 		renderer->shutDown();
 		mainWindow->shutDown();
 	}
@@ -233,13 +240,13 @@ namespace RT
 			framesCount = 1;
 		}
 
-		//ImGui::Image(
-		//	(ImTextureID)frameBuffer->getAttachment(1).getTexId(),
-		//	viewportSize,
-		//	ImVec2(0, 1),
-		//	ImVec2(1, 0)
-		//);
-
+		ImGui::Image(
+			renderPass->getAttachment(1).getTexId(),
+			viewportSize,
+			ImVec2(0, 1),
+			ImVec2(1, 0)
+		);
+		
 		ImGui::End();
 		ImGui::PopStyleVar();
 
@@ -256,20 +263,26 @@ namespace RT
 		rtShader->use();
 		if (lastWinSize != winSize)
 		{
-			frameBuffer = FrameBuffer::create(winSize, 2);
+			auto renderPassSpec = RenderPassSpec{};
+			renderPassSpec.size = winSize;
+			renderPassSpec.attachmentsFormats.push_back(ImageFormat::RGBA32F);
+			renderPassSpec.attachmentsFormats.push_back(ImageFormat::RGBA32F);
+			renderPassSpec.attachmentsFormats.push_back(ImageFormat::Depth);
+
+			renderPass = RenderPass::create(renderPassSpec);
 			rtShader->setUniform("Resolution", 1, (glm::vec2)winSize);
 			lastWinSize = winSize;
 		}
 		rtShader->setUniform("CameraBuffer", sizeof(Camera::Spec), camera.GetSpec());
 		rtShader->unuse();
-		frameBuffer->getAttachment(0).bind(0);
-		frameBuffer->getAttachment(1).bind(1);
+		renderPass->getAttachment(0).bind(0);
+		renderPass->getAttachment(1).bind(1);
 
 		Timer timeit;
 		camera.ResizeCamera((int32_t)viewportSize.x, (int32_t)viewportSize.y);
-		frameBuffer->bind();
+		renderPass->bind();
 		renderer->render(camera, *rtShader, *screenBuff, scene);
-		frameBuffer->unbind();
+		renderPass->unbind();
 		lastFrameDuration = timeit.Ellapsed();
 	}
 

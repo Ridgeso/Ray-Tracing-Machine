@@ -8,7 +8,7 @@
 #include "Engine/Render/Renderer.h"
 #include "Engine/Render/Shader.h"
 #include "Engine/Render/Buffer.h"
-#include "Engine/Render/FrameBuffer.h"
+#include "Engine/Render/RenderPass.h"
 
 namespace RT
 {
@@ -49,7 +49,7 @@ namespace RT
 		Local<Renderer> renderer;
 		Local<Shader> rtShader;
 		Local<VertexBuffer> screenBuff;
-		Share<FrameBuffer> frameBuffer;
+		Share<RenderPass> renderPass;
 		Camera camera;
 		Scene scene;
 

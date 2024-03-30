@@ -35,8 +35,6 @@ namespace RT::Vulkan
 		void createImGuiRenderPass();
 
 	private:
-		Local<Swapchain> swapchain = nullptr;
-
 		VkPipelineLayout pipelineLayout{};
 		std::vector<VkCommandBuffer> commandBuffers{};
 		Local<Pipeline> pipeline = nullptr;

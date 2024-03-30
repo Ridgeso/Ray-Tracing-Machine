@@ -86,7 +86,7 @@ namespace RT::Vulkan
 		
 		auto pipelineConfig = PipelineConfigInfo{};
 		Pipeline::defaultPipelineConfigInfo(pipelineConfig);
-		pipelineConfig.renderPass = swapchain->getRenderPass();
+		pipelineConfig.renderPass = SwapchainInstance->getRenderPass();
 		pipelineConfig.pipelineLayout = pipelineLayout;
 		
 		pipeline->init(
@@ -94,7 +94,7 @@ namespace RT::Vulkan
 			"..\\Engine\\assets\\shaders\\frag.frag.spv",
 			pipelineConfig);
 
-		commandBuffers.resize(swapchain->getSwapChainImages().size());
+		commandBuffers.resize(SwapchainInstance->getSwapChainImages().size());
 
 		//createImGuiRenderPass(); // Will be deleted soon
 		initImGui();
@@ -105,7 +105,9 @@ namespace RT::Vulkan
 		allocInfo.commandPool = deviceInstance.getCommandPool();
 		allocInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
 
-		RT_CORE_ASSERT(vkAllocateCommandBuffers(deviceInstance.getDevice(), &allocInfo, commandBuffers.data()) == VK_SUCCESS, "failed to allocate command buffers!");
+		RT_CORE_ASSERT(
+			vkAllocateCommandBuffers(deviceInstance.getDevice(), &allocInfo, commandBuffers.data()) == VK_SUCCESS,
+			"failed to allocate command buffers!");
 	}
 
 	void VulkanRenderer::shutDown()
@@ -152,14 +154,14 @@ namespace RT::Vulkan
 		
 		vertexBuffer.reset();
 
-		swapchain->shutdown();
+		SwapchainInstance->shutdown();
 		deviceInstance.shutdown();
 	}
 
 	void VulkanRenderer::render(const Camera& camera, const Shader& shader, const VertexBuffer& vbuffer, const Scene& scene)
 	{
 		uint32_t imageIndex = 0u;
-		auto result = swapchain->acquireNextImage(imageIndex);
+		auto result = SwapchainInstance->acquireNextImage(imageIndex);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR)
 		{
@@ -171,7 +173,7 @@ namespace RT::Vulkan
 		recordCommandbuffer(imageIndex);
 		//drawImGui();
 
-		result = swapchain->submitCommandBuffers(commandBuffers[imageIndex], imageIndex);
+		result = SwapchainInstance->submitCommandBuffers(commandBuffers[imageIndex], imageIndex);
 		
 		if (VK_ERROR_OUT_OF_DATE_KHR == result || VK_SUBOPTIMAL_KHR == result)
 		{
@@ -191,13 +193,13 @@ namespace RT::Vulkan
 
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = swapchain->getRenderPass();
-		renderPassInfo.framebuffer = swapchain->getSwapChainFramebuffers()[imIdx];
+		renderPassInfo.renderPass = SwapchainInstance->getRenderPass();
+		renderPassInfo.framebuffer = SwapchainInstance->getFramebuffers()[imIdx];
 		//renderPassInfo.renderPass = igRenderPass;
 		//renderPassInfo.framebuffer = frames[imIdx].Framebuffer;
 
 		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = swapchain->getWindowExtent();
+		renderPassInfo.renderArea.extent = SwapchainInstance->getWindowExtent();
 
 		constexpr auto clearValues = std::array<VkClearValue, 1>{
 			VkClearValue{ { 0.1f, 0.1f, 0.1f, 1.0f } }, // color
@@ -211,13 +213,13 @@ namespace RT::Vulkan
 		auto viewport = VkViewport{};
 		viewport.x = 0;
 		viewport.y = 0;
-		viewport.width = swapchain->getSwapchainExtent().width;
-		viewport.height = swapchain->getSwapchainExtent().height;
+		viewport.width = SwapchainInstance->getSwapchainExtent().width;
+		viewport.height = SwapchainInstance->getSwapchainExtent().height;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 		auto scissor = VkRect2D{};
 		scissor.offset = { 0, 0 };
-		scissor.extent = swapchain->getSwapchainExtent();
+		scissor.extent = SwapchainInstance->getSwapchainExtent();
 		vkCmdSetViewport(commandBuffers[imIdx], 0, 1, &viewport);
 		vkCmdSetScissor(commandBuffers[imIdx], 0, 1, &scissor);
 
@@ -250,22 +252,22 @@ namespace RT::Vulkan
 		extent = VkExtent2D{ (uint32_t)size.x, (uint32_t)size.y };
 
 		auto oldSwapchain = Share<Swapchain>(nullptr);
-		if (swapchain == nullptr)
+		if (SwapchainInstance == nullptr)
 		{
-			swapchain = makeLocal<Swapchain>(extent);
+			SwapchainInstance = makeLocal<Swapchain>(extent);
 		}
 		else
 		{
 			// TODO: check rendepass compatibility
-			oldSwapchain = Share<Swapchain>(swapchain.release());
-			swapchain = makeLocal<Swapchain>(extent, oldSwapchain);
+			oldSwapchain = Share<Swapchain>(SwapchainInstance.release());
+			SwapchainInstance = makeLocal<Swapchain>(extent, oldSwapchain);
 		}
 		
-		swapchain->init();
+		SwapchainInstance->init();
 
 		if (oldSwapchain)
 		{
-			RT_CORE_ASSERT(swapchain->compareFormats(*oldSwapchain), "swapchain image/depth formats has changed");
+			RT_CORE_ASSERT(SwapchainInstance->compareFormats(*oldSwapchain), "swapchain image/depth formats has changed");
 			oldSwapchain->shutdown();
 		}
 	}
@@ -368,12 +370,12 @@ namespace RT::Vulkan
 		vkInfo.DescriptorPool = descriptorPool;
 		vkInfo.Subpass = 0;
 		vkInfo.MinImageCount = Swapchain::minImageCount();
-		vkInfo.ImageCount = swapchain->getSwapChainImages().size();
+		vkInfo.ImageCount = SwapchainInstance->getSwapChainImages().size();
 		vkInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 		vkInfo.Allocator = nullptr;
 		vkInfo.CheckVkResultFn = checkVkResultCallback;
 		RT_ASSERT(
-			ImGui_ImplVulkan_Init(&vkInfo, swapchain->getRenderPass()),
+			ImGui_ImplVulkan_Init(&vkInfo, SwapchainInstance->getRenderPass()),
 			"ImGui not initialized");
 		//RT_ASSERT(
 		//	ImGui_ImplVulkan_Init(&vkInfo, igRenderPass),
@@ -410,7 +412,7 @@ namespace RT::Vulkan
 	void VulkanRenderer::createImGuiRenderPass()
 	{
 		Vulkan::Device& device = DeviceInstance;
-		imageCount = swapchain->getSwapChainImages().size();
+		imageCount = SwapchainInstance->getSwapChainImages().size();
 
 		frames = new ImGuiFrame[imageCount];
 		semaphores = new ImGuiFrameSemaphores[imageCount];
@@ -418,13 +420,13 @@ namespace RT::Vulkan
 			memset(frames, 0, sizeof(ImGuiFrame) * imageCount);
 			memset(semaphores, 0, sizeof(ImGuiFrameSemaphores) * imageCount);
 			VkImage backbuffers[16] = {};
-			vkGetSwapchainImagesKHR(device.getDevice(), swapchain->getSwapChain(), &imageCount, backbuffers);
+			vkGetSwapchainImagesKHR(device.getDevice(), SwapchainInstance->getSwapChain(), &imageCount, backbuffers);
 			for (uint32_t i = 0; i < imageCount; i++)
 				frames[i].Backbuffer = backbuffers[i];
 		}
 
 		auto attachment = VkAttachmentDescription{};
-		attachment.format = swapchain->getImageFormat();
+		attachment.format = SwapchainInstance->getImageFormat();
 		attachment.samples = VK_SAMPLE_COUNT_1_BIT;
 		attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -471,7 +473,7 @@ namespace RT::Vulkan
 		auto info = VkImageViewCreateInfo{};
 		info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		info.format = swapchain->getImageFormat();
+		info.format = SwapchainInstance->getImageFormat();
 		info.components.r = VK_COMPONENT_SWIZZLE_R;
 		info.components.g = VK_COMPONENT_SWIZZLE_G;
 		info.components.b = VK_COMPONENT_SWIZZLE_B;
@@ -490,8 +492,8 @@ namespace RT::Vulkan
 		framebufferInfo.renderPass = igRenderPass;
 		framebufferInfo.attachmentCount = 1;
 		framebufferInfo.pAttachments = &imageAttachment;
-		framebufferInfo.width = swapchain->getWindowExtent().width;
-		framebufferInfo.height = swapchain->getWindowExtent().height;
+		framebufferInfo.width = SwapchainInstance->getWindowExtent().width;
+		framebufferInfo.height = SwapchainInstance->getWindowExtent().height;
 		framebufferInfo.layers = 1;
 		for (uint32_t i = 0; i < 3; i++)
 		{

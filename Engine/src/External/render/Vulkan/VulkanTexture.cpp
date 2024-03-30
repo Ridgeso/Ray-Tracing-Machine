@@ -222,9 +222,9 @@ namespace RT::Vulkan
 		// just for testing RGBA32F format
 		for (uint32_t i = 0; i < imSize / sizeof(float); i += 4)
 		{
-			((float*)dstData)[i + 0] = 1.0f;
+			((float*)dstData)[i + 0] = 0.0f;
 			((float*)dstData)[i + 1] = 0.2f;
-			((float*)dstData)[i + 2] = 0.5f;
+			((float*)dstData)[i + 2] = 1.0f;
 			((float*)dstData)[i + 3] = 1.0f;
 		}
 		//std::memset(dstData, 255, imSize);

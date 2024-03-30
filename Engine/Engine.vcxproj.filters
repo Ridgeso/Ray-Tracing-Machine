@@ -51,13 +51,13 @@
     <ClCompile Include="src\External\render\OpenGl\OpenGlBuffer.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
-    <ClCompile Include="src\External\render\OpenGl\OpenGlFrameBuffer.cpp">
+    <ClCompile Include="src\External\render\OpenGl\OpenGlRenderPass.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
     <ClCompile Include="src\Engine\Render\Buffer.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
-    <ClCompile Include="src\Engine\Render\FrameBuffer.cpp">
+    <ClCompile Include="src\Engine\Render\RenderPass.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
     <ClCompile Include="src\Engine\Render\Texture.cpp">
@@ -70,9 +70,6 @@
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
     <ClCompile Include="src\External\render\Vulkan\VulkanTexture.cpp">
-      <Filter>Pliki źródłowe</Filter>
-    </ClCompile>
-    <ClCompile Include="src\External\render\Vulkan\VulkanFrameBuffer.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
     <ClCompile Include="src\External\render\Vulkan\VulkanBuffer.cpp">
@@ -100,6 +97,9 @@
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
     <ClCompile Include="src\External\window\ImGuiBackend.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
+    <ClCompile Include="src\External\render\Vulkan\VulkanRenderPass.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
   </ItemGroup>
@@ -152,13 +152,13 @@
     <ClInclude Include="src\External\render\OpenGl\OpenGlBuffer.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
-    <ClInclude Include="src\External\render\OpenGl\OpenGlFrameBuffer.h">
+    <ClInclude Include="src\External\render\OpenGl\OpenGlRenderPass.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="src\Engine\Render\Buffer.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
-    <ClInclude Include="src\Engine\Render\FrameBuffer.h">
+    <ClInclude Include="src\Engine\Render\RenderPass.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="src\Engine\Render\Texture.h">
@@ -174,9 +174,6 @@
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="src\External\render\Vulkan\VulkanTexture.h">
-      <Filter>Pliki nagłówkowe</Filter>
-    </ClInclude>
-    <ClInclude Include="src\External\render\Vulkan\VulkanFrameBuffer.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="src\External\render\Vulkan\VulkanBuffer.h">
@@ -210,6 +207,9 @@
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="src\External\window\ImGuiImpl.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="src\External\render\Vulkan\VulkanRenderPass.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
   </ItemGroup>

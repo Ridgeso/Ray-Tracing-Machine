@@ -19,19 +19,23 @@ namespace RT::Vulkan
         Swapchain& operator=(const Swapchain&) = delete;
         Swapchain&& operator=(Swapchain&&) = delete;
         
+        static Local<Swapchain>& getSwapchainInstance() { return swapchainInstance; }
+
         void init();
         void shutdown();
 
         VkResult acquireNextImage(uint32_t& imageIndex);
         VkResult submitCommandBuffers(const VkCommandBuffer& buffers, uint32_t& imageIndex);
         bool compareFormats(const Swapchain& other) const;
+        static VkFormat findDepthFormat();
 
         VkSwapchainKHR getSwapChain() const { return swapChain; }
         VkRenderPass getRenderPass() const { return renderPass; }
-        const std::vector<VkFramebuffer>& getSwapChainFramebuffers() const { return swapChainFramebuffers; }
+        const std::vector<VkFramebuffer>& getFramebuffers() const { return swapChainFramebuffers; }
         VkExtent2D getWindowExtent() const { return windowExtent; }
         VkExtent2D getSwapchainExtent() const { return swapChainExtent; }
         const std::vector<VkImage>& getSwapChainImages() const { return swapChainImages; }
+        const uint32_t getImageCount() const { return imageCount; }
         const std::vector<VkImageView>& getSwapChainImageViews() const { return swapChainImageViews; }
         VkFormat getImageFormat() const { return swapChainImageFormat; }
 
@@ -49,12 +53,11 @@ namespace RT::Vulkan
         bool compareSwapFormats(const Swapchain& swapChain) const;
         void incrementFrameCounter();
     
-        static VkFormat findDepthFormat();
         static VkSurfaceFormatKHR chooseSwapSurfaceFormat(
             const std::vector<VkSurfaceFormatKHR>& availableFormats);
         static VkPresentModeKHR chooseSwapPresentMode(
             const std::vector<VkPresentModeKHR>& availablePresentModes);
-
+        
     private:
         static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
         
@@ -72,6 +75,7 @@ namespace RT::Vulkan
         std::vector<VkImageView> depthImageViews = {};
         std::vector<VkImage> swapChainImages = {};
         std::vector<VkImageView> swapChainImageViews = {};
+        uint32_t imageCount = 0u;
 
         std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> imageAvailableSemaphores = {};
         std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores = {};
@@ -80,6 +84,10 @@ namespace RT::Vulkan
         uint8_t currentFrame = 0u;
 
         Share<Swapchain> oldSwapchain = nullptr;
+
+        static Local<Swapchain> swapchainInstance;
     };
+
+    #define SwapchainInstance ::RT::Vulkan::Swapchain::getSwapchainInstance()
 
 }

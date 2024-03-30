@@ -4,6 +4,8 @@
 namespace RT::Vulkan
 {
 
+    Local<Swapchain> Swapchain::swapchainInstance = nullptr;
+
     Swapchain::Swapchain(const VkExtent2D windowExtent, const Share<Swapchain>& oldSwapchain)
         : windowExtent{windowExtent}, oldSwapchain{oldSwapchain}
     {
@@ -123,6 +125,14 @@ namespace RT::Vulkan
             other.swapChainImageFormat == swapChainImageFormat;
     }
 
+    VkFormat Swapchain::findDepthFormat()
+    {
+        return DeviceInstance.findSupportedFormat(
+            { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+    }
+
     void Swapchain::createSwapChain()
     {
         auto& deviceInstance = DeviceInstance;
@@ -135,7 +145,7 @@ namespace RT::Vulkan
         auto presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
         auto extent = chooseSwapExtent(swapChainSupport.capabilities);
 
-        uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
+        imageCount = swapChainSupport.capabilities.minImageCount + 1;
         if (swapChainSupport.capabilities.maxImageCount > 0 &&
             imageCount > swapChainSupport.capabilities.maxImageCount)
         {
@@ -403,14 +413,6 @@ namespace RT::Vulkan
     void Swapchain::incrementFrameCounter()
     {
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-    }
-
-    VkFormat Swapchain::findDepthFormat()
-    {
-        return DeviceInstance.findSupportedFormat(
-            { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
     }
 
     VkSurfaceFormatKHR Swapchain::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)

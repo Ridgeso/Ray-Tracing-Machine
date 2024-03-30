@@ -13,9 +13,9 @@
   <ItemGroup>
     <ClCompile Include="src\Engine\Core\Log.cpp" />
     <ClCompile Include="src\Engine\Render\Buffer.cpp" />
-    <ClCompile Include="src\Engine\Render\FrameBuffer.cpp" />
+    <ClCompile Include="src\Engine\Render\RenderPass.cpp" />
     <ClCompile Include="src\Engine\Render\Texture.cpp" />
-    <ClCompile Include="src\External\render\OpenGl\OpenGlFrameBuffer.cpp" />
+    <ClCompile Include="src\External\render\OpenGl\OpenGlRenderPass.cpp" />
     <ClCompile Include="src\External\render\OpenGl\OpenGlTexture.cpp" />
     <ClCompile Include="src\Engine\Render\Shader.cpp" />
     <ClCompile Include="src\External\Render\OpenGl\OpenGlShader.cpp" />
@@ -29,10 +29,10 @@
     <ClCompile Include="src\External\render\OpenGl\OpenGlBuffer.cpp" />
     <ClCompile Include="src\External\render\Vulkan\Device.cpp" />
     <ClCompile Include="src\External\render\Vulkan\Pipeline.cpp" />
+    <ClCompile Include="src\External\render\Vulkan\VulkanRenderPass.cpp" />
     <ClCompile Include="src\External\render\Vulkan\Swapchain.cpp" />
     <ClCompile Include="src\External\render\Vulkan\utils\Debug.cpp" />
     <ClCompile Include="src\External\render\Vulkan\VulkanBuffer.cpp" />
-    <ClCompile Include="src\External\render\Vulkan\VulkanFrameBuffer.cpp" />
     <ClCompile Include="src\External\render\Vulkan\VulkanRenderer.cpp" />
     <ClCompile Include="src\External\render\Vulkan\VulkanShader.cpp" />
     <ClCompile Include="src\External\render\Vulkan\VulkanTexture.cpp" />
@@ -46,10 +46,10 @@
     <ClInclude Include="src\Engine\Core\Log.h" />
     <ClInclude Include="src\Engine\Core\Utils.h" />
     <ClInclude Include="src\Engine\Render\Buffer.h" />
-    <ClInclude Include="src\Engine\Render\FrameBuffer.h" />
+    <ClInclude Include="src\Engine\Render\RenderPass.h" />
     <ClInclude Include="src\Engine\Render\RenderBase.h" />
     <ClInclude Include="src\Engine\Render\Texture.h" />
-    <ClInclude Include="src\External\render\OpenGl\OpenGlFrameBuffer.h" />
+    <ClInclude Include="src\External\render\OpenGl\OpenGlRenderPass.h" />
     <ClInclude Include="src\External\render\OpenGl\OpenGlTexture.h" />
     <ClInclude Include="src\Engine\Render\Shader.h" />
     <ClInclude Include="src\External\Render\OpenGl\OpenGlShader.h" />
@@ -65,12 +65,12 @@
     <ClInclude Include="src\Engine\Render\Scene.h" />
     <ClInclude Include="src\External\render\OpenGl\OpenGlBuffer.h" />
     <ClInclude Include="src\External\render\Vulkan\Pipeline.h" />
+    <ClInclude Include="src\External\render\Vulkan\VulkanRenderPass.h" />
     <ClInclude Include="src\External\render\Vulkan\Swapchain.h" />
     <ClInclude Include="src\External\render\Vulkan\Device.h" />
     <ClInclude Include="src\External\render\Vulkan\utils\Debug.h" />
     <ClInclude Include="src\External\Render\Vulkan\utils\Utils.h" />
     <ClInclude Include="src\External\render\Vulkan\VulkanBuffer.h" />
-    <ClInclude Include="src\External\render\Vulkan\VulkanFrameBuffer.h" />
     <ClInclude Include="src\External\render\Vulkan\VulkanRenderer.h" />
     <ClInclude Include="src\External\render\Vulkan\VulkanShader.h" />
     <ClInclude Include="src\External\render\Vulkan\VulkanTexture.h" />

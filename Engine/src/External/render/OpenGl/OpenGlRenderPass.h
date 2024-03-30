@@ -3,17 +3,17 @@
 #include <vector>
 #include <glm/glm.hpp>
 
-#include "Engine/Render/FrameBuffer.h"
+#include "Engine/Render/RenderPass.h"
 #include "OpenGlTexture.h"
 
 namespace RT::OpenGl
 {
 
-	class OpenGlFrameBuffer : public FrameBuffer
+	class OpenGlRenderPass : public RenderPass
 	{
 	public:
-		OpenGlFrameBuffer(const glm::ivec2 size, const int32_t numOfAttachments);
-		~OpenGlFrameBuffer() final;
+		OpenGlRenderPass(const RenderPassSpec& spec);
+		~OpenGlRenderPass() final;
 
 		void bind() const final;
 		void unbind() const final;
@@ -23,7 +23,7 @@ namespace RT::OpenGl
 	private:
 		uint32_t renderId;
 		uint32_t frameId;
-		glm::ivec2 size;
+		glm::uvec2 size;
 		std::vector<OpenGlTexture> attachments;
 	};
 
