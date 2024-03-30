@@ -40,6 +40,15 @@ namespace RT::Vulkan
             const VkMemoryPropertyFlags properties,
             VkBuffer& buffer,
             VkDeviceMemory& bufferMemory) const;
+        uint32_t findMemoryType(const uint32_t typeFilter, const VkMemoryPropertyFlags properties) const;
+
+        template <typename Proc>
+        void execSingleCmdPass(Proc&& proc) const
+        {
+            auto singleCmdBuff = startSingleCmdBuff();
+            proc(singleCmdBuff);
+            flushSingleCmdBuff(singleCmdBuff);
+        }
 
         VkDevice getDevice() const { return device; }
         VkInstance getInstance() const { return instance; }
@@ -49,8 +58,7 @@ namespace RT::Vulkan
         VkQueue getPresentQueue() const { return presentQueue; }
         VkCommandPool getCommandPool() const { return commandPool; }
         
-        const Utils::SwapChainSupportDetails& getSwapChainSupportDetails() const
-        { return swapChainSupportDetails; }
+        const Utils::SwapChainSupportDetails& getSwapChainSupportDetails() const { return swapChainSupportDetails; }
         Utils::QueueFamilyIndices getQueueFamilyIndices() const { return queueFamilyIndices; }
 
         friend static Device createDeviceInstance();
@@ -68,7 +76,9 @@ namespace RT::Vulkan
         bool isDeviceSuitable(VkPhysicalDevice phyDev);
         Utils::QueueFamilyIndices findQueueFamilies(VkPhysicalDevice phyDev) const;
         Utils::SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice phyDev);
-        uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
+
+        VkCommandBuffer startSingleCmdBuff() const;
+        void flushSingleCmdBuff(const VkCommandBuffer commandBuffer) const;
 
         static bool checkDeviceExtensionSupport(VkPhysicalDevice phyDev);
 

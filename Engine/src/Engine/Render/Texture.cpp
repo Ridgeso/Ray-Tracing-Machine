@@ -7,7 +7,7 @@
 namespace RT
 {
 	
-	Local<Texture> Texture::create(const glm::ivec2 size, const ImageFormat imageFormat)
+	Local<Texture> Texture::create(const glm::uvec2 size, const ImageFormat imageFormat)
 	{
 		switch (GlobalRenderAPI)
 		{

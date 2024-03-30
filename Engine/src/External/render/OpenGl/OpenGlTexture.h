@@ -14,23 +14,24 @@ namespace RT::OpenGl
 		using path = std::filesystem::path;
 
 	public:
-		OpenGlTexture(const glm::ivec2 size, const ImageFormat imageFormat);
+		OpenGlTexture(const glm::uvec2 size, const ImageFormat imageFormat);
 		~OpenGlTexture() final;
 
 		void setBuff(const void* data) final;
 
 		void bind(const uint32_t slot = 0) const final;
 
-		const uint32_t getTexId() const final { return texId; }
-		const int32_t getWidth() const final { return size.x; }
-		const int32_t getHeight() const final { return size.y; }
+		const ImTextureID getTexId() const final { return (ImTextureID)texId; }
+		const glm::uvec2 getSize() const final { return size; }
+
+		const uint32_t getId() const { return texId; }
 
 	private:
 		constexpr int32_t imageFormat2GlFormat(const ImageFormat imageFormat);
 
 	private:
 		uint32_t texId;
-		glm::ivec2 size;
+		glm::uvec2 size;
 		ImageFormat imageFormat;
 	};
 

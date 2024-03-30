@@ -5,7 +5,7 @@
 namespace RT::OpenGl
 {
 
-	OpenGlTexture::OpenGlTexture(const glm::ivec2 size, const ImageFormat imageFormat)
+	OpenGlTexture::OpenGlTexture(const glm::uvec2 size, const ImageFormat imageFormat)
 		: texId{}, size{size}, imageFormat{imageFormat}
 	{
 		glGenTextures(1, &texId);

@@ -103,6 +103,20 @@ namespace RT::Vulkan
         vkBindBufferMemory(device, buffer, bufferMemory, 0);
     }
 
+    uint32_t Device::findMemoryType(const uint32_t typeFilter, const VkMemoryPropertyFlags properties) const
+    {
+        auto memProperties = VkPhysicalDeviceMemoryProperties{};
+        vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+        for (uint32_t memType = 0u; memType < memProperties.memoryTypeCount; memType++)
+        {
+            if ((typeFilter & (1 << memType)) && (memProperties.memoryTypes[memType].propertyFlags & properties) == properties)
+            {
+                return memType;
+            }
+        }
+        RT_CORE_ASSERT(false, "failed to find suitable memory type!");
+    }
+
     Device createDeviceInstance()
     {
         return Device();
@@ -324,18 +338,44 @@ namespace RT::Vulkan
         return swapChainSupportDetails;
     }
 
-    uint32_t Device::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const
+    VkCommandBuffer Device::startSingleCmdBuff() const
     {
-        auto memProperties = VkPhysicalDeviceMemoryProperties{};
-        vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
-        for (uint32_t memType = 0u; memType < memProperties.memoryTypeCount; memType++)
-        {
-            if ((typeFilter & (1 << memType)) && (memProperties.memoryTypes[memType].propertyFlags & properties) == properties)
-            {
-                return memType;
-            }
-        }
-        RT_CORE_ASSERT(false, "failed to find suitable memory type!");
+        auto allocInfo = VkCommandBufferAllocateInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.commandPool = commandPool;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandBufferCount = 1;
+
+        auto cmdBuffer = VkCommandBuffer{};
+        RT_CORE_ASSERT(
+            vkAllocateCommandBuffers(device, &allocInfo, &cmdBuffer) == VK_SUCCESS,
+            "failed to allocate command buffers!");
+
+        auto beginInfo = VkCommandBufferBeginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        RT_CORE_ASSERT(
+            vkBeginCommandBuffer(cmdBuffer, &beginInfo) == VK_SUCCESS,
+            "failed to begin command buffer");
+
+        return cmdBuffer;
+    }
+
+    void Device::flushSingleCmdBuff(const VkCommandBuffer cmdBuffer) const
+    {
+        RT_CORE_ASSERT(
+            vkEndCommandBuffer(cmdBuffer) == VK_SUCCESS,
+            "failed to end command buffer");
+
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &cmdBuffer;
+
+        vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+        vkQueueWaitIdle(graphicsQueue);
+
+        vkFreeCommandBuffers(device, commandPool, 1, &cmdBuffer);
     }
 
     bool Device::checkDeviceExtensionSupport(VkPhysicalDevice phyDev)

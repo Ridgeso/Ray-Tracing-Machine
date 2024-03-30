@@ -15,7 +15,7 @@ namespace RT::Vulkan
 	{
 		auto vertices = std::vector<Vertex>(size);
 		auto totalSize = size * sizeof(Vertex);
-		memcpy(vertices.data(), data, totalSize);
+		std::memcpy(vertices.data(), data, totalSize);
 		createVertexBuffers(vertices);
 		setData(totalSize, vertices.data());
 	}
