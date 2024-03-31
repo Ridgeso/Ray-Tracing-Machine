@@ -21,7 +21,7 @@ namespace RT::ImGuiImpl
         {
             case RT::RenderAPI::OpenGL:
                 ImGui_ImplGlfw_InitForOpenGL(window, true);
-                ImGui_ImplOpenGL3_Init("#version 430 core");
+                ImGui_ImplOpenGL3_Init("#version 450 core");
                 ImGui::GetIO().Fonts->Build();
                 break;
             case RT::RenderAPI::Vulkan:

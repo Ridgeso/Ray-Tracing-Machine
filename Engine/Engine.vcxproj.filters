@@ -216,5 +216,6 @@
   <ItemGroup>
     <None Include="imgui.ini" />
     <None Include="assets\shaders\RayTracing.shader" />
+    <None Include="assets\shaders\triangle.shader" />
   </ItemGroup>
 </Project>

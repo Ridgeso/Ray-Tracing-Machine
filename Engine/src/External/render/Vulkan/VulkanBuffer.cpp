@@ -33,12 +33,12 @@ namespace RT::Vulkan
 
 	void VulkanVertexBuffer::setData(const uint32_t size, const void* data) const
 	{
-		const auto& deviceInstance = DeviceInstance;
+		const auto device = DeviceInstance.getDevice();
 		
 		void* dstData = nullptr;
-		vkMapMemory(deviceInstance.getDevice(), vertexMemory, 0, size, 0, &dstData);
-		memcpy(dstData, data, size);
-		vkUnmapMemory(deviceInstance.getDevice(), vertexMemory);
+		vkMapMemory(device, vertexMemory, 0, size, 0, &dstData);
+		std::memcpy(dstData, data, size);
+		vkUnmapMemory(device, vertexMemory);
 	}
 
 	void VulkanVertexBuffer::bind() const

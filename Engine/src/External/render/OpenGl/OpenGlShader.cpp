@@ -1,10 +1,13 @@
+#include "OpenGlShader.h"
+
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <vector>
-#include <iostream>
+#include <unordered_set>
 
-#include "OpenGlShader.h"
+#include "Engine/Core/Log.h"
+#include "Engine/Core/Assert.h"
 
 namespace RT::OpenGl
 {
@@ -33,11 +36,7 @@ namespace RT::OpenGl
 	void OpenGlShader::load(const std::string& shaderPath)
 	{
         auto shadersSource = readSources(shaderPath);
-        if (shadersSource.size() == 0)
-        {
-            std::cout << "[Shader] Source code couldn't be found: " << shaderPath << std::endl;
-            return;
-        }
+        RT_CORE_ASSERT(shadersSource.size() != 0, "Failed to find source code!\n{}", shaderPath);
 
         auto shaderIds = std::vector<uint32_t>();
         programId = glCreateProgram();
@@ -96,45 +95,34 @@ namespace RT::OpenGl
 
     std::unordered_map<OpenGlShader::Type, std::stringstream> OpenGlShader::readSources(const std::string& shaderPath) const
     {
-        std::ifstream shaders(shaderPath, std::ios::in);
+        auto shaders = std::ifstream(shaderPath, std::ios::in);
         if (!shaders.is_open())
         {
             return {};
         }
 
-        auto emptyShaders = std::unordered_map<Type, std::stringstream>();
-        emptyShaders[Type::Vertex] << "";
-        emptyShaders[Type::TessEvaulation] << "";
-        emptyShaders[Type::TessControl] << "";
-        emptyShaders[Type::Geometry] << "";
-        emptyShaders[Type::Fragment] << "";
-        emptyShaders[Type::Compute] << "";
         auto shadersSource = std::unordered_map<Type, std::stringstream>();
-        
+        auto foundShaders = std::unordered_set<Type>();
+
         auto shaderType = Type::None;
         auto line = std::string();
-        while (std::getline(shaders, line))
+        for (uint32_t lineNr = 1u; std::getline(shaders, line); lineNr++)
         {
-            for (auto& [_, source] : emptyShaders)
-            {
-                source << '\n';
-            }
-
             if (line.find("###SHADER") != std::string::npos)
             {
-                shaderType =
-                      line.find("VERTEX") != std::string::npos          ? Type::Vertex
-                    : line.find("TESS_CONTROL") != std::string::npos    ? Type::TessControl
+                shaderType
+                    = line.find("VERTEX")          != std::string::npos ? Type::Vertex
+                    : line.find("TESS_CONTROL")    != std::string::npos ? Type::TessControl
                     : line.find("TESS_EVAULATION") != std::string::npos ? Type::TessEvaulation
-                    : line.find("GEOMETRY") != std::string::npos        ? Type::Geometry
-                    : line.find("FRAGMENT") != std::string::npos        ? Type::Fragment
-                    : line.find("FRAGMENT") != std::string::npos        ? Type::Compute
-                    :                                                     Type::None;
+                    : line.find("GEOMETRY")        != std::string::npos ? Type::Geometry
+                    : line.find("FRAGMENT")        != std::string::npos ? Type::Fragment
+                    : line.find("FRAGMENT")        != std::string::npos ? Type::Compute
+                    : Type::None;
 
-                if (emptyShaders.find(shaderType) != emptyShaders.end())
+                if (foundShaders.find(shaderType) == foundShaders.end())
                 {
-                    shadersSource[shaderType] << emptyShaders[shaderType].str();
-                    emptyShaders.erase(shaderType);
+                    foundShaders.insert(shaderType);
+                    shadersSource[shaderType] << std::string(lineNr, '\n');
                 }
             }
             else if (shaderType != Type::None)
@@ -197,7 +185,7 @@ namespace RT::OpenGl
 
             std::vector<char> infoLog(maxLength);
             glGetProgramInfoLog(programId, maxLength, &maxLength, infoLog.data());
-            std::cout << "[Shader] Linking failed " << shaderPath << ":\n" << infoLog.data() << std::endl;
+            RT_LOG_ERROR("[Shader] Linking failed {}:\n{}", shaderPath, infoLog.data());
 
             glDeleteProgram(programId);
         }

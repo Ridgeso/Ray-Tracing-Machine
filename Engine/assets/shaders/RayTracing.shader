@@ -3,7 +3,7 @@
 layout (location = 0) in vec2 aPos;
 layout (location = 1) in vec2 aTexCoords;
 
-out vec2 TexCoords;
+layout (location = 0) out vec2 TexCoords;
 
 void main()
 {
@@ -18,7 +18,7 @@ void main()
 #define UINT_MAX 4294967295.0
 #define PI 3.141592653589793
 
-in vec2 TexCoords;
+layout (location = 0) in vec2 TexCoords;
 
 layout (location = 0) out vec4 AccumulationColor;
 layout (location = 1) out vec4 ScreenColor;
@@ -31,6 +31,8 @@ uniform uint MaxBounces;
 uniform uint MaxFrames;
 uniform uint FrameIndex;
 uniform vec2 Resolution;
+uniform int MaterialsCount;
+uniform int SpheresCount;
 
 layout(std430, binding = 0) buffer CameraBuffer
 {
@@ -49,22 +51,6 @@ struct Material
     float RefractionRatio;
 };
 
-uniform int MaterialsCount;
-layout(std430, binding = 1) buffer MaterialsBuffer
-{
-    Material Materials[];
-};
-
-struct
-{
-    uint seed;
-} Global;
-
-vec3 getEmmision(in int matIndex)
-{
-    return Materials[matIndex].EmmisionColor * Materials[matIndex].EmmisionPower;
-}
-
 struct Sphere
 {
     vec3 Position;
@@ -72,15 +58,19 @@ struct Sphere
     int MaterialId;
 };
 
-uniform int SpheresCount;
+layout(std430, binding = 1) buffer MaterialsBuffer
+{
+    Material Materials[];
+};
+
 layout(std430, binding = 2) buffer SpheresBuffer
 {
     Sphere Spheres[];
 };
 
-uint PCGhash(in uint input)
+uint PCGhash(in uint random)
 {
-    uint state = input * 747796405u + 2891336453u;
+    uint state = random * 747796405u + 2891336453u;
     uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
     return (word >> 22u) ^ word;
 }
@@ -95,6 +85,11 @@ vec3 randomUnitSpehere(inout uint seed)
 {
     return 2.0 * vec3(fastRandom(seed), fastRandom(seed), fastRandom(seed)) - 1.0;
 }
+
+struct
+{
+    uint seed;
+} Global;
 
 struct Ray
 {
@@ -121,6 +116,11 @@ const vec3 LightDir = normalize(vec3(-1, -1, -1));
 const vec3 GroundColor = vec3(0.3);
 const vec3 SkyColorZenith = vec3(0.5, 0.7, 1.0);
 const vec3 SkyColorHorizon = vec3(0.6, 0.4, 0.4);
+
+vec3 getEmmision(in int matIndex)
+{
+    return Materials[matIndex].EmmisionColor * Materials[matIndex].EmmisionPower;
+}
 
 Payload miss(in Ray ray)
 {

@@ -6,16 +6,15 @@
 namespace RT::Vulkan
 {
 
-    void Pipeline::init(const std::string& vertFilepath, const std::string& fragFilepath, const PipelineConfigInfo& configInfo)
+    void Pipeline::init(const std::string& shaderName, const PipelineConfigInfo& configInfo)
     {
-        createGraphicsPipeline(vertFilepath, fragFilepath, configInfo);
+        createGraphicsPipeline(shaderName, configInfo);
     }
 
     void Pipeline::shutdown()
     {
         auto device = DeviceInstance.getDevice();
-        vkDestroyShaderModule(device, vertShaderModule, nullptr);
-        vkDestroyShaderModule(device, fragShaderModule, nullptr);
+        shader.destroy();
         vkDestroyPipeline(device, graphicsPipeline, nullptr);
     }
 
@@ -95,39 +94,17 @@ namespace RT::Vulkan
         configInfo.dynamicStateInfo.flags = 0;
     }
 
-    void Pipeline::createGraphicsPipeline(
-        const std::string& vertFilepath,
-        const std::string& fragFilepath,
-        const PipelineConfigInfo& configInfo)
+    void Pipeline::createGraphicsPipeline(const std::string& shaderName, const PipelineConfigInfo& configInfo)
     {
         RT_CORE_ASSERT(
             configInfo.pipelineLayout != VK_NULL_HANDLE,
             "Cannot create graphics pipeline: no pipelineLayout provided in configInfo");
         RT_CORE_ASSERT(
             configInfo.renderPass != VK_NULL_HANDLE,
-            "Cannot create graphics pipeline: no renderPass provided in configInfo");
+            "Cannot create graphics pipeline: no renderPass provided in configInfo")
 
-        auto vertCode = readFile(vertFilepath);
-        auto fragCode = readFile(fragFilepath);
-
-        createShaderModule(vertCode, &vertShaderModule);
-        createShaderModule(fragCode, &fragShaderModule);
-
-        VkPipelineShaderStageCreateInfo shaderStages[2];
-        shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-        shaderStages[0].module = vertShaderModule;
-        shaderStages[0].pName = "main";
-        shaderStages[0].flags = 0;
-        shaderStages[0].pNext = nullptr;
-        shaderStages[0].pSpecializationInfo = nullptr;
-        shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        shaderStages[1].module = fragShaderModule;
-        shaderStages[1].pName = "main";
-        shaderStages[1].flags = 0;
-        shaderStages[1].pNext = nullptr;
-        shaderStages[1].pSpecializationInfo = nullptr;
+        shader.load(shaderName);
+        auto shaderStages = shader.getStages();
 
         auto attriDesc = Vertex::getAttributeDescriptions();
         auto bindDesc = Vertex::getBindingDescriptions();
@@ -140,8 +117,8 @@ namespace RT::Vulkan
 
         VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        pipelineInfo.stageCount = 2;
-        pipelineInfo.pStages = shaderStages;
+        pipelineInfo.stageCount = shaderStages.size();
+        pipelineInfo.pStages = shaderStages.data();
         pipelineInfo.pVertexInputState = &vertexInputInfo;
         pipelineInfo.pInputAssemblyState = &configInfo.inputAssemblyInfo;
         pipelineInfo.pViewportState = &configInfo.viewportInfo;
@@ -167,32 +144,6 @@ namespace RT::Vulkan
             nullptr,
             &graphicsPipeline) == VK_SUCCESS,
             "failed to create graphics pipeline");
-    }
-
-    void Pipeline::createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule) const
-    {
-        VkShaderModuleCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        createInfo.codeSize = code.size();
-        createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-
-        RT_CORE_ASSERT(vkCreateShaderModule(DeviceInstance.getDevice(), &createInfo, nullptr, shaderModule) == VK_SUCCESS, "failed to create shader module");
-    }
-
-    std::vector<char> Pipeline::readFile(const std::string& filepath)
-    {
-        std::ifstream file{filepath, std::ios::ate | std::ios::binary};
-
-        RT_CORE_ASSERT(file.is_open(), "failed to open file: {}", filepath);
-
-        size_t fileSize = static_cast<size_t>(file.tellg());
-        std::vector<char> buffer(fileSize);
-
-        file.seekg(0);
-        file.read(buffer.data(), fileSize);
-
-        file.close();
-        return buffer;
     }
 
 }

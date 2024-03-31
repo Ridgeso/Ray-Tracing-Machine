@@ -77,7 +77,8 @@ namespace RT
 			scene.spheres[scene.spheres.size() - 1].materialId = scene.materials.size() - 1;
 		}
 	
-		rtShader->load("..\\Engine\\assets\\shaders\\RayTracing.shader");
+		//rtShader->load("..\\Engine\\assets\\shaders\\RayTracing.shader");
+		rtShader->load("..\\Engine\\assets\\shaders\\triangle.shader");
 		rtShader->use();
 		rtShader->setUniform("AccumulationTexture", 1, 0);
 		rtShader->setUniform("RenderTexture", 1, 1);
@@ -123,9 +124,9 @@ namespace RT
 
 			update();
 
-			mainWindow->beginUI();
-            layout();
-			mainWindow->endUI();
+			//mainWindow->beginUI();
+            //layout();
+			//mainWindow->endUI();
 
 			specs.isRunning &= mainWindow->update();
 			specs.isRunning &= mainWindow->pullEvents();

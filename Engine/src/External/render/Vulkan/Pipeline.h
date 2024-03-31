@@ -2,6 +2,7 @@
 #include <vulkan/vulkan.h>
 
 #include "Device.h"
+#include "VulkanShader.h"
 
 namespace RT::Vulkan
 {
@@ -37,10 +38,7 @@ namespace RT::Vulkan
         Pipeline& operator=(const Pipeline&) = delete;
         Pipeline&& operator=(Pipeline&&) = delete;
 
-        void init(
-            const std::string& vertFilepath,
-            const std::string& fragFilepath,
-            const PipelineConfigInfo& configInfo);
+        void init(const std::string& shaderName, const PipelineConfigInfo& configInfo);
         void shutdown();
         
         VkPipeline getGraphicsPipeline() const { return graphicsPipeline; }
@@ -49,17 +47,11 @@ namespace RT::Vulkan
         static void defaultPipelineConfigInfo(PipelineConfigInfo& configInfo);
 
     private:
-        void createGraphicsPipeline(
-            const std::string& vertFilepath,
-            const std::string& fragFilepath,
-            const PipelineConfigInfo& configInfo);
-        void createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule) const;
-        static std::vector<char> readFile(const std::string& filepath);
+        void createGraphicsPipeline(const std::string& shaderName, const PipelineConfigInfo& configInfo);
 
     private:
         VkPipeline graphicsPipeline = {};
-        VkShaderModule vertShaderModule = {};
-        VkShaderModule fragShaderModule = {};
+        VulkanShader shader = {};
 	};
 
 }

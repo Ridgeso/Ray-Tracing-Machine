@@ -81,6 +81,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\RayTracing.shader" />
+    <None Include="assets\shaders\triangle.shader" />
     <None Include="imgui.ini" />
   </ItemGroup>
   <ItemGroup>
@@ -147,7 +148,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
-      <AdditionalDependencies>gdi32.lib;user32.lib;kernel32.lib;opengl32.lib;$(SolutionDir)Dependencies\glfw\lib-vc2022\glfw3.lib;$(VULKAN_SDK)\Lib\vulkan-1.lib</AdditionalDependencies>
+      <AdditionalDependencies>gdi32.lib;user32.lib;kernel32.lib;opengl32.lib;$(SolutionDir)Dependencies\glfw\lib-vc2022\glfw3.lib;$(VULKAN_SDK)\Lib\vulkan-1.lib;$(VULKAN_SDK)\Lib\shaderc_sharedd.lib;$(VULKAN_SDK)\Lib\spirv-cross-cored.lib</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -171,7 +172,7 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
     </Link>
     <Lib>
-      <AdditionalDependencies>gdi32.lib;user32.lib;kernel32.lib;opengl32.lib;$(SolutionDir)Dependencies\glfw\lib-vc2022\glfw3.lib;$(VULKAN_SDK)\Lib\vulkan-1.lib</AdditionalDependencies>
+      <AdditionalDependencies>gdi32.lib;user32.lib;kernel32.lib;opengl32.lib;$(SolutionDir)Dependencies\glfw\lib-vc2022\glfw3.lib;$(VULKAN_SDK)\Lib\vulkan-1.lib;$(VULKAN_SDK)\Lib\shaderc_shared.lib;$(VULKAN_SDK)\Lib\spirv-cross-core.lib</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

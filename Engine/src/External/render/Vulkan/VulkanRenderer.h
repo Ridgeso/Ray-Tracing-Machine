@@ -31,8 +31,6 @@ namespace RT::Vulkan
 		void recreateSwapchain();
 		
 		void initImGui();
-		void drawImGui();
-		void createImGuiRenderPass();
 
 	private:
 		VkPipelineLayout pipelineLayout{};
@@ -42,5 +40,8 @@ namespace RT::Vulkan
 		Local<VulkanVertexBuffer> vertexBuffer{};
 
 		VkExtent2D extent{};
+
+		VkPipelineCache pipelineCache = {};
+		VkDescriptorPool descriptorPool = {};
 	};
 }
