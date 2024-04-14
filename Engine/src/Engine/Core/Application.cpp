@@ -124,9 +124,9 @@ namespace RT
 
 			update();
 
-			//mainWindow->beginUI();
-            //layout();
-			//mainWindow->endUI();
+			mainWindow->beginUI();
+			layout();
+			mainWindow->endUI();
 
 			specs.isRunning &= mainWindow->update();
 			specs.isRunning &= mainWindow->pullEvents();
@@ -281,9 +281,7 @@ namespace RT
 
 		Timer timeit;
 		camera.ResizeCamera((int32_t)viewportSize.x, (int32_t)viewportSize.y);
-		renderPass->bind();
-		renderer->render(camera, *rtShader, *screenBuff, scene);
-		renderPass->unbind();
+		renderer->render(*renderPass, camera, *rtShader, *screenBuff, scene);
 		lastFrameDuration = timeit.Ellapsed();
 	}
 

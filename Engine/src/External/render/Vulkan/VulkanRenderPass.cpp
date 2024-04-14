@@ -31,14 +31,6 @@ namespace RT::Vulkan
         vkDestroyRenderPass(device, renderPass, nullptr);
     }
     
-    void VulkanRenderPass::bind() const
-    {
-    }
-
-    void VulkanRenderPass::unbind() const
-    {
-    }
-
     void VulkanRenderPass::createAttachments(const std::vector<ImageFormat>& attachmentTypes)
     {
         attachments.reserve(attachmentTypes.size());
@@ -73,8 +65,10 @@ namespace RT::Vulkan
             allAttDesc[i].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             allAttDesc[i].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
             allAttDesc[i].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            //allAttDesc[i].initialLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
             allAttDesc[i].finalLayout = isDepth ?
                 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL :
+                //VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
                 VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
             auto attRef = VkAttachmentReference{};
@@ -129,9 +123,9 @@ namespace RT::Vulkan
         for (int32_t i = 0; i < frameBuffers.size(); i++)
         {
             auto infoAttachments = std::vector<VkImageView>(attachments.size());
-            for (int32_t i = 0; i < attachments.size(); i++)
+            for (int32_t j = 0; j < attachments.size(); j++)
             {
-                infoAttachments[i] = attachments[i].getImageView();
+                infoAttachments[j] = attachments[j].getImageView();
             }
 
             auto framebufferInfo = VkFramebufferCreateInfo{};

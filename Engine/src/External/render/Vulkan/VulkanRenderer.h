@@ -7,6 +7,7 @@
 #include "Swapchain.h"
 #include "Pipeline.h"
 #include "VulkanBuffer.h"
+#include "VulkanRenderPass.h"
 
 namespace RT::Vulkan
 {
@@ -24,13 +25,21 @@ namespace RT::Vulkan
 		void init(const RenderSpecs& specs) final;
 		void shutDown() final;
 
-		void render(const Camera& camera, const Shader& shader, const VertexBuffer& vbuffer, const Scene& scene) final;
+		void render(
+			const RenderPass& renderPass,
+			const Camera& camera,
+			const Shader& shader,
+			const VertexBuffer& vbuffer,
+			const Scene& scene) final;
 	
 	private:
-		void recordCommandbuffer(const uint32_t imIdx);
+		void recordCommandbuffer(const uint32_t imIdx, const VulkanRenderPass& renderPass);
 		void recreateSwapchain();
-		
+
 		void initImGui();
+
+		void registerFrameBuff(VkCommandBuffer cmdBuffer, const VulkanRenderPass& renderPass);
+		void createPipeline(const VkRenderPass rp);
 
 	private:
 		VkPipelineLayout pipelineLayout{};

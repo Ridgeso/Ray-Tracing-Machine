@@ -51,6 +51,11 @@ namespace RT::OpenGl
         glDeleteFramebuffers(1, &frameId);
 	}
 
+    const Texture& OpenGlRenderPass::getAttachment(const uint32_t index) const
+    {
+        return attachments[index];
+    }
+
     void OpenGlRenderPass::bind() const
     {
         glBindFramebuffer(GL_FRAMEBUFFER, frameId);
@@ -60,11 +65,6 @@ namespace RT::OpenGl
     void OpenGlRenderPass::unbind() const
     {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    }
-
-    const Texture& OpenGlRenderPass::getAttachment(const uint32_t index) const
-    {
-        return attachments[index];
     }
 
 }

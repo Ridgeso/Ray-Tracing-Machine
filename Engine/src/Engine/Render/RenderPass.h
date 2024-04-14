@@ -18,9 +18,6 @@ namespace RT
 	{
 		virtual ~RenderPass() = 0;
 
-		virtual void bind() const = 0;
-		virtual void unbind() const = 0;
-		
 		virtual const Texture& getAttachment(const uint32_t idx = 0) const = 0;
 
 		static Share<RenderPass> create(const RenderPassSpec& spec);

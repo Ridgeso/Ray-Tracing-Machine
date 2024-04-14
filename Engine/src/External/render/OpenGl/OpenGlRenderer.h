@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 
 #include "Engine/Render/Renderer.h"
+#include "OpenGlRenderPass.h"
 #include "OpenGlShader.h"
 #include "OpenGlTexture.h"
 #include "OpenGlBuffer.h"
@@ -22,7 +23,12 @@ namespace RT::OpenGl
 		void init(const RenderSpecs& specs) final;
 		void shutDown() final;
 
-		void render(const Camera& camera, const Shader& shader, const VertexBuffer& vbuffer, const Scene& scene) final;
+		void render(
+			const RenderPass& renderPass,
+			const Camera& camera,
+			const Shader& shader,
+			const VertexBuffer& vbuffer,
+			const Scene& scene) final;
 
 		const RenderSpecs& getSpecs() const { return specs; }
 

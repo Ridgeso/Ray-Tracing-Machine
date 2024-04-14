@@ -15,10 +15,10 @@ namespace RT::OpenGl
 		OpenGlRenderPass(const RenderPassSpec& spec);
 		~OpenGlRenderPass() final;
 
-		void bind() const final;
-		void unbind() const final;
-
 		const Texture& getAttachment(const uint32_t index = 0) const final;
+
+		void bind() const;
+		void unbind() const;
 
 	private:
 		uint32_t renderId;

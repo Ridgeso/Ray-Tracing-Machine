@@ -1,4 +1,4 @@
-#include "External/render/Vulkan/VulkanRenderer.h"
+#include "VulkanRenderer.h"
 
 #include "Engine/Core/Assert.h"
 #include "Engine/Core/Application.h"
@@ -36,6 +36,8 @@ namespace RT::Vulkan
 		deviceInstance.init(window);
 		recreateSwapchain();
 		
+		initImGui();
+
 		auto triangleVert = std::vector<Vertex>{
 			{{0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}},
 			{{0.5f, -0.5f},  {0.0f, 1.0f, 0.0f}},
@@ -58,17 +60,8 @@ namespace RT::Vulkan
 		RT_CORE_ASSERT(
 			vkCreatePipelineLayout(deviceInstance.getDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) == VK_SUCCESS,
 			"Could not create pipeline Layout");
-		
-		auto pipelineConfig = PipelineConfigInfo{};
-		Pipeline::defaultPipelineConfigInfo(pipelineConfig);
-		pipelineConfig.renderPass = SwapchainInstance->getRenderPass();
-		pipelineConfig.pipelineLayout = pipelineLayout;
-		
-		pipeline->init("..\\Engine\\assets\\shaders\\triangle.shader", pipelineConfig);
 
 		commandBuffers.resize(SwapchainInstance->getSwapChainImages().size());
-
-		initImGui();
 
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -105,8 +98,19 @@ namespace RT::Vulkan
 		deviceInstance.shutdown();
 	}
 
-	void VulkanRenderer::render(const Camera& camera, const Shader& shader, const VertexBuffer& vbuffer, const Scene& scene)
+	void VulkanRenderer::render(
+		const RenderPass& renderPass,
+		const Camera& camera,
+		const Shader& shader,
+		const VertexBuffer& vbuffer,
+		const Scene& scene)
 	{
+		const auto& vkRenderPass = static_cast<const VulkanRenderPass&>(renderPass);
+		if (pipeline->getGraphicsPipeline() == VK_NULL_HANDLE)
+		{
+			createPipeline(vkRenderPass.getRenderPass());
+		}
+
 		uint32_t imageIndex = 0u;
 		auto result = SwapchainInstance->acquireNextImage(imageIndex);
 
@@ -117,7 +121,7 @@ namespace RT::Vulkan
 
 		RT_ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, "failte to acquire swap chain image!");
 		
-		recordCommandbuffer(imageIndex);
+		recordCommandbuffer(imageIndex, vkRenderPass);
 
 		result = SwapchainInstance->submitCommandBuffers(commandBuffers[imageIndex], imageIndex);
 		
@@ -130,7 +134,7 @@ namespace RT::Vulkan
 		RT_ASSERT(result == VK_SUCCESS, "failte to present swap chain image!");
 	}
 
-	void VulkanRenderer::recordCommandbuffer(const uint32_t imIdx)
+	void VulkanRenderer::recordCommandbuffer(const uint32_t imIdx, const VulkanRenderPass& renderPass)
 	{
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -139,15 +143,15 @@ namespace RT::Vulkan
 
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		
 		renderPassInfo.renderPass = SwapchainInstance->getRenderPass();
 		renderPassInfo.framebuffer = SwapchainInstance->getFramebuffers()[imIdx];
 
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = SwapchainInstance->getWindowExtent();
 
-		constexpr auto clearValues = std::array<VkClearValue, 2>{
+		constexpr auto clearValues = std::array<VkClearValue, 1>{
 			VkClearValue{ { 0.1f, 0.1f, 0.1f, 1.0f } }, // color
-			VkClearValue{ { 1.0f, 0 } } // depthStencil
 		};
 		renderPassInfo.clearValueCount = clearValues.size();
 		renderPassInfo.pClearValues = clearValues.data();
@@ -167,17 +171,16 @@ namespace RT::Vulkan
 		vkCmdSetViewport(commandBuffers[imIdx], 0, 1, &viewport);
 		vkCmdSetScissor(commandBuffers[imIdx], 0, 1, &scissor);
 
-		pipeline->bind(commandBuffers[imIdx]);
-		vertexBuffer->bind(commandBuffers[imIdx]);
-		vertexBuffer->draw(commandBuffers[imIdx]);
-
-		//auto* drawData = ImGui::GetDrawData();
-		//if (drawData != nullptr)
-		//{
-		//	ImGui_ImplVulkan_RenderDrawData(drawData, commandBuffers[imIdx]);
-		//}
+		auto* drawData = ImGui::GetDrawData();
+		if (drawData != nullptr)
+		{
+			ImGui_ImplVulkan_RenderDrawData(drawData, commandBuffers[imIdx]);
+		}
 
 		vkCmdEndRenderPass(commandBuffers[imIdx]);
+
+		registerFrameBuff(commandBuffers[imIdx], renderPass);
+
 		RT_CORE_ASSERT(vkEndCommandBuffer(commandBuffers[imIdx]) == VK_SUCCESS, "failed to record command buffer");
 	}
 
@@ -274,6 +277,66 @@ namespace RT::Vulkan
 		});
 		vkDeviceWaitIdle(device.getDevice());
 		ImGui_ImplVulkan_DestroyFontUploadObjects();	
+	}
+
+	void VulkanRenderer::registerFrameBuff(VkCommandBuffer cmdBuffer, const VulkanRenderPass& renderPass)
+	{
+		const auto rpExtent = VkExtent2D(renderPass.getSize().x, renderPass.getSize().y);
+
+		VkRenderPassBeginInfo renderPassInfo{};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		
+		renderPassInfo.renderPass = renderPass.getRenderPass();
+		renderPassInfo.framebuffer = renderPass.getFrameBuffer(0);
+		
+		renderPassInfo.renderArea.offset = { 0, 0 };
+		renderPassInfo.renderArea.extent = rpExtent;
+		
+		constexpr auto clearValues = std::array<VkClearValue, 3>{
+			VkClearValue{ { 0.1f, 0.1f, 0.1f, 1.0f } }, // color
+			VkClearValue{ { 0.1f, 0.1f, 0.1f, 1.0f } }, // color
+			VkClearValue{ { 1.0f, 0 } } // depthStencil
+		};
+		renderPassInfo.clearValueCount = clearValues.size();
+		renderPassInfo.pClearValues = clearValues.data();
+		
+		vkCmdBeginRenderPass(cmdBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+		
+		auto viewport = VkViewport{};
+		viewport.x = 0;
+		viewport.y = 0;
+		viewport.width = (float)rpExtent.width;
+		viewport.height = (float)rpExtent.height;
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		auto scissor = VkRect2D{};
+		scissor.offset = { 0, 0 };
+		scissor.extent = rpExtent;
+		vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
+		vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+		
+		pipeline->bind(cmdBuffer);
+		vertexBuffer->bind(cmdBuffer);
+		vertexBuffer->draw(cmdBuffer);
+		
+		vkCmdEndRenderPass(cmdBuffer);
+		
+		static_cast<const VulkanTexture&>(renderPass.getAttachment(1)).transition(
+			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_ACCESS_SHADER_READ_BIT,
+			cmdBuffer);
+	}
+
+	void VulkanRenderer::createPipeline(const VkRenderPass rp)
+	{
+		auto pipelineConfig = PipelineConfigInfo{};
+		Pipeline::defaultPipelineConfigInfo(pipelineConfig);
+		pipelineConfig.renderPass = rp;
+		pipelineConfig.pipelineLayout = pipelineLayout;
+
+		pipeline->init("..\\Engine\\assets\\shaders\\triangle.shader", pipelineConfig);
 	}
 
 }

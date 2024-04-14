@@ -259,22 +259,30 @@ namespace RT::Vulkan
         subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
         subpass.colorAttachmentCount = 1;
         subpass.pColorAttachments = &colorAttachmentRef;
+#if 0
         subpass.pDepthStencilAttachment = &depthAttachmentRef;
+#else
+        subpass.pDepthStencilAttachment = VK_NULL_HANDLE;
+#endif
 
         auto dependency = VkSubpassDependency{};
         dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
         dependency.dstSubpass = 0;
-        //dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        //dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        //dependency.srcAccessMask = 0;
-        //dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        
+#if 0
         dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
         dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
         dependency.srcAccessMask = 0;
         dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-        //auto attachments = std::array<VkAttachmentDescription, 1>{ colorAttachment }; // , depthAttachment };
         auto attachments = std::array<VkAttachmentDescription, 2>{ colorAttachment, depthAttachment };
+#else
+        dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency.srcAccessMask = 0;
+        dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        auto attachments = std::array<VkAttachmentDescription, 1>{ colorAttachment };
+#endif
+
         auto renderPassInfo = VkRenderPassCreateInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
         renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
@@ -344,8 +352,11 @@ namespace RT::Vulkan
         swapChainFramebuffers.resize(swapChainImages.size());
         for (size_t i = 0; i < swapChainImages.size(); i++)
         {
-            //auto attachments = std::array<VkImageView, 1>{ swapChainImageViews[i] };// , depthImageViews[i] };
+#if 0
             auto attachments = std::array<VkImageView, 2>{ swapChainImageViews[i], depthImageViews[i] };
+#else
+            auto attachments = std::array<VkImageView, 1>{ swapChainImageViews[i] };
+#endif
 
             auto framebufferInfo = VkFramebufferCreateInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;

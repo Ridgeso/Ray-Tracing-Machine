@@ -21,6 +21,13 @@ namespace RT::Vulkan
 
 		VkImageView getImageView() const { return imageView; }
 
+		void transition(
+			const VkImageLayout oldLayout,
+			const VkImageLayout newLayout,
+			const VkAccessFlags srcAccessMask,
+			const VkAccessFlags dstAccessMask,
+			const VkCommandBuffer cmdBuffer = VK_NULL_HANDLE) const;
+
 		static constexpr VkFormat imageFormat2VulkanFormat(const ImageFormat imageFormat);
 		static constexpr uint32_t format2Size(const ImageFormat imageFormat);
 
