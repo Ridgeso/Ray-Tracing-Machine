@@ -16,7 +16,6 @@ namespace RT::Vulkan
         createSwapChain();
         createImageViews();
         createRenderPass();
-        createDepthResources();
         createFramebuffers();
         createSyncObjects();
 
@@ -37,13 +36,6 @@ namespace RT::Vulkan
         {
             vkDestroySwapchainKHR(device, swapChain, nullptr);
             swapChain = nullptr;
-        }
-
-        for (int i = 0; i < depthImages.size(); i++)
-        {
-            vkDestroyImageView(device, depthImageViews[i], nullptr);
-            vkDestroyImage(device, depthImages[i], nullptr);
-            vkFreeMemory(device, depthImageMemorys[i], nullptr);
         }
 
         for (auto framebuffer : swapChainFramebuffers)
@@ -259,29 +251,17 @@ namespace RT::Vulkan
         subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
         subpass.colorAttachmentCount = 1;
         subpass.pColorAttachments = &colorAttachmentRef;
-#if 0
-        subpass.pDepthStencilAttachment = &depthAttachmentRef;
-#else
         subpass.pDepthStencilAttachment = VK_NULL_HANDLE;
-#endif
 
         auto dependency = VkSubpassDependency{};
         dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
         dependency.dstSubpass = 0;
         
-#if 0
-        dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-        dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-        dependency.srcAccessMask = 0;
-        dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-        auto attachments = std::array<VkAttachmentDescription, 2>{ colorAttachment, depthAttachment };
-#else
         dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         dependency.srcAccessMask = 0;
         dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
         auto attachments = std::array<VkAttachmentDescription, 1>{ colorAttachment };
-#endif
 
         auto renderPassInfo = VkRenderPassCreateInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -297,66 +277,12 @@ namespace RT::Vulkan
             "failed to create render pass!");
     }
 
-    void Swapchain::createDepthResources()
-    {
-        auto depthFormat = findDepthFormat();
-        swapChainDepthFormat = depthFormat;
-
-        depthImages.resize(swapChainImages.size());
-        depthImageMemorys.resize(swapChainImages.size());
-        depthImageViews.resize(swapChainImages.size());
-
-        for (int i = 0; i < depthImages.size(); i++)
-        {
-            auto imageInfo = VkImageCreateInfo{};
-            imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-            imageInfo.imageType = VK_IMAGE_TYPE_2D;
-            imageInfo.extent.width = swapChainExtent.width;
-            imageInfo.extent.height = swapChainExtent.height;
-            imageInfo.extent.depth = 1;
-            imageInfo.mipLevels = 1;
-            imageInfo.arrayLayers = 1;
-            imageInfo.format = depthFormat;
-            imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-            imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-            imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-            imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-            imageInfo.flags = 0;
-
-            DeviceInstance.createImageWithInfo(
-                imageInfo,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                depthImages[i],
-                depthImageMemorys[i]);
-
-            auto viewInfo = VkImageViewCreateInfo{};
-            viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-            viewInfo.image = depthImages[i];
-            viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-            viewInfo.format = depthFormat;
-            viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-            viewInfo.subresourceRange.baseMipLevel = 0;
-            viewInfo.subresourceRange.levelCount = 1;
-            viewInfo.subresourceRange.baseArrayLayer = 0;
-            viewInfo.subresourceRange.layerCount = 1;
-
-            RT_CORE_ASSERT(
-                vkCreateImageView(DeviceInstance.getDevice(), &viewInfo, nullptr, &depthImageViews[i]) == VK_SUCCESS,
-                "failed to create texture image view!");
-        }
-    }
-
     void Swapchain::createFramebuffers()
     {
         swapChainFramebuffers.resize(swapChainImages.size());
         for (size_t i = 0; i < swapChainImages.size(); i++)
         {
-#if 0
-            auto attachments = std::array<VkImageView, 2>{ swapChainImageViews[i], depthImageViews[i] };
-#else
             auto attachments = std::array<VkImageView, 1>{ swapChainImageViews[i] };
-#endif
 
             auto framebufferInfo = VkFramebufferCreateInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;

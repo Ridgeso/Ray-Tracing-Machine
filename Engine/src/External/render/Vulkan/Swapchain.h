@@ -45,7 +45,6 @@ namespace RT::Vulkan
         void createSwapChain();
         void createImageViews();
         void createRenderPass();
-        void createDepthResources();
         void createFramebuffers();
         void createSyncObjects();
 
@@ -70,9 +69,6 @@ namespace RT::Vulkan
         VkExtent2D swapChainExtent = {};
         const VkExtent2D windowExtent = {};
 
-        std::vector<VkImage> depthImages = {};
-        std::vector<VkDeviceMemory> depthImageMemorys = {};
-        std::vector<VkImageView> depthImageViews = {};
         std::vector<VkImage> swapChainImages = {};
         std::vector<VkImageView> swapChainImageViews = {};
         uint32_t imageCount = 0u;
