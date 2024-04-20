@@ -1,6 +1,9 @@
 #include "VulkanBuffer.h"
+
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Assert.h"
+
+#include "Swapchain.h"
 
 namespace RT::Vulkan
 {
@@ -100,6 +103,107 @@ namespace RT::Vulkan
 		attribDesc[1].format = VK_FORMAT_R32G32B32_SFLOAT;
 		attribDesc[1].offset = offsetof(Vertex, color);
 		return attribDesc;
+	}
+
+	VulkanUniform::VulkanUniform(const uint32_t instanceSize, const uint32_t instanceCount)
+		: alignedSize{instanceSize}
+		, instanceCount{instanceCount}
+	{
+		DeviceInstance.createBuffer(
+			alignedSize,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			uniBuffer,
+			uniMemory);
+
+		auto req = VkMemoryRequirements{};
+		vkGetBufferMemoryRequirements(DeviceInstance.getDevice(), uniBuffer, &req);
+
+		RT_LOG_TRACE("Uniform Requirements: {} {} {}", req.alignment, req.size, req.memoryTypeBits);
+	}
+
+	VulkanUniform::~VulkanUniform()
+	{
+		const auto device = DeviceInstance.getDevice();
+		vkDestroyBuffer(device, uniBuffer, nullptr);
+		vkFreeMemory(device, uniMemory, nullptr);
+	}
+
+	void VulkanUniform::setData(const void* data, uint32_t size)
+	{
+		void* mapped = nullptr;
+		
+		/*
+		* TODO: VK_WHOLE_SIZE must be mutile of nonCoherentAtomSize (64 in my case)
+		* probably are needed two sizes, one for the uniform size second fo the aligned size
+		* 
+		* Another solution is to use VK_MEMORY_PROPERTY_HOST_COHERENT_BIT in creation but
+		* I want to keep manual flush for education purpose
+		*/
+		vkMapMemory(DeviceInstance.getDevice(), uniMemory, 0, VK_WHOLE_SIZE, 0, &mapped);
+
+		std::memcpy(mapped, data, size);
+
+		auto memRange = VkMappedMemoryRange{};
+		memRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+		memRange.memory = uniMemory;
+		memRange.offset = 0;
+		// As above
+		memRange.size = VK_WHOLE_SIZE;
+
+		RT_CORE_ASSERT(
+			vkFlushMappedMemoryRanges(DeviceInstance.getDevice(), 1, &memRange) == VK_SUCCESS,
+			"Failed to flush uniform buffer!");
+		
+		vkUnmapMemory(DeviceInstance.getDevice(), uniMemory);
+	}
+
+	VulkanStorage::VulkanStorage(const uint32_t instanceSize, const uint32_t instanceCount)
+		: alignedSize{instanceSize}
+		, instanceCount{instanceCount}
+	{
+		DeviceInstance.createBuffer(
+			alignedSize,
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			stoBuffer,
+			stoMemory);
+
+		auto req = VkMemoryRequirements{};
+		vkGetBufferMemoryRequirements(DeviceInstance.getDevice(), stoBuffer, &req);
+
+		RT_LOG_TRACE("Storage Requirements: {} {} {}", req.alignment, req.size, req.memoryTypeBits);
+	}
+
+	VulkanStorage::~VulkanStorage()
+	{
+		const auto device = DeviceInstance.getDevice();
+		vkDestroyBuffer(device, stoBuffer, nullptr);
+		vkFreeMemory(device, stoMemory, nullptr);
+	}
+
+	void VulkanStorage::setData(const void* data, uint32_t size)
+	{
+		void* mapped = nullptr;
+
+		/*
+		* TODO: Same case as in uniform
+		*/
+		vkMapMemory(DeviceInstance.getDevice(), stoMemory, 0, VK_WHOLE_SIZE, 0, &mapped);
+
+		std::memcpy(mapped, data, size);
+
+		auto memRange = VkMappedMemoryRange{};
+		memRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+		memRange.memory = stoMemory;
+		memRange.offset = 0;
+		memRange.size = VK_WHOLE_SIZE;
+
+		RT_CORE_ASSERT(
+			vkFlushMappedMemoryRanges(DeviceInstance.getDevice(), 1, &memRange) == VK_SUCCESS,
+			"Failed to flush storage buffer!");
+
+		vkUnmapMemory(DeviceInstance.getDevice(), stoMemory);
 	}
 
 }

@@ -142,7 +142,7 @@ namespace RT::Vulkan
         auto options = shaderc::CompileOptions{};
 
         options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
-        constexpr bool optimize = true;
+        constexpr bool optimize = false;
         if (optimize)
         {
             options.SetOptimizationLevel(shaderc_optimization_level_performance);

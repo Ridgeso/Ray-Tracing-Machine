@@ -16,6 +16,17 @@
 namespace RT::Vulkan
 {
 
+	// Test Purposes
+	struct UniData
+	{
+		glm::vec4 color;
+	};
+	struct ObjectData
+	{
+		glm::vec4 anotherColor{1.0, 0.0, 1.0, 1.0};
+		glm::mat4 model;
+	};
+
 	VulkanRenderer::VulkanRenderer()
 	{
 		if (EnableValidationLayers)
@@ -50,10 +61,38 @@ namespace RT::Vulkan
 			static_cast<uint32_t>(triangleVert.size()),
 			triangleVert.data());
 
+		uniform[0] = makeLocal<VulkanUniform>(static_cast<uint32_t>(sizeof(UniData)));
+		uniform[1] = makeLocal<VulkanUniform>(static_cast<uint32_t>(sizeof(UniData)));
+		storage[0] = makeLocal<VulkanStorage>(static_cast<uint32_t>(sizeof(ObjectData) * 10));
+		storage[1] = makeLocal<VulkanStorage>(static_cast<uint32_t>(sizeof(ObjectData) * 10));
+
+		auto descriptorSpec = DescriptorSpec{};
+		descriptorSpec.bindTypes.push_back(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+		descriptorSpec.bindTypes.push_back(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE);
+		descriptorSpec.bindTypes.push_back(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+		descriptorSpec.poolSizes.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swapchain::MAX_FRAMES_IN_FLIGHT });
+		descriptorSpec.poolSizes.push_back({ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, Swapchain::MAX_FRAMES_IN_FLIGHT });
+		descriptorSpec.poolSizes.push_back({ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, Swapchain::MAX_FRAMES_IN_FLIGHT });
+
+		descriptor = makeLocal<Descriptor>(descriptorSpec);
+		
+		auto bufferInfo = VkDescriptorBufferInfo{};
+		bufferInfo.offset = 0;
+		bufferInfo.range = VK_WHOLE_SIZE;
+		bufferInfo.buffer = uniform[0]->getBuffer();
+		descriptor->writeUniform(0, 0, bufferInfo);
+		bufferInfo.buffer = uniform[1]->getBuffer();
+		descriptor->writeUniform(1, 0, bufferInfo);
+
+		bufferInfo.buffer = storage[0]->getBuffer();
+		descriptor->writeStorage(0, 2, bufferInfo);
+		bufferInfo.buffer = storage[1]->getBuffer();
+		descriptor->writeStorage(1, 2, bufferInfo);
+
 		auto pipelineLayoutInfo = VkPipelineLayoutCreateInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.setLayoutCount = 0;
-		pipelineLayoutInfo.pSetLayouts = nullptr;
+		pipelineLayoutInfo.setLayoutCount = 1;
+		pipelineLayoutInfo.pSetLayouts = descriptor->getLayout();
 		pipelineLayoutInfo.pushConstantRangeCount = 0;
 		pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
@@ -93,6 +132,11 @@ namespace RT::Vulkan
 		pipeline->shutdown();
 		
 		vertexBuffer.reset();
+		uniform[0].reset();
+		uniform[1].reset();
+		storage[0].reset();
+		storage[1].reset();
+		descriptor.reset();
 
 		SwapchainInstance->shutdown();
 		deviceInstance.shutdown();
@@ -281,6 +325,28 @@ namespace RT::Vulkan
 
 	void VulkanRenderer::registerFrameBuff(VkCommandBuffer cmdBuffer, const VulkanRenderPass& renderPass)
 	{
+		auto uniData = UniData{ { 0.0, 1.0, 0.5, 1.0} };
+		uniform[SwapchainInstance->getCurrentFrame()]->setData(&uniData, sizeof(uniData));
+
+		auto imageInfo = VkDescriptorImageInfo{};
+		imageInfo.sampler = static_cast<const VulkanTexture&>(renderPass.getAttachment(0)).getSampler();
+		imageInfo.imageView = static_cast<const VulkanTexture&>(renderPass.getAttachment(0)).getImageView();
+		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		descriptor->writeImage(SwapchainInstance->getCurrentFrame(), 1, imageInfo);
+
+		auto objectBuffer = std::array<ObjectData, 10>{ObjectData{}, ObjectData{}};
+		storage[SwapchainInstance->getCurrentFrame()]->setData(objectBuffer.data(), sizeof(ObjectData) * 10);
+
+		vkCmdBindDescriptorSets(
+			cmdBuffer,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			pipelineLayout,
+			0,
+			1,
+			descriptor->getSet(SwapchainInstance->getCurrentFrame()),
+			0,
+			nullptr);
+
 		const auto rpExtent = VkExtent2D(renderPass.getSize().x, renderPass.getSize().y);
 
 		VkRenderPassBeginInfo renderPassInfo{};

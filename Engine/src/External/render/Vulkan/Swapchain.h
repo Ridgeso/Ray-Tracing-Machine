@@ -39,7 +39,12 @@ namespace RT::Vulkan
         const std::vector<VkImageView>& getSwapChainImageViews() const { return swapChainImageViews; }
         VkFormat getImageFormat() const { return swapChainImageFormat; }
 
+        uint8_t getCurrentFrame() const { return currentFrame; }
+
         static constexpr uint32_t minImageCount() { return 2; }
+
+    public:
+        static constexpr uint8_t MAX_FRAMES_IN_FLIGHT = 2;
 
     private:
         void createSwapChain();
@@ -58,7 +63,6 @@ namespace RT::Vulkan
             const std::vector<VkPresentModeKHR>& availablePresentModes);
         
     private:
-        static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
         
         VkSwapchainKHR swapChain = {};
         VkRenderPass renderPass = {};

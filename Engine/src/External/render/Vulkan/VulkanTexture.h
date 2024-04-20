@@ -20,6 +20,7 @@ namespace RT::Vulkan
 		const glm::uvec2 getSize() const final { return size; }
 
 		VkImageView getImageView() const { return imageView; }
+		VkSampler getSampler() const { return sampler; }
 
 		void transition(
 			const VkImageLayout oldLayout,

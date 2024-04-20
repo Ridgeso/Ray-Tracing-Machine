@@ -48,4 +48,46 @@ namespace RT::Vulkan
 		uint32_t vertexCount = 0u;
 	};
 
+	class VulkanUniform
+	{
+	public:
+		VulkanUniform(const uint32_t instanceSize, const uint32_t instanceCount = 1u);
+		~VulkanUniform();
+
+		VulkanUniform(const VulkanUniform&) = delete;
+		VulkanUniform(VulkanUniform&&) = delete;
+		VulkanUniform& operator=(const VulkanUniform&) = delete;
+		VulkanUniform&& operator=(VulkanUniform&&) = delete;
+
+		void setData(const void* data, uint32_t size);
+		VkBuffer getBuffer() const { return uniBuffer; }
+
+	private:
+		VkBuffer uniBuffer = {};
+		VkDeviceMemory uniMemory = {};
+		uint32_t alignedSize = 0u;
+		uint32_t instanceCount = 1u;
+	};
+
+	class VulkanStorage
+	{
+	public:
+		VulkanStorage(const uint32_t instanceSize, const uint32_t instanceCount = 1u);
+		~VulkanStorage();
+
+		VulkanStorage(const VulkanStorage&) = delete;
+		VulkanStorage(VulkanStorage&&) = delete;
+		VulkanStorage& operator=(const VulkanStorage&) = delete;
+		VulkanStorage&& operator=(VulkanStorage&&) = delete;
+
+		void setData(const void* data, uint32_t size);
+		VkBuffer getBuffer() const { return stoBuffer; }
+
+	private:
+		VkBuffer stoBuffer = {};
+		VkDeviceMemory stoMemory = {};
+		uint32_t alignedSize = 0u;
+		uint32_t instanceCount = 1u;
+	};
+
 }

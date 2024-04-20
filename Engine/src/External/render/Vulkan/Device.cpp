@@ -178,7 +178,10 @@ namespace RT::Vulkan
         if (EnableValidationLayers)
         {
             vkGetPhysicalDeviceProperties(physicalDevice, &properties);
-            RT_LOG_INFO("physical device: {}", properties.deviceName);
+            RT_LOG_INFO(
+                "physical device: {} nonCoherentAtomSize: {}",
+                properties.deviceName,
+                properties.limits.nonCoherentAtomSize);
         }
     }
 

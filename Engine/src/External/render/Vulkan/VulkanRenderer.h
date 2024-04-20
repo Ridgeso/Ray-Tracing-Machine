@@ -7,10 +7,12 @@
 #include "Swapchain.h"
 #include "Pipeline.h"
 #include "VulkanBuffer.h"
+#include "Descriptors.h"
 #include "VulkanRenderPass.h"
 
 namespace RT::Vulkan
 {
+
 	class VulkanRenderer : public Renderer
 	{
 	public:
@@ -42,15 +44,19 @@ namespace RT::Vulkan
 		void createPipeline(const VkRenderPass rp);
 
 	private:
-		VkPipelineLayout pipelineLayout{};
-		std::vector<VkCommandBuffer> commandBuffers{};
+		VkPipelineLayout pipelineLayout = {};
+		std::vector<VkCommandBuffer> commandBuffers = {};
 		Local<Pipeline> pipeline = nullptr;
 		
-		Local<VulkanVertexBuffer> vertexBuffer{};
+		Local<VulkanVertexBuffer> vertexBuffer = {};
+		Local<VulkanUniform> uniform[2] = {};
+		Local<VulkanStorage> storage[2] = {};
+		Local<Descriptor> descriptor = {};
 
-		VkExtent2D extent{};
+		VkExtent2D extent = {};
 
 		VkPipelineCache pipelineCache = {};
 		VkDescriptorPool descriptorPool = {};
 	};
+
 }
