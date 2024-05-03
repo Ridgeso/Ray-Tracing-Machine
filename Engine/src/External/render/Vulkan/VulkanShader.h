@@ -44,8 +44,6 @@ namespace RT::Vulkan
 		const ShaderStages& getStages() const { return shaderStages; }
 
 	private:
-		void setUniformImpl(const std::string& uniName, const int32_t size, const void* value) const final;
-	
 		SourceMap<std::stringstream> readSources() const;
 		SourceMap<std::vector<char>> readBinaries() const;
 		SourceMap<std::vector<uint32_t>> compileSources(const SourceMap<std::stringstream>& sources) const;

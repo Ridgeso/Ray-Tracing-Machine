@@ -76,23 +76,6 @@ namespace RT
 			scene.spheres[scene.spheres.size() - 1].radius = 0.25;
 			scene.spheres[scene.spheres.size() - 1].materialId = scene.materials.size() - 1;
 		}
-	
-		//rtShader->load("..\\Engine\\assets\\shaders\\RayTracing.shader");
-		rtShader->load("..\\Engine\\assets\\shaders\\triangle.shader");
-		rtShader->use();
-		rtShader->setUniform("AccumulationTexture", 1, 0);
-		rtShader->setUniform("RenderTexture", 1, 1);
-		rtShader->setUniform("DrawEnvironment", 1, (float)drawEnvironment);
-		rtShader->setUniform("MaxBounces", 1, maxBounces);
-		rtShader->setUniform("MaxFrames", 1, maxFrames);
-		rtShader->setUniform("FrameIndex", 1, framesCount);
-		rtShader->setUniform("Resolution", 1, (glm::vec2)lastWinSize);
-		rtShader->setUniform("CameraBuffer", sizeof(Camera::Spec), camera.GetSpec());
-		rtShader->setUniform("MaterialsCount", 1, scene.materials.size());
-		rtShader->setUniform("MaterialsBuffer", sizeof(Material) * scene.materials.size(), scene.materials.data());
-		rtShader->setUniform("SpheresCount", 1, scene.spheres.size());
-		rtShader->setUniform("SpheresBuffer", sizeof(Sphere) * scene.spheres.size(), scene.spheres.data());
-		rtShader->unuse();
 
 		screenBuff = VertexBuffer::create(sizeof(screenVertices), screenVertices);
 		screenBuff->registerAttributes({ VertexElement::Float2, VertexElement::Float2 });
@@ -103,6 +86,31 @@ namespace RT
 		renderPassSpec.attachmentsFormats.push_back(ImageFormat::RGBA32F);
 		renderPassSpec.attachmentsFormats.push_back(ImageFormat::Depth);
 		renderPass = RenderPass::create(renderPassSpec);
+
+		//rtShader->load("..\\Engine\\assets\\shaders\\RayTracing.shader");
+		rtShader->load("..\\Engine\\assets\\shaders\\triangle.shader");
+
+		infoUniform.resolution = lastWinSize;
+		infoUniform.spheresCount = scene.spheres.size();
+		infoUniform.materialsCount = scene.materials.size();
+
+		accumulationSamplerUniform = Uniform::create(renderPass->getAttachment(0), 0);
+
+		ammountsUniform = Uniform::create(UniformType::Uniform, sizeof(InfoUniform));
+		ammountsUniform->setData(&infoUniform, sizeof(InfoUniform));
+		ammountsUniform->bind(1);
+
+		cameraUniform = Uniform::create(UniformType::Uniform, sizeof(Camera::Spec));
+		cameraUniform->setData(&camera.GetSpec(), sizeof(Camera::Spec));
+		cameraUniform->bind(2);
+
+		materialsStorage = Uniform::create(UniformType::Storage, sizeof(Material) * scene.materials.size());
+		materialsStorage->setData(scene.materials.data(), sizeof(Material) * scene.materials.size());
+		materialsStorage->bind(3);
+
+		spheresStorage = Uniform::create(UniformType::Storage, sizeof(Sphere) * scene.spheres.size());
+		spheresStorage->setData(scene.spheres.data(), sizeof(Sphere) * scene.spheres.size());
+		spheresStorage->bind(4);
 
 		lastMousePos = windowSize / 2;
 	}
@@ -142,32 +150,33 @@ namespace RT
 		ImGui::Text("App frame took: %.3fms", appFrameDuration);
 		ImGui::Text("CPU time: %.3fms", lastFrameDuration);
 		ImGui::Text("GPU time: %.3fms", appFrameDuration - lastFrameDuration);
-		ImGui::Text("Frames: %d", framesCount);
+		ImGui::Text("Frames: %d", infoUniform.frameIndex);
 
-		framesCount++;
+		infoUniform.frameIndex++;
 		if (!accumulation)
 		{
-			framesCount = 1;
+			infoUniform.frameIndex = 1;
 		}
 
 		rtShader->use();
-		if (ImGui::DragInt("Bounces Limit", (int32_t*)&maxBounces, 1, 1, 15))
+		if (ImGui::DragInt("Bounces Limit", (int32_t*)&infoUniform.maxBounces, 1, 1, 15))
 		{
-			rtShader->setUniform("MaxBounces", 1, maxBounces);
+			ammountsUniform->setData(&infoUniform.maxBounces, sizeof(uint32_t), offsetof(InfoUniform, maxBounces));
 		}
-		if (ImGui::DragInt("Precalculated Frames Limit", (int32_t*)&maxFrames, 1, 1, 15))
+		if (ImGui::DragInt("Precalculated Frames Limit", (int32_t*)&infoUniform.maxFrames, 1, 1, 15))
 		{
-			rtShader->setUniform("MaxFrames", 1, maxFrames);
+			ammountsUniform->setData(&infoUniform.maxFrames, sizeof(uint32_t), offsetof(InfoUniform, maxFrames));
 		}
 		if (ImGui::Button("Reset"))
 		{
-			framesCount = 1;
+			infoUniform.frameIndex = 1;
 		}
-		rtShader->setUniform("FrameIndex", 1, framesCount);
+		ammountsUniform->setData(&infoUniform.frameIndex, sizeof(uint32_t), offsetof(InfoUniform, frameIndex));
 		ImGui::Checkbox("Accumulate", &accumulation);
-		if (ImGui::Checkbox("Draw Environment", &drawEnvironment))
+		if (ImGui::Checkbox("Draw Environment", &drawEnvironmentTranslator))
 		{
-			rtShader->setUniform("DrawEnvironment", 1, (float)drawEnvironment);
+			infoUniform.drawEnvironment = drawEnvironmentTranslator;
+			ammountsUniform->setData(&infoUniform.drawEnvironment, sizeof(float), offsetof(InfoUniform, drawEnvironment));
 		}
 		bool shouldUpdateMaterials = false;
 		if (ImGui::Button("Add Material"))
@@ -221,13 +230,35 @@ namespace RT
 		ImGui::End();
 		if (shouldUpdateMaterials)
 		{
-			rtShader->setUniform("MaterialsCount", 1, scene.materials.size());
-			rtShader->setUniform("MaterialsBuffer", sizeof(Material) * scene.materials.size(), scene.materials.data());
+			if (scene.materials.size() == infoUniform.materialsCount)
+			{
+				materialsStorage->setData(scene.materials.data(), sizeof(Material) * scene.materials.size());
+			}
+			else
+			{
+				infoUniform.materialsCount = scene.materials.size();
+				ammountsUniform->setData(&infoUniform.materialsCount, sizeof(float), offsetof(InfoUniform, materialsCount));
+
+				materialsStorage = Uniform::create(UniformType::Storage, sizeof(Material) * scene.materials.size());
+				materialsStorage->setData(scene.materials.data(), sizeof(Material) * scene.materials.size());
+				materialsStorage->bind(3);
+			}
 		}
 		if (shouldUpdateSpehere)
 		{
-			rtShader->setUniform("SpheresCount", 1, scene.spheres.size());
-			rtShader->setUniform("SpheresBuffer", sizeof(Sphere) * scene.spheres.size(), scene.spheres.data());
+			if (scene.spheres.size() == infoUniform.spheresCount)
+			{
+				spheresStorage->setData(scene.spheres.data(), sizeof(Sphere) * scene.spheres.size());
+			}
+			else
+			{
+				infoUniform.spheresCount = scene.spheres.size();
+				ammountsUniform->setData(&infoUniform.spheresCount, sizeof(float), offsetof(InfoUniform, spheresCount));
+
+				spheresStorage = Uniform::create(UniformType::Storage, sizeof(Sphere) * scene.spheres.size());
+				spheresStorage->setData(scene.spheres.data(), sizeof(Sphere) * scene.spheres.size());
+				spheresStorage->bind(4);
+			}
 		}
 		rtShader->unuse();
 
@@ -238,7 +269,7 @@ namespace RT
 		if (viewPort.x != viewportSize.x || viewPort.y != viewportSize.y)
 		{
 			viewportSize = viewPort;
-			framesCount = 1;
+			infoUniform.frameIndex = 1;
 		}
 
 		ImGui::Image(
@@ -271,13 +302,12 @@ namespace RT
 			renderPassSpec.attachmentsFormats.push_back(ImageFormat::Depth);
 
 			renderPass = RenderPass::create(renderPassSpec);
-			rtShader->setUniform("Resolution", 1, (glm::vec2)winSize);
+			infoUniform.resolution = winSize;
+			ammountsUniform->setData(&infoUniform.resolution, sizeof(glm::vec2), offsetof(InfoUniform, resolution));
 			lastWinSize = winSize;
 		}
-		rtShader->setUniform("CameraBuffer", sizeof(Camera::Spec), camera.GetSpec());
+		cameraUniform->setData(&camera.GetSpec(), sizeof(Camera::Spec));
 		rtShader->unuse();
-		renderPass->getAttachment(0).bind(0);
-		renderPass->getAttachment(1).bind(1);
 
 		Timer timeit;
 		camera.ResizeCamera((int32_t)viewportSize.x, (int32_t)viewportSize.y);
@@ -361,7 +391,7 @@ namespace RT
 		if (moved)
 		{
 			camera.RecalculateInvView();
-			framesCount = 0;
+			infoUniform.frameIndex = 0;
 		}
 	}
 

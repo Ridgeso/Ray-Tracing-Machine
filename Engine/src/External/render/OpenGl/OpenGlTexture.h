@@ -19,10 +19,10 @@ namespace RT::OpenGl
 
 		void setBuff(const void* data) final;
 
-		void bind(const uint32_t slot = 0) const final;
-
 		const ImTextureID getTexId() const final { return (ImTextureID)texId; }
 		const glm::uvec2 getSize() const final { return size; }
+
+		void bind(const uint32_t slot = 0) const;
 
 		const uint32_t getId() const { return texId; }
 

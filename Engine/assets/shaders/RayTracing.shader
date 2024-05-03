@@ -1,5 +1,5 @@
 ###SHADER VERTEX
-#version 430 core
+#version 450 core
 layout (location = 0) in vec2 aPos;
 layout (location = 1) in vec2 aTexCoords;
 
@@ -12,7 +12,7 @@ void main()
 }
 
 ###SHADER FRAGMENT
-#version 430 core
+#version 450 core
 #define LOWETS_THRESHOLD 1.0e-6F
 #define FLT_MAX 3.402823466e+38F
 #define UINT_MAX 4294967295.0
@@ -23,18 +23,20 @@ layout (location = 0) in vec2 TexCoords;
 layout (location = 0) out vec4 AccumulationColor;
 layout (location = 1) out vec4 ScreenColor;
 
-uniform sampler2D AccumulationTexture;
-uniform sampler2D RenderTexture;
+layout(binding = 0) uniform sampler2D AccumulationTexture;
 
-uniform float DrawEnvironment;
-uniform uint MaxBounces;
-uniform uint MaxFrames;
-uniform uint FrameIndex;
-uniform vec2 Resolution;
-uniform int MaterialsCount;
-uniform int SpheresCount;
+layout(std140, set = 0, binding = 1) uniform Amounts
+{
+    float DrawEnvironment;
+    uint MaxBounces;
+    uint MaxFrames;
+    uint FrameIndex;
+    vec2 Resolution;
+    int MaterialsCount;
+    int SpheresCount;
+};
 
-layout(std430, binding = 0) buffer CameraBuffer
+layout(std140, set = 0, binding = 2) uniform CameraBuffer
 {
     mat4 projection;
     mat4 view;
@@ -58,12 +60,12 @@ struct Sphere
     int MaterialId;
 };
 
-layout(std430, binding = 1) buffer MaterialsBuffer
+layout(std140, set = 1, binding = 3) buffer MaterialsBuffer
 {
     Material Materials[];
 };
 
-layout(std430, binding = 2) buffer SpheresBuffer
+layout(std140, set = 1, binding = 4) buffer SpheresBuffer
 {
     Sphere Spheres[];
 };

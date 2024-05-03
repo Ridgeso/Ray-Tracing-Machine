@@ -26,10 +26,30 @@ namespace RT::OpenGl
 
 		constexpr static int32_t elementType2Size(const VertexElement element);
 		constexpr static uint32_t elementType2GlType(const VertexElement element);
+		constexpr static int32_t getNrOfComponents(const VertexElement element);
 	private:
 		uint32_t bufferId;
 		uint32_t size;
 		mutable int32_t count;
+	};
+
+	class OpenGlUniform : public Uniform
+	{
+	public:
+		OpenGlUniform(const UniformType uniformType, const uint32_t size);
+		OpenGlUniform(const Texture& sampler, const uint32_t binding);
+		~OpenGlUniform() final;
+
+		void bind(const uint32_t binding) const final;
+		void setData(const void* data, const uint32_t size, const uint32_t offset = 0) final;
+
+	private:
+		constexpr static uint32_t UniformType2GlType(const UniformType uniformType);
+
+	private:
+		uint32_t uniformId = 0u;
+		uint32_t maxSize = 0u;
+		UniformType uniformType = UniformType::None;
 	};
 
 }

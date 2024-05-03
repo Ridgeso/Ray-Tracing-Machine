@@ -73,10 +73,6 @@ namespace RT::Vulkan
         //}
 	}
 
-	void VulkanShader::setUniformImpl(const std::string& uniName, const int32_t size, const void* value) const
-	{
-	}
-
     VulkanShader::SourceMap<std::stringstream> VulkanShader::readSources() const
     {
         auto shaders = std::ifstream(shaderPath, std::ios::in);

@@ -29,29 +29,26 @@ namespace RT
 
 	VertexBuffer::~VertexBuffer() {}
 
-	namespace Utils
+	Local<Uniform> Uniform::create(const UniformType uniformType, const uint32_t size)
 	{
-	
-		int32_t getNrOfComponents(const VertexElement element)
+		switch (GlobalRenderAPI)
 		{
-			switch (element)
-			{
-				case VertexElement::Int:
-				case VertexElement::Float:
-					return 1;
-				case VertexElement::Int2:
-				case VertexElement::Float2:
-					return 2;
-				case VertexElement::Int3:
-				case VertexElement::Float3:
-					return 3;
-				case VertexElement::Int4:
-				case VertexElement::Float4:
-					return 4;
-			}
-			return 0;
+			case RT::RenderAPI::OpenGL: return makeLocal<OpenGl::OpenGlUniform>(uniformType, size); break;
+			//case RT::RenderAPI::Vulkan: return makeLocal<VulkanUniform>(size); break;
 		}
-
+		return nullptr;
 	}
+	
+	Local<Uniform> Uniform::create(const Texture& sampler, const uint32_t binding)
+	{
+		switch (GlobalRenderAPI)
+		{
+			case RT::RenderAPI::OpenGL: return makeLocal<OpenGl::OpenGlUniform>(sampler, binding); break;
+			//case RT::RenderAPI::Vulkan: return makeLocal<VulkanUniform>(sampler, binding); break;
+		}
+		return nullptr;
+	}
+
+	Uniform::~Uniform() {}
 
 }

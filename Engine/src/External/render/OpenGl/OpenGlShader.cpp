@@ -55,43 +55,8 @@ namespace RT::OpenGl
             glDeleteShader(id);
         }
 
-        loadUniforms();
+        reflect();
 	}
-
-    void OpenGlShader::setUniformImpl(const std::string& uniName, const int32_t size, const void* value) const
-    {
-        const auto& pos = uniforms.find(uniName);
-        if (pos == uniforms.end())
-        {
-            return;
-        }
-
-        if (size == 1)
-        {
-            switch (pos->second.type)
-            {
-                case Uniform::Type::Int: glUniform1i(pos->second.id, *(int32_t*)value); break;
-                case Uniform::Type::Uint: glUniform1ui(pos->second.id, *(uint32_t*)value); break;
-                case Uniform::Type::Float: glUniform1f(pos->second.id, *(float*)value); break;
-                case Uniform::Type::Float2: glUniform2f(pos->second.id, ((glm::vec2*)value)->x, ((glm::vec2*)value)->y); break;
-            }
-        }
-        else
-        {
-            switch (pos->second.type)
-            {
-                case Uniform::Type::Buffer: setStorage(pos->second.id, size, value); break;
-            }
-        }
-    }
-
-    void OpenGlShader::setStorage(const int32_t pos, const size_t size, const void* data) const
-    {
-        const auto storageId = storages.at(pos);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, storageId);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, size, data, GL_DYNAMIC_DRAW);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, pos, storageId);
-    }
 
     std::unordered_map<OpenGlShader::Type, std::stringstream> OpenGlShader::readSources(const std::string& shaderPath) const
     {
@@ -147,7 +112,8 @@ namespace RT::OpenGl
         return shaderId;
     }
 
-    void OpenGlShader::loadUniforms()
+    // TODO: Leave for debugging purpose and delete unnecessery maps
+    void OpenGlShader::reflect()
     {
         constexpr size_t bufSize = 64;
         char name[bufSize];
@@ -158,7 +124,8 @@ namespace RT::OpenGl
         for (auto i = 0u; i < count; i++)
         {
             glGetActiveUniform(programId, i, bufSize, &length, &size, &type, name);
-            uniforms[std::string(name)] = { glUniType2UniType(type), glGetUniformLocation(programId, name)};
+            int32_t uniformType = glGetUniformLocation(programId, name);
+            uniforms[std::string(name)] = uniformType;
         }
 
         glGetProgramInterfaceiv(programId, GL_SHADER_STORAGE_BLOCK, GL_ACTIVE_RESOURCES, &count);
@@ -169,8 +136,9 @@ namespace RT::OpenGl
 
             glGetProgramResourceiv(programId, GL_SHADER_STORAGE_BLOCK, i, propsSize, props, propsSize, &length, values);
             glGetProgramResourceName(programId, GL_SHADER_STORAGE_BLOCK, i, bufSize, &length, name);
-            uniforms[std::string(name)] = { Uniform::Type::Buffer, values[0]};
-            glGenBuffers(1, &storages[values[0]]);
+            int32_t itIsStorageType = values[0];
+            uniforms[std::string(name)] = itIsStorageType;
+            glCreateBuffers(1, &storages[values[0]]);
         }
     }
 
@@ -203,19 +171,6 @@ namespace RT::OpenGl
             case Type::Compute:        return GL_COMPUTE_SHADER;
         }
         return 0u;
-    }
-
-    constexpr Uniform::Type OpenGlShader::glUniType2UniType(const uint32_t glUniType)
-    {
-        switch (glUniType)
-        {
-            case GL_SAMPLER_2D:   return Uniform::Type::Int;
-            case GL_INT:          return Uniform::Type::Int;
-            case GL_UNSIGNED_INT: return Uniform::Type::Uint;
-            case GL_FLOAT:        return Uniform::Type::Float;
-            case GL_FLOAT_VEC2:   return Uniform::Type::Float2;
-        }
-        return Uniform::Type::None;
     }
 
 }

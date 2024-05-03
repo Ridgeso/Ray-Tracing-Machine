@@ -1,9 +1,11 @@
 #pragma once
 #include <vector>
 #include <cstdint>
-#include <Engine/Core/Base.h>
 
 #include <glm/glm.hpp>
+#include <Engine/Core/Base.h>
+
+#include "Engine/Render/Texture.h"
 
 namespace RT
 {
@@ -32,11 +34,23 @@ namespace RT
 		static Local<VertexBuffer> create(const uint32_t size, const void* data);
 	};
 
-	namespace Utils
+	enum class UniformType
 	{
+		None,
+		Uniform,
+		Storage,
+		Sampler
+	};
 
-		int32_t getNrOfComponents(const VertexElement element);
+	struct Uniform
+	{
+		virtual ~Uniform() = 0;
 
-	}
+		virtual void bind(const uint32_t binding) const = 0;
+		virtual void setData(const void* data, const uint32_t size, const uint32_t offset = 0) = 0;
+	
+		static Local<Uniform> create(const UniformType uniformType, const uint32_t size);
+		static Local<Uniform> create(const Texture& sampler, const uint32_t binding);
+	};
 
 }

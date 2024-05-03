@@ -50,6 +50,11 @@ namespace RT
 		Local<Shader> rtShader;
 		Local<VertexBuffer> screenBuff;
 		Share<RenderPass> renderPass;
+		Local<Uniform> cameraUniform;
+		Local<Uniform> ammountsUniform;
+		Local<Uniform> accumulationSamplerUniform;
+		Local<Uniform> materialsStorage;
+		Local<Uniform> spheresStorage;
 		Camera camera;
 		Scene scene;
 
@@ -58,10 +63,19 @@ namespace RT
 		static Application* MainApp;
 
 		bool accumulation = false;
-		uint32_t framesCount = 1;
-		uint32_t maxBounces = 5;
-		uint32_t maxFrames = 1;
-		bool drawEnvironment = false;
+		bool drawEnvironmentTranslator = false;
+
+		struct InfoUniform
+		{
+			float drawEnvironment = (float)false;
+			uint32_t maxBounces = 5;
+			uint32_t maxFrames = 1;
+			uint32_t frameIndex = 1;
+			glm::vec2 resolution = {};
+			int32_t materialsCount = 0;
+			int32_t spheresCount = 0;
+			uint32_t renderTexture = 1;
+		} infoUniform;
 
 		struct Vertices
 		{

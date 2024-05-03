@@ -17,8 +17,6 @@ namespace RT
 
 		virtual void setBuff(const void* data) = 0;
 
-		virtual void bind(const uint32_t slot = 0) const = 0;
-
 		virtual const ImTextureID getTexId() const = 0;
 		virtual const glm::uvec2 getSize() const = 0;
 

@@ -17,22 +17,6 @@ namespace RT
 		virtual const uint32_t getId() const = 0;
 
 		virtual void load(const std::string& shaderPath) = 0;
-
-		template <typename T>
-		void setUniform(const std::string& uniName, const int32_t size, const T& value) const
-		{
-			if constexpr (std::is_pointer<T>::value)
-			{
-				setUniformImpl(uniName, size, value);
-			}
-			else
-			{
-				setUniformImpl(uniName, size, &value);
-			}
-		}
-
-	private:
-		virtual void setUniformImpl(const std::string& uniName, const int32_t size, const void* value) const = 0;
 	};
 
 	Local<Shader> createShader();
