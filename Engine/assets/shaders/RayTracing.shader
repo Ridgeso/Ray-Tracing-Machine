@@ -1,5 +1,6 @@
 ###SHADER VERTEX
 #version 450 core
+
 layout (location = 0) in vec2 aPos;
 layout (location = 1) in vec2 aTexCoords;
 
@@ -13,6 +14,7 @@ void main()
 
 ###SHADER FRAGMENT
 #version 450 core
+
 #define LOWETS_THRESHOLD 1.0e-6F
 #define FLT_MAX 3.402823466e+38F
 #define UINT_MAX 4294967295.0
@@ -23,9 +25,11 @@ layout (location = 0) in vec2 TexCoords;
 layout (location = 0) out vec4 AccumulationColor;
 layout (location = 1) out vec4 ScreenColor;
 
-layout(binding = 0) uniform sampler2D AccumulationTexture;
+//layout(binding = 0) uniform sampler2D AccumulationTexture;
+layout(set = 0, binding = 0) uniform sampler2D AccumulationTexture;
 
-layout(std140, set = 0, binding = 1) uniform Amounts
+//layout(std140, set = 0, binding = 1) uniform Amounts
+layout(std140, set = 1, binding = 0) uniform Amounts
 {
     float DrawEnvironment;
     uint MaxBounces;
@@ -36,7 +40,8 @@ layout(std140, set = 0, binding = 1) uniform Amounts
     int SpheresCount;
 };
 
-layout(std140, set = 0, binding = 2) uniform CameraBuffer
+//layout(std140, set = 0, binding = 2) uniform CameraBuffer
+layout(std140, set = 2, binding = 0) uniform CameraBuffer
 {
     mat4 projection;
     mat4 view;
@@ -60,12 +65,14 @@ struct Sphere
     int MaterialId;
 };
 
-layout(std140, set = 1, binding = 3) buffer MaterialsBuffer
+//layout(std140, set = 1, binding = 3) buffer MaterialsBuffer
+layout(std140, set = 3, binding = 0) readonly buffer MaterialsBuffer
 {
     Material Materials[];
 };
 
-layout(std140, set = 1, binding = 4) buffer SpheresBuffer
+//layout(std140, set = 1, binding = 4) readonly bufferSpheresBuffer
+layout(std140, set = 4, binding = 0) readonly buffer SpheresBuffer
 {
     Sphere Spheres[];
 };
@@ -291,9 +298,14 @@ void main()
     
     pixel.Color = pixel.Color / float(MaxFrames);
     
-    if (FrameIndex != 1)
-        pixel.Color += texture(AccumulationTexture, TexCoords).xyz;
+    //if (FrameIndex != 1)
+    //{
+    //    pixel.Color += texture(AccumulationTexture, TexCoords).xyz;
+    //}
         
+    //AccumulationColor = vec4(pixel.Color, 1.0);
+    //ScreenColor = vec4(AccumulationColor.xyz / float(FrameIndex), 1.0);
+    
     AccumulationColor = vec4(pixel.Color, 1.0);
-    ScreenColor = vec4(AccumulationColor.xyz / float(FrameIndex), 1.0);
+    ScreenColor = vec4(pixel.Color, 1.0);
 }

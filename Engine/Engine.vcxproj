@@ -83,7 +83,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\RayTracing.shader" />
-    <None Include="assets\shaders\triangle.shader" />
     <None Include="imgui.ini" />
   </ItemGroup>
   <ItemGroup>

@@ -40,7 +40,7 @@ namespace RT::Vulkan
         Pipeline& operator=(const Pipeline&) = delete;
         Pipeline&& operator=(Pipeline&&) = delete;
 
-        void init(const std::string& shaderName, const PipelineConfigInfo& configInfo);
+        void init(const VulkanShader& shader, const PipelineConfigInfo& configInfo);
         void shutdown();
         
         VkPipeline getGraphicsPipeline() const { return graphicsPipeline; }
@@ -49,11 +49,10 @@ namespace RT::Vulkan
         static void defaultPipelineConfigInfo(PipelineConfigInfo& configInfo);
 
     private:
-        void createGraphicsPipeline(const std::string& shaderName, const PipelineConfigInfo& configInfo);
+        void createGraphicsPipeline(const VulkanShader& shader, const PipelineConfigInfo& configInfo);
 
     private:
         VkPipeline graphicsPipeline = {};
-        VulkanShader shader = {};
 	};
 
 }

@@ -24,17 +24,21 @@ namespace RT::Vulkan
 		Descriptor(const DescriptorSpec& spec);
 		~Descriptor();
 
-		void writeUniform(const uint32_t set, const uint32_t binding, VkDescriptorBufferInfo bufferInfo);
-		void writeStorage(const uint32_t set, const uint32_t binding, VkDescriptorBufferInfo bufferInfo);
-		void writeImage(const uint32_t set, const uint32_t binding, VkDescriptorImageInfo imgInfo);
+		void writeUniform(const uint32_t binding, VkDescriptorBufferInfo bufferInfo);
+		void writeStorage(const uint32_t binding, VkDescriptorBufferInfo bufferInfo);
+		void writeImage(const uint32_t binding, VkDescriptorImageInfo imgInfo);
 
-		const VkDescriptorSet* getSet(const uint32_t set) const { return &descriptor[set]; }
+		const VkDescriptorSet* getSet() const { return &descriptor; }
 		const VkDescriptorSetLayout* getLayout() const { return &descriptorSetLayout; }
 
 	private:
-		std::vector<VkDescriptorSet> descriptor = {};
+		VkDescriptorSet descriptor = {};
 		VkDescriptorSetLayout descriptorSetLayout = {};
 		VkDescriptorPool descriptorPool = {};
 	};
 
+	void bindDescriptor(const uint32_t binding, const Descriptor& descriptor);
+
+	std::vector<VkDescriptorSet> getBindedDescriptors();
+	std::vector<VkDescriptorSetLayout> getRegistredLayouts();
 }

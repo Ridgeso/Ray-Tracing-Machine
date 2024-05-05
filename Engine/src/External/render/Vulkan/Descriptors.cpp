@@ -9,6 +9,9 @@
 namespace RT::Vulkan
 {
 
+	static auto bindedDescriptors = std::vector<VkDescriptorSet>{};
+	static auto registeredLayouts = std::vector<VkDescriptorSetLayout>{};
+
 	Descriptor::Descriptor(const DescriptorSpec& spec)
 	{
 		auto bindings = std::vector<VkDescriptorSetLayoutBinding>(spec.bindTypes.size());
@@ -49,17 +52,13 @@ namespace RT::Vulkan
 				&descriptorPool) == VK_SUCCESS,
 			"failed to create descriptor pool!");
 
-		auto descriptorSetLayouts = std::vector<VkDescriptorSetLayout>(spec.maxSets);
-		std::fill(descriptorSetLayouts.begin(), descriptorSetLayouts.end(), descriptorSetLayout);
-
 		auto allocInfo = VkDescriptorSetAllocateInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		allocInfo.descriptorPool = descriptorPool;
-		allocInfo.pSetLayouts = descriptorSetLayouts.data();
-		allocInfo.descriptorSetCount = spec.maxSets;
+		allocInfo.descriptorSetCount = 1;
+		allocInfo.pSetLayouts = &descriptorSetLayout;
 
-		descriptor.resize(spec.maxSets);
-		RT_ASSERT(vkAllocateDescriptorSets(DeviceInstance.getDevice(), &allocInfo, descriptor.data()) == VK_SUCCESS);
+		RT_CORE_ASSERT(vkAllocateDescriptorSets(DeviceInstance.getDevice(), &allocInfo, &descriptor) == VK_SUCCESS);
 	}
 
 	Descriptor::~Descriptor()
@@ -69,50 +68,74 @@ namespace RT::Vulkan
 		vkFreeDescriptorSets(
 			device,
 			descriptorPool,
-			descriptor.size(),
-			descriptor.data());
+			1,
+			&descriptor);
 
 		vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 		vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 	}
 
-	void Descriptor::writeUniform(const uint32_t set, const uint32_t binding, VkDescriptorBufferInfo bufferInfo)
+	void Descriptor::writeUniform(const uint32_t binding, VkDescriptorBufferInfo bufferInfo)
 	{
 		auto write = VkWriteDescriptorSet{};
 		write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		write.dstSet = descriptor[set];
+		write.dstSet = descriptor;
 		write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		write.dstBinding = binding;
+		//write.dstBinding = binding;
+		write.dstBinding = 0;
 		write.pBufferInfo = &bufferInfo;
 		write.descriptorCount = 1;
 
 		vkUpdateDescriptorSets(DeviceInstance.getDevice(), 1, &write, 0, nullptr);
 	}
 
-	void Descriptor::writeStorage(const uint32_t set, const uint32_t binding, VkDescriptorBufferInfo bufferInfo)
+	void Descriptor::writeStorage(const uint32_t binding, VkDescriptorBufferInfo bufferInfo)
 	{
 		auto write = VkWriteDescriptorSet{};
 		write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		write.dstSet = descriptor[set];
+		write.dstSet = descriptor;
 		write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		write.dstBinding = binding;
+		//write.dstBinding = binding;
+		write.dstBinding = 0;
 		write.pBufferInfo = &bufferInfo;
 		write.descriptorCount = 1;
 
 		vkUpdateDescriptorSets(DeviceInstance.getDevice(), 1, &write, 0, nullptr);
 	}
 
-	void Descriptor::writeImage(const uint32_t set, const uint32_t binding, VkDescriptorImageInfo imgInfo)
+	void Descriptor::writeImage(const uint32_t binding, VkDescriptorImageInfo imgInfo)
 	{
 		auto write = VkWriteDescriptorSet{};
 		write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		write.dstSet = descriptor[set];
+		write.dstSet = descriptor;
 		write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-		write.dstBinding = binding;
+		//write.dstBinding = binding;
+		write.dstBinding = 0;
 		write.pImageInfo = &imgInfo;
 		write.descriptorCount = 1;
 
 		vkUpdateDescriptorSets(DeviceInstance.getDevice(), 1, &write, 0, nullptr);
+	}
+
+	void bindDescriptor(const uint32_t binding, const Descriptor& descriptor)
+	{
+		if (bindedDescriptors.size() < binding + 1)
+		{
+			bindedDescriptors.resize(binding + 1);
+			registeredLayouts.resize(binding + 1);
+		}
+		bindedDescriptors[binding] = *descriptor.getSet();
+		registeredLayouts[binding] = *descriptor.getLayout();
+	}
+
+	std::vector<VkDescriptorSet> getBindedDescriptors()
+	{
+		return bindedDescriptors;
+	}
+
+	std::vector<VkDescriptorSetLayout> getRegistredLayouts()
+	{
+		return registeredLayouts;
 	}
 
 }

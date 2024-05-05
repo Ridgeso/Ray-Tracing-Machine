@@ -4,9 +4,12 @@
 #include "Engine/Core/Assert.h"
 
 #include "Swapchain.h"
+#include "VulkanTexture.h"
 
 namespace RT::Vulkan
 {
+
+	auto uniformsToFlush = std::vector<VulkanUniform*>();
 
 	VulkanVertexBuffer::VulkanVertexBuffer(const uint32_t size)
 	{
@@ -100,110 +103,117 @@ namespace RT::Vulkan
 		
 		attribDesc[1].binding = 0;
 		attribDesc[1].location = 1;
-		attribDesc[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-		attribDesc[1].offset = offsetof(Vertex, color);
+		attribDesc[1].format = VK_FORMAT_R32G32_SFLOAT;
+		attribDesc[1].offset = offsetof(Vertex, tex);
 		return attribDesc;
 	}
 
-	VulkanUniform::VulkanUniform(const uint32_t instanceSize, const uint32_t instanceCount)
-		: alignedSize{instanceSize}
-		, instanceCount{instanceCount}
+	const auto uniformDescriptorSpec = DescriptorSpec{ { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER }, { { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swapchain::MAX_FRAMES_IN_FLIGHT } } };
+	const auto storageDescriptorSpec = DescriptorSpec{ { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER }, { { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, Swapchain::MAX_FRAMES_IN_FLIGHT } } };
+	const auto samplerDescriptorSpec = DescriptorSpec{ { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE }, { { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, Swapchain::MAX_FRAMES_IN_FLIGHT } } };
+
+	VulkanUniform::VulkanUniform(const UniformType uniformType, const uint32_t instanceSize)
+		: uniformType{uniformType}
+		, descriptor{
+			UniformType::Uniform == uniformType
+				? uniformDescriptorSpec
+				: storageDescriptorSpec}
 	{
+		alignedSize = calculateAlignedSize(
+			instanceSize,
+			UniformType::Uniform == uniformType ?
+				DeviceInstance.getLimits().minUniformBufferOffsetAlignment :
+				DeviceInstance.getLimits().minStorageBufferOffsetAlignment);
+		
 		DeviceInstance.createBuffer(
 			alignedSize,
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			uniformType2VkBuffBit(uniformType),
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
 			uniBuffer,
 			uniMemory);
 
-		auto req = VkMemoryRequirements{};
-		vkGetBufferMemoryRequirements(DeviceInstance.getDevice(), uniBuffer, &req);
+		vkMapMemory(DeviceInstance.getDevice(), uniMemory, 0, VK_WHOLE_SIZE, 0, &mapped);
+	}
 
-		RT_LOG_TRACE("Uniform Requirements: {} {} {}", req.alignment, req.size, req.memoryTypeBits);
+	VulkanUniform::VulkanUniform(const Texture& sampler, const uint32_t binding)
+		: uniformType{UniformType::Sampler}
+		, descriptor{samplerDescriptorSpec}
+	{
+		const auto& vulkanSampler = static_cast<const VulkanTexture&>(sampler);
+
+		auto imgInfo = VkDescriptorImageInfo{};
+		imgInfo.sampler = vulkanSampler.getSampler();
+		imgInfo.imageView = vulkanSampler.getImageView();
+		imgInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		//imgInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+		descriptor.writeImage(binding, imgInfo);
+		bindDescriptor(binding, descriptor);
 	}
 
 	VulkanUniform::~VulkanUniform()
 	{
-		const auto device = DeviceInstance.getDevice();
-		vkDestroyBuffer(device, uniBuffer, nullptr);
-		vkFreeMemory(device, uniMemory, nullptr);
+		if (UniformType::Sampler != uniformType)
+		{
+			const auto device = DeviceInstance.getDevice();
+			vkUnmapMemory(device, uniMemory);
+			vkDestroyBuffer(device, uniBuffer, nullptr);
+			vkFreeMemory(device, uniMemory, nullptr);
+		}
 	}
 
-	void VulkanUniform::setData(const void* data, uint32_t size)
+	void VulkanUniform::bind(const uint32_t binding) const
 	{
-		void* mapped = nullptr;
-		
-		/*
-		* TODO: VK_WHOLE_SIZE must be mutile of nonCoherentAtomSize (64 in my case)
-		* probably are needed two sizes, one for the uniform size second fo the aligned size
-		* 
-		* Another solution is to use VK_MEMORY_PROPERTY_HOST_COHERENT_BIT in creation but
-		* I want to keep manual flush for education purpose
-		*/
-		vkMapMemory(DeviceInstance.getDevice(), uniMemory, 0, VK_WHOLE_SIZE, 0, &mapped);
+		auto bufferInfo = VkDescriptorBufferInfo{};
+		bufferInfo.offset = 0;
+		bufferInfo.range = VK_WHOLE_SIZE;
+		bufferInfo.buffer = uniBuffer;
+		switch (uniformType)
+		{
+			case RT::UniformType::Uniform: descriptor.writeUniform(binding, bufferInfo); break;
+			case RT::UniformType::Storage: descriptor.writeStorage(binding, bufferInfo); break;
+		}
+		bindDescriptor(binding, descriptor);
+	}
 
-		std::memcpy(mapped, data, size);
+	void VulkanUniform::setData(const void* data, const uint32_t size, const uint32_t offset)
+	{
+		void* dst = (uint8_t*)mapped + offset;
+		std::memcpy(dst, data, size);
 
+		uniformsToFlush.push_back(this);
+	}
+
+	void VulkanUniform::flush() const
+	{
 		auto memRange = VkMappedMemoryRange{};
 		memRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
 		memRange.memory = uniMemory;
 		memRange.offset = 0;
-		// As above
 		memRange.size = VK_WHOLE_SIZE;
-
 		RT_CORE_ASSERT(
 			vkFlushMappedMemoryRanges(DeviceInstance.getDevice(), 1, &memRange) == VK_SUCCESS,
 			"Failed to flush uniform buffer!");
-		
-		vkUnmapMemory(DeviceInstance.getDevice(), uniMemory);
 	}
 
-	VulkanStorage::VulkanStorage(const uint32_t instanceSize, const uint32_t instanceCount)
-		: alignedSize{instanceSize}
-		, instanceCount{instanceCount}
+	constexpr VkBufferUsageFlagBits VulkanUniform::uniformType2VkBuffBit(const UniformType uniformType)
 	{
-		DeviceInstance.createBuffer(
-			alignedSize,
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-			stoBuffer,
-			stoMemory);
-
-		auto req = VkMemoryRequirements{};
-		vkGetBufferMemoryRequirements(DeviceInstance.getDevice(), stoBuffer, &req);
-
-		RT_LOG_TRACE("Storage Requirements: {} {} {}", req.alignment, req.size, req.memoryTypeBits);
+		switch (uniformType)
+		{
+			case UniformType::Uniform: return VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+			case UniformType::Storage: return VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+		}
+		return VkBufferUsageFlagBits{};
 	}
 
-	VulkanStorage::~VulkanStorage()
+	constexpr uint32_t VulkanUniform::calculateAlignedSize(const uint32_t initialSize, const uint32_t minAlignment)
 	{
-		const auto device = DeviceInstance.getDevice();
-		vkDestroyBuffer(device, stoBuffer, nullptr);
-		vkFreeMemory(device, stoMemory, nullptr);
+		return (initialSize + minAlignment - 1) & ~(minAlignment - 1);
 	}
 
-	void VulkanStorage::setData(const void* data, uint32_t size)
+	std::vector<VulkanUniform*>& getUniformsToFlush()
 	{
-		void* mapped = nullptr;
-
-		/*
-		* TODO: Same case as in uniform
-		*/
-		vkMapMemory(DeviceInstance.getDevice(), stoMemory, 0, VK_WHOLE_SIZE, 0, &mapped);
-
-		std::memcpy(mapped, data, size);
-
-		auto memRange = VkMappedMemoryRange{};
-		memRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-		memRange.memory = stoMemory;
-		memRange.offset = 0;
-		memRange.size = VK_WHOLE_SIZE;
-
-		RT_CORE_ASSERT(
-			vkFlushMappedMemoryRanges(DeviceInstance.getDevice(), 1, &memRange) == VK_SUCCESS,
-			"Failed to flush storage buffer!");
-
-		vkUnmapMemory(DeviceInstance.getDevice(), stoMemory);
+		return uniformsToFlush;
 	}
 
 }

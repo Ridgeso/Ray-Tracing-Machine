@@ -4,6 +4,7 @@
 #include "Engine/Render/Buffer.h"
 
 #include "Device.h"
+#include "Descriptors.h"
 
 #define GLM_FORCE_RADAINS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -16,7 +17,7 @@ namespace RT::Vulkan
 	struct Vertex
 	{
 		glm::vec2 position;
-		glm::vec3 color;
+		glm::vec2 tex;
 
 		static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();
 		static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
@@ -48,46 +49,51 @@ namespace RT::Vulkan
 		uint32_t vertexCount = 0u;
 	};
 
-	class VulkanUniform
+	class VulkanUniform : public Uniform
 	{
 	public:
-		VulkanUniform(const uint32_t instanceSize, const uint32_t instanceCount = 1u);
-		~VulkanUniform();
+		VulkanUniform(const UniformType uniformType, const uint32_t instanceSize);
+		VulkanUniform(const Texture& sampler, const uint32_t binding);
+		~VulkanUniform() final;
 
 		VulkanUniform(const VulkanUniform&) = delete;
 		VulkanUniform(VulkanUniform&&) = delete;
 		VulkanUniform& operator=(const VulkanUniform&) = delete;
 		VulkanUniform&& operator=(VulkanUniform&&) = delete;
 
-		void setData(const void* data, uint32_t size);
+		void bind(const uint32_t binding) const final;
+		void setData(const void* data, const uint32_t size, const uint32_t offset = 0u) final;
+		
+		void flush() const;
+
 		VkBuffer getBuffer() const { return uniBuffer; }
 
 	private:
-		VkBuffer uniBuffer = {};
-		VkDeviceMemory uniMemory = {};
-		uint32_t alignedSize = 0u;
-		uint32_t instanceCount = 1u;
-	};
-
-	class VulkanStorage
-	{
-	public:
-		VulkanStorage(const uint32_t instanceSize, const uint32_t instanceCount = 1u);
-		~VulkanStorage();
-
-		VulkanStorage(const VulkanStorage&) = delete;
-		VulkanStorage(VulkanStorage&&) = delete;
-		VulkanStorage& operator=(const VulkanStorage&) = delete;
-		VulkanStorage&& operator=(VulkanStorage&&) = delete;
-
-		void setData(const void* data, uint32_t size);
-		VkBuffer getBuffer() const { return stoBuffer; }
+		static constexpr VkBufferUsageFlagBits uniformType2VkBuffBit(const UniformType uniformType);
+		static constexpr uint32_t calculateAlignedSize(const uint32_t initialSize, const uint32_t minAlignment);
 
 	private:
-		VkBuffer stoBuffer = {};
-		VkDeviceMemory stoMemory = {};
+		UniformType uniformType = UniformType::None;
 		uint32_t alignedSize = 0u;
-		uint32_t instanceCount = 1u;
+
+		VkBuffer uniBuffer = {};
+		VkDeviceMemory uniMemory = {};
+		void* mapped = nullptr;
+
+		mutable Descriptor descriptor = { DescriptorSpec{} };
 	};
+
+	class MockVulkanUniform : public Uniform
+	{
+	public:
+		MockVulkanUniform(const UniformType uniformType, const uint32_t instanceSize) {}
+		MockVulkanUniform(const Texture& sampler, const uint32_t binding) {}
+		~MockVulkanUniform() final {}
+
+		void bind(const uint32_t binding) const final {}
+		void setData(const void* data, const uint32_t size, const uint32_t offset = 0u) final {}
+	};
+
+	std::vector<VulkanUniform*>& getUniformsToFlush();
 
 }

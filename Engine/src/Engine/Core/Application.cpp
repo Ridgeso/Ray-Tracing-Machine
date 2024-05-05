@@ -87,8 +87,7 @@ namespace RT
 		renderPassSpec.attachmentsFormats.push_back(ImageFormat::Depth);
 		renderPass = RenderPass::create(renderPassSpec);
 
-		//rtShader->load("..\\Engine\\assets\\shaders\\RayTracing.shader");
-		rtShader->load("..\\Engine\\assets\\shaders\\triangle.shader");
+		rtShader->load("..\\Engine\\assets\\shaders\\RayTracing.shader");
 
 		infoUniform.resolution = lastWinSize;
 		infoUniform.spheresCount = scene.spheres.size();
@@ -117,6 +116,12 @@ namespace RT
 
 	Application::~Application()
 	{
+		accumulationSamplerUniform.reset();
+		ammountsUniform.reset();
+		cameraUniform.reset();
+		materialsStorage.reset();
+		spheresStorage.reset();
+
 		rtShader->destroy();
 		screenBuff.reset();
 		renderPass.reset();

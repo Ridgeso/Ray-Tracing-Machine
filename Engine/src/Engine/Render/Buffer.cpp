@@ -33,8 +33,8 @@ namespace RT
 	{
 		switch (GlobalRenderAPI)
 		{
-			case RT::RenderAPI::OpenGL: return makeLocal<OpenGl::OpenGlUniform>(uniformType, size); break;
-			//case RT::RenderAPI::Vulkan: return makeLocal<VulkanUniform>(size); break;
+			case RenderAPI::OpenGL: return makeLocal<OpenGl::OpenGlUniform>(uniformType, size); break;
+			case RenderAPI::Vulkan: return makeLocal<Vulkan::VulkanUniform>(uniformType, size); break;
 		}
 		return nullptr;
 	}
@@ -43,8 +43,8 @@ namespace RT
 	{
 		switch (GlobalRenderAPI)
 		{
-			case RT::RenderAPI::OpenGL: return makeLocal<OpenGl::OpenGlUniform>(sampler, binding); break;
-			//case RT::RenderAPI::Vulkan: return makeLocal<VulkanUniform>(sampler, binding); break;
+			case RenderAPI::OpenGL: return makeLocal<OpenGl::OpenGlUniform>(sampler, binding); break;
+			case RenderAPI::Vulkan: return makeLocal<Vulkan::VulkanUniform>(sampler, binding); break;
 		}
 		return nullptr;
 	}

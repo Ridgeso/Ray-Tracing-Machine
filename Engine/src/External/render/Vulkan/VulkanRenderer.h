@@ -35,24 +35,25 @@ namespace RT::Vulkan
 			const Scene& scene) final;
 	
 	private:
-		void recordCommandbuffer(const uint32_t imIdx, const VulkanRenderPass& renderPass);
+		void recordCommandbuffer(
+			const uint32_t imIdx,
+			const VulkanRenderPass& renderPass,
+			const VulkanVertexBuffer& vkVbuffer);
 		void recreateSwapchain();
 
 		void initImGui();
 
-		void registerFrameBuff(VkCommandBuffer cmdBuffer, const VulkanRenderPass& renderPass);
-		void createPipeline(const VkRenderPass rp);
+		void registerFrameBuff(
+			VkCommandBuffer cmdBuffer,
+			const VulkanRenderPass& renderPass,
+			const VulkanVertexBuffer& vkVbuffer);
+		void createPipeline(const VkRenderPass rp, const VulkanShader& vkShader);
 
 	private:
 		VkPipelineLayout pipelineLayout = {};
 		std::vector<VkCommandBuffer> commandBuffers = {};
 		Local<Pipeline> pipeline = nullptr;
 		
-		Local<VulkanVertexBuffer> vertexBuffer = {};
-		Local<VulkanUniform> uniform[2] = {};
-		Local<VulkanStorage> storage[2] = {};
-		Local<Descriptor> descriptor = {};
-
 		VkExtent2D extent = {};
 
 		VkPipelineCache pipelineCache = {};

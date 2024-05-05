@@ -57,6 +57,8 @@ namespace RT::Vulkan
         VkQueue getGraphicsQueue() const { return graphicsQueue; }
         VkQueue getPresentQueue() const { return presentQueue; }
         VkCommandPool getCommandPool() const { return commandPool; }
+
+        const VkPhysicalDeviceLimits& getLimits() const { return properties.limits; }
         
         const Utils::SwapChainSupportDetails& getSwapChainSupportDetails() const { return swapChainSupportDetails; }
         Utils::QueueFamilyIndices getQueueFamilyIndices() const { return queueFamilyIndices; }

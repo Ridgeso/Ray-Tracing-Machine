@@ -6,15 +6,14 @@
 namespace RT::Vulkan
 {
 
-    void Pipeline::init(const std::string& shaderName, const PipelineConfigInfo& configInfo)
+    void Pipeline::init(const VulkanShader& shader, const PipelineConfigInfo& configInfo)
     {
-        createGraphicsPipeline(shaderName, configInfo);
+        createGraphicsPipeline(shader, configInfo);
     }
 
     void Pipeline::shutdown()
     {
         auto device = DeviceInstance.getDevice();
-        shader.destroy();
         vkDestroyPipeline(device, graphicsPipeline, nullptr);
     }
 
@@ -110,7 +109,7 @@ namespace RT::Vulkan
         configInfo.dynamicStateInfo.flags = 0;
     }
 
-    void Pipeline::createGraphicsPipeline(const std::string& shaderName, const PipelineConfigInfo& configInfo)
+    void Pipeline::createGraphicsPipeline(const VulkanShader& shader, const PipelineConfigInfo& configInfo)
     {
         RT_CORE_ASSERT(
             configInfo.pipelineLayout != VK_NULL_HANDLE,
@@ -119,7 +118,6 @@ namespace RT::Vulkan
             configInfo.renderPass != VK_NULL_HANDLE,
             "Cannot create graphics pipeline: no renderPass provided in configInfo")
 
-        shader.load(shaderName);
         auto shaderStages = shader.getStages();
 
         auto attriDesc = Vertex::getAttributeDescriptions();

@@ -166,7 +166,6 @@ namespace RT::Vulkan
         vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
         
         RT_ASSERT(deviceCount != 0, "Failed to find any GPU supporting Vulkan");
-        RT_LOG_INFO("Device count: {}", deviceCount);
 
         auto devices = std::vector<VkPhysicalDevice>(deviceCount);
         vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
@@ -179,9 +178,7 @@ namespace RT::Vulkan
         {
             vkGetPhysicalDeviceProperties(physicalDevice, &properties);
             RT_LOG_INFO(
-                "physical device: {} nonCoherentAtomSize: {}",
-                properties.deviceName,
-                properties.limits.nonCoherentAtomSize);
+                "physical device: {}", properties.deviceName);
         }
     }
 
