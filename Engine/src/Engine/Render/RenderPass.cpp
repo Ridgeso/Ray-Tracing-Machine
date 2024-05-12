@@ -11,7 +11,7 @@ namespace RT
 	{
 		switch (GlobalRenderAPI)
 		{
-			case RenderAPI::OpenGL: return makeShare<OpenGl::OpenGlRenderPass>(spec);
+			// case RenderAPI::OpenGL: return makeShare<OpenGl::OpenGlRenderPass>(spec);
 			case RenderAPI::Vulkan: return makeShare<Vulkan::VulkanRenderPass>(spec);
 		}
 		return nullptr;

@@ -2,6 +2,7 @@
 
 #include <glad/glad.h>
 
+#include <exception>
 
 namespace RT::OpenGl
 {
@@ -53,7 +54,8 @@ namespace RT::OpenGl
 
     const Texture& OpenGlRenderPass::getAttachment(const uint32_t index) const
     {
-        return attachments[index];
+        // return attachments[index];
+        throw std::runtime_error("Not Implemented");
     }
 
     void OpenGlRenderPass::bind() const

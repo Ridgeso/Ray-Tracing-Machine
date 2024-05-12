@@ -11,7 +11,7 @@ namespace RT
 	{
 		switch (GlobalRenderAPI)
 		{
-			case RenderAPI::OpenGL: return makeLocal<OpenGl::OpenGlTexture>(size, imageFormat);
+			// case RenderAPI::OpenGL: return makeLocal<OpenGl::OpenGlTexture>(size, imageFormat);
 			case RenderAPI::Vulkan: return makeLocal<Vulkan::VulkanTexture>(size, imageFormat);
 		}
 		return nullptr;

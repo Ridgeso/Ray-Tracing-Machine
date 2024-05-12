@@ -11,7 +11,7 @@ namespace RT
 	{
 		switch (GlobalRenderAPI)
 		{
-			case RenderAPI::OpenGL: return makeLocal<OpenGl::OpenGlVertexBuffer>(size);
+			// case RenderAPI::OpenGL: return makeLocal<OpenGl::OpenGlVertexBuffer>(size);
 			case RenderAPI::Vulkan: return makeLocal<Vulkan::VulkanVertexBuffer>(size);
 		}
 		return nullptr;
@@ -21,7 +21,7 @@ namespace RT
 	{
 		switch (GlobalRenderAPI)
 		{
-			case RenderAPI::OpenGL: return makeLocal<OpenGl::OpenGlVertexBuffer>(size, data);
+			// case RenderAPI::OpenGL: return makeLocal<OpenGl::OpenGlVertexBuffer>(size, data);
 			case RenderAPI::Vulkan: return makeLocal<Vulkan::VulkanVertexBuffer>(size, data);
 		}
 		return nullptr;
@@ -33,7 +33,7 @@ namespace RT
 	{
 		switch (GlobalRenderAPI)
 		{
-			case RenderAPI::OpenGL: return makeLocal<OpenGl::OpenGlUniform>(uniformType, size); break;
+			// case RenderAPI::OpenGL: return makeLocal<OpenGl::OpenGlUniform>(uniformType, size); break;
 			case RenderAPI::Vulkan: return makeLocal<Vulkan::VulkanUniform>(uniformType, size); break;
 		}
 		return nullptr;
@@ -43,7 +43,7 @@ namespace RT
 	{
 		switch (GlobalRenderAPI)
 		{
-			case RenderAPI::OpenGL: return makeLocal<OpenGl::OpenGlUniform>(sampler, binding); break;
+			// case RenderAPI::OpenGL: return makeLocal<OpenGl::OpenGlUniform>(sampler, binding); break;
 			case RenderAPI::Vulkan: return makeLocal<Vulkan::VulkanUniform>(sampler, binding); break;
 		}
 		return nullptr;

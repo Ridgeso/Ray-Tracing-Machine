@@ -10,7 +10,7 @@
 namespace RT::OpenGl
 {
 
-	class OpenGlShader : public Shader
+	class OpenGlShader // : public Shader
 	{
 	public:
 		enum Type
@@ -28,12 +28,12 @@ namespace RT::OpenGl
 		OpenGlShader() = default;
 		~OpenGlShader() = default;
 
-		void use() const final;
-		void unuse() const final;
-		void destroy() final;
-		const uint32_t getId() const final { return programId; }
+		void use() const; // final;
+		void unuse() const; // final;
+		void destroy(); // final;
+		const uint32_t getId() const /*final*/ { return programId; }
 
-		void load(const std::string& shaderPath) final;
+		void load(const std::string& shaderPath); // final;
 		
 	private:
 		std::unordered_map<Type, std::stringstream> readSources(const std::string& shaderPath) const;

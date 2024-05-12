@@ -9,13 +9,13 @@
 namespace RT::OpenGl
 {
 
-	class OpenGlRenderPass : public RenderPass
+	class OpenGlRenderPass // : public RenderPass
 	{
 	public:
 		OpenGlRenderPass(const RenderPassSpec& spec);
-		~OpenGlRenderPass() final;
+		~OpenGlRenderPass(); // final;
 
-		const Texture& getAttachment(const uint32_t index = 0) const final;
+		const Texture& getAttachment(const uint32_t index = 0) const; // final;
 
 		void bind() const;
 		void unbind() const;

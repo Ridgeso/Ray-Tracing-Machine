@@ -12,7 +12,7 @@ namespace RT
 	{
 		switch (GlobalRenderAPI)
 		{
-			case RenderAPI::OpenGL: return makeLocal<OpenGl::OpenGlRenderer>();
+			// case RenderAPI::OpenGL: return makeLocal<OpenGl::OpenGlRenderer>();
 			case RenderAPI::Vulkan: return makeLocal<Vulkan::VulkanRenderer>();
 		}
 		return nullptr;

@@ -32,6 +32,7 @@ namespace RT::OpenGl
         const VertexBuffer& vbuffer,
         const Scene& scene)
     {
+        /*
         const auto& openGlRenderPass = static_cast<const OpenGlRenderPass&>(renderPass);
         const auto& openGlShader = static_cast<const OpenGlShader&>(shader);
         const auto& openGlVbuffer = static_cast<const OpenGlVertexBuffer&>(vbuffer);
@@ -45,6 +46,7 @@ namespace RT::OpenGl
         openGlVbuffer.unbind();
         openGlShader.unuse();
         openGlRenderPass.unbind();
+        */
     }
 
     void OpenGlRenderer::loadOpenGlForGlfw()

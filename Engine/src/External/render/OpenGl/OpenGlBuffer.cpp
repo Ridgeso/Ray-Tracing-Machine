@@ -140,10 +140,12 @@ namespace RT::OpenGl
 	OpenGlUniform::OpenGlUniform(const Texture& sampler, const uint32_t binding)
 		: uniformType{UniformType::Sampler}
 	{
+		/*
 		static_cast<const OpenGlTexture&>(sampler).bind(binding);
 		glCreateBuffers(1, &uniformId);
 		glNamedBufferData(uniformId, sizeof(uint32_t), &binding, GL_DYNAMIC_DRAW);
 		bind(binding);
+		*/
 	}
 
 	OpenGlUniform::~OpenGlUniform()
