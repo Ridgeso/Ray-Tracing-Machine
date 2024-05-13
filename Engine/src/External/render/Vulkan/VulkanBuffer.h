@@ -4,7 +4,6 @@
 #include "Engine/Render/Buffer.h"
 
 #include "Device.h"
-#include "Descriptors.h"
 
 #define GLM_FORCE_RADAINS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -68,6 +67,8 @@ namespace RT::Vulkan
 
 		VkBuffer getBuffer() const { return uniBuffer; }
 
+		friend class VulkanDescriptorSet;
+
 	private:
 		static constexpr VkBufferUsageFlagBits uniformType2VkBuffBit(const UniformType uniformType);
 		static constexpr uint32_t calculateAlignedSize(const uint32_t initialSize, const uint32_t minAlignment);
@@ -80,7 +81,8 @@ namespace RT::Vulkan
 		VkDeviceMemory uniMemory = {};
 		void* mapped = nullptr;
 
-		mutable Descriptor descriptor = { DescriptorSpec{} };
+		mutable VkDescriptorBufferInfo bufferInfo = {};
+		mutable VkDescriptorImageInfo imgInfo = {};
 	};
 
 	class MockVulkanUniform : public Uniform

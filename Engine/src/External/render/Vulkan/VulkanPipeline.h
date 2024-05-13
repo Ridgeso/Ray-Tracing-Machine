@@ -3,6 +3,8 @@
 
 #include <vector>
 
+#include "Engine/Render/Pipeline.h"
+
 #include "Device.h"
 #include "VulkanShader.h"
 
@@ -29,22 +31,23 @@ namespace RT::Vulkan
         uint32_t subpass = 0;
     };
 
-	class Pipeline
+	class VulkanPipeline : public Pipeline
 	{
     public:
-        Pipeline() = default;
-        ~Pipeline() = default;
+        VulkanPipeline() = default;
+        ~VulkanPipeline() = default;
 
-        Pipeline(const Pipeline&) = delete;
-        Pipeline(Pipeline&&) = delete;
-        Pipeline& operator=(const Pipeline&) = delete;
-        Pipeline&& operator=(Pipeline&&) = delete;
+        VulkanPipeline(const VulkanPipeline&) = delete;
+        VulkanPipeline(VulkanPipeline&&) = delete;
+        VulkanPipeline& operator=(const VulkanPipeline&) = delete;
+        VulkanPipeline&& operator=(VulkanPipeline&&) = delete;
 
-        void init(const VulkanShader& shader, const PipelineConfigInfo& configInfo);
-        void shutdown();
+        void init(const Shader& shader, const RenderPass& renderPass, const PipelineLayouts& pipelineLayouts) override;
+        void shutdown() final;
         
         VkPipeline getGraphicsPipeline() const { return graphicsPipeline; }
         void bind(const VkCommandBuffer commandBuffer) const;
+        const VkPipelineLayout getLayout() const { return pipelineLayout; }
 
         static void defaultPipelineConfigInfo(PipelineConfigInfo& configInfo);
 
@@ -53,6 +56,7 @@ namespace RT::Vulkan
 
     private:
         VkPipeline graphicsPipeline = {};
+        VkPipelineLayout pipelineLayout = {};
 	};
 
 }

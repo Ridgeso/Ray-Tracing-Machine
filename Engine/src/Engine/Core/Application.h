@@ -9,6 +9,8 @@
 #include "Engine/Render/Shader.h"
 #include "Engine/Render/Buffer.h"
 #include "Engine/Render/RenderPass.h"
+#include "Engine/Render/Descriptors.h"
+#include "Engine/Render/Pipeline.h"
 
 namespace RT
 {
@@ -45,16 +47,29 @@ namespace RT
 		float lastFrameDuration;
 		float appFrameDuration;
 		ImVec2 viewportSize;
+
 		Local<Window> mainWindow;
 		Local<Renderer> renderer;
+		
 		Local<Shader> rtShader;
 		Local<VertexBuffer> screenBuff;
 		Share<RenderPass> renderPass;
+		
 		Local<Uniform> cameraUniform;
 		Local<Uniform> ammountsUniform;
 		Local<Uniform> accumulationSamplerUniform;
 		Local<Uniform> materialsStorage;
 		Local<Uniform> spheresStorage;
+		
+		Local<DescriptorLayout> commonDescriptorLayout;
+		Local<DescriptorPool> commonDescriptorPool;
+		Local<DescriptorSet> commonDescriptorSet;
+		Local<DescriptorLayout> sceneDescriptorLayout;
+		Local<DescriptorPool> sceneDescriptorPool;
+		Local<DescriptorSet> sceneDescriptorSet;
+
+		Local<Pipeline> pipeline;
+
 		Camera camera;
 		Scene scene;
 

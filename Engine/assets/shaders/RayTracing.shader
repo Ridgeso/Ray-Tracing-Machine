@@ -25,11 +25,9 @@ layout (location = 0) in vec2 TexCoords;
 layout (location = 0) out vec4 AccumulationColor;
 layout (location = 1) out vec4 ScreenColor;
 
-//layout(binding = 0) uniform sampler2D AccumulationTexture;
 layout(set = 0, binding = 0) uniform sampler2D AccumulationTexture;
 
-//layout(std140, set = 0, binding = 1) uniform Amounts
-layout(std140, set = 1, binding = 0) uniform Amounts
+layout(std140, set = 0, binding = 1) uniform Amounts
 {
     float DrawEnvironment;
     uint MaxBounces;
@@ -40,8 +38,7 @@ layout(std140, set = 1, binding = 0) uniform Amounts
     int SpheresCount;
 };
 
-//layout(std140, set = 0, binding = 2) uniform CameraBuffer
-layout(std140, set = 2, binding = 0) uniform CameraBuffer
+layout(std140, set = 0, binding = 2) uniform CameraBuffer
 {
     mat4 projection;
     mat4 view;
@@ -65,14 +62,12 @@ struct Sphere
     int MaterialId;
 };
 
-//layout(std140, set = 1, binding = 3) buffer MaterialsBuffer
-layout(std140, set = 3, binding = 0) readonly buffer MaterialsBuffer
+layout(std140, set = 1, binding = 0) readonly buffer MaterialsBuffer
 {
     Material Materials[];
 };
 
-//layout(std140, set = 1, binding = 4) readonly bufferSpheresBuffer
-layout(std140, set = 4, binding = 0) readonly buffer SpheresBuffer
+layout(std140, set = 1, binding = 1) readonly buffer SpheresBuffer
 {
     Sphere Spheres[];
 };

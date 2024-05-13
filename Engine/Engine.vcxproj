@@ -11,8 +11,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Engine\Render\Descriptors.cpp" />
     <ClCompile Include="src\Engine\Core\Log.cpp" />
     <ClCompile Include="src\Engine\Render\Buffer.cpp" />
+    <ClCompile Include="src\Engine\Render\Pipeline.cpp" />
     <ClCompile Include="src\Engine\Render\RenderPass.cpp" />
     <ClCompile Include="src\Engine\Render\Texture.cpp" />
     <ClCompile Include="src\External\render\OpenGl\OpenGlRenderPass.cpp" />
@@ -27,9 +29,9 @@
     <ClCompile Include="src\External\Render\OpenGl\OpenGlRenderer.cpp" />
     <ClCompile Include="src\Engine\Render\Scene.cpp" />
     <ClCompile Include="src\External\render\OpenGl\OpenGlBuffer.cpp" />
-    <ClCompile Include="src\External\Render\Vulkan\Descriptors.cpp" />
+    <ClCompile Include="src\External\Render\Vulkan\VulkanDescriptors.cpp" />
     <ClCompile Include="src\External\render\Vulkan\Device.cpp" />
-    <ClCompile Include="src\External\render\Vulkan\Pipeline.cpp" />
+    <ClCompile Include="src\External\render\Vulkan\VulkanPipeline.cpp" />
     <ClCompile Include="src\External\render\Vulkan\VulkanRenderPass.cpp" />
     <ClCompile Include="src\External\render\Vulkan\Swapchain.cpp" />
     <ClCompile Include="src\External\render\Vulkan\utils\Debug.cpp" />
@@ -43,10 +45,12 @@
     <ClCompile Include="src\External\window\ImGuiImpl.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Engine\Render\Descriptors.h" />
     <ClInclude Include="src\Engine\Core\Assert.h" />
     <ClInclude Include="src\Engine\Core\Log.h" />
     <ClInclude Include="src\Engine\Core\Utils.h" />
     <ClInclude Include="src\Engine\Render\Buffer.h" />
+    <ClInclude Include="src\Engine\Render\Pipeline.h" />
     <ClInclude Include="src\Engine\Render\RenderPass.h" />
     <ClInclude Include="src\Engine\Render\RenderBase.h" />
     <ClInclude Include="src\Engine\Render\Texture.h" />
@@ -65,8 +69,8 @@
     <ClInclude Include="src\External\Render\OpenGl\OpenGlRenderer.h" />
     <ClInclude Include="src\Engine\Render\Scene.h" />
     <ClInclude Include="src\External\render\OpenGl\OpenGlBuffer.h" />
-    <ClInclude Include="src\External\Render\Vulkan\Descriptors.h" />
-    <ClInclude Include="src\External\render\Vulkan\Pipeline.h" />
+    <ClInclude Include="src\External\Render\Vulkan\VulkanDescriptors.h" />
+    <ClInclude Include="src\External\render\Vulkan\VulkanPipeline.h" />
     <ClInclude Include="src\External\render\Vulkan\VulkanRenderPass.h" />
     <ClInclude Include="src\External\render\Vulkan\Swapchain.h" />
     <ClInclude Include="src\External\render\Vulkan\Device.h" />

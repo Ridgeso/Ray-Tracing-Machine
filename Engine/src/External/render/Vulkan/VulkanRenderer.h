@@ -5,9 +5,9 @@
 #include <vulkan/vulkan.h>
 #include "Device.h"
 #include "Swapchain.h"
-#include "Pipeline.h"
+#include "VulkanPipeline.h"
 #include "VulkanBuffer.h"
-#include "Descriptors.h"
+#include "VulkanDescriptors.h"
 #include "VulkanRenderPass.h"
 
 namespace RT::Vulkan
@@ -32,13 +32,15 @@ namespace RT::Vulkan
 			const Camera& camera,
 			const Shader& shader,
 			const VertexBuffer& vbuffer,
-			const Scene& scene) final;
+			const Scene& scene,
+			const Pipeline& pipeline) final;
 	
 	private:
 		void recordCommandbuffer(
 			const uint32_t imIdx,
 			const VulkanRenderPass& renderPass,
-			const VulkanVertexBuffer& vkVbuffer);
+			const VulkanVertexBuffer& vkVbuffer,
+			const VulkanPipeline& vkPipeline);
 		void recreateSwapchain();
 
 		void initImGui();
@@ -46,13 +48,11 @@ namespace RT::Vulkan
 		void registerFrameBuff(
 			VkCommandBuffer cmdBuffer,
 			const VulkanRenderPass& renderPass,
-			const VulkanVertexBuffer& vkVbuffer);
-		void createPipeline(const VkRenderPass rp, const VulkanShader& vkShader);
+			const VulkanVertexBuffer& vkVbuffer,
+			const VulkanPipeline& vkPipeline);
 
 	private:
-		VkPipelineLayout pipelineLayout = {};
 		std::vector<VkCommandBuffer> commandBuffers = {};
-		Local<Pipeline> pipeline = nullptr;
 		
 		VkExtent2D extent = {};
 

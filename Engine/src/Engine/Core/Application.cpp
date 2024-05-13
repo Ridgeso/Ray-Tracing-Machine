@@ -111,6 +111,41 @@ namespace RT
 		spheresStorage->setData(scene.spheres.data(), sizeof(Sphere) * scene.spheres.size());
 		spheresStorage->bind(4);
 
+		auto commonDescriptorLayoutSpec = DescriptorLayoutSpec();
+		commonDescriptorLayoutSpec.emplace_back(1, DescriptorType::Sampler);
+		commonDescriptorLayoutSpec.emplace_back(1, DescriptorType::Uniform);
+		commonDescriptorLayoutSpec.emplace_back(1, DescriptorType::Uniform);
+		commonDescriptorLayout = DescriptorLayout::create(commonDescriptorLayoutSpec);
+
+		auto commonDescriptorPoolSpec = DescriptorPoolSpec();
+		commonDescriptorPoolSpec.emplace_back(1, DescriptorType::Sampler);
+		commonDescriptorPoolSpec.emplace_back(1, DescriptorType::Uniform);
+		commonDescriptorPoolSpec.emplace_back(1, DescriptorType::Uniform);
+		commonDescriptorPool = DescriptorPool::create(commonDescriptorPoolSpec);
+
+		auto sceneDescriptorLayoutSpec = DescriptorLayoutSpec();
+		sceneDescriptorLayoutSpec.emplace_back(1, DescriptorType::Storage);
+		sceneDescriptorLayoutSpec.emplace_back(1, DescriptorType::Storage);
+		sceneDescriptorLayout = DescriptorLayout::create(sceneDescriptorLayoutSpec);
+
+		auto sceneDescriptorPoolSpec = DescriptorPoolSpec();
+		sceneDescriptorPoolSpec.emplace_back(1, DescriptorType::Storage);
+		sceneDescriptorPoolSpec.emplace_back(1, DescriptorType::Storage);
+		sceneDescriptorPool = DescriptorPool::create(sceneDescriptorPoolSpec);
+
+		commonDescriptorSet = DescriptorSet::create(*commonDescriptorLayout, *commonDescriptorPool);
+		sceneDescriptorSet = DescriptorSet::create(*sceneDescriptorLayout, *sceneDescriptorPool);
+
+		commonDescriptorSet->write(0, *accumulationSamplerUniform);
+		commonDescriptorSet->write(1, *ammountsUniform);
+		commonDescriptorSet->write(2, *cameraUniform);
+		sceneDescriptorSet->write(0, *materialsStorage);
+		sceneDescriptorSet->write(1, *spheresStorage);
+
+		pipeline = Pipeline::create();
+		auto pipelineSets = PipelineLayouts{ commonDescriptorLayout.get(), sceneDescriptorLayout.get()};
+		pipeline->init(*rtShader, *renderPass, pipelineSets);
+
 		lastMousePos = windowSize / 2;
 	}
 
@@ -122,9 +157,18 @@ namespace RT
 		materialsStorage.reset();
 		spheresStorage.reset();
 
+		commonDescriptorSet.reset();
+		sceneDescriptorSet.reset();
+
+		commonDescriptorLayout.reset();
+		commonDescriptorPool.reset();
+		sceneDescriptorLayout.reset();
+		sceneDescriptorPool.reset();
+
 		rtShader->destroy();
 		screenBuff.reset();
 		renderPass.reset();
+		pipeline.reset();
 		renderer->shutDown();
 		mainWindow->shutDown();
 	}
@@ -314,9 +358,12 @@ namespace RT
 		cameraUniform->setData(&camera.GetSpec(), sizeof(Camera::Spec));
 		rtShader->unuse();
 
+		commonDescriptorSet->bind(0);
+		sceneDescriptorSet->bind(1);
+
 		Timer timeit;
 		camera.ResizeCamera((int32_t)viewportSize.x, (int32_t)viewportSize.y);
-		renderer->render(*renderPass, camera, *rtShader, *screenBuff, scene);
+		renderer->render(*renderPass, camera, *rtShader, *screenBuff, scene, *pipeline);
 		lastFrameDuration = timeit.Ellapsed();
 	}
 

@@ -108,16 +108,9 @@ namespace RT::Vulkan
 		return attribDesc;
 	}
 
-	const auto uniformDescriptorSpec = DescriptorSpec{ { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER }, { { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swapchain::MAX_FRAMES_IN_FLIGHT } } };
-	const auto storageDescriptorSpec = DescriptorSpec{ { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER }, { { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, Swapchain::MAX_FRAMES_IN_FLIGHT } } };
-	const auto samplerDescriptorSpec = DescriptorSpec{ { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE }, { { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, Swapchain::MAX_FRAMES_IN_FLIGHT } } };
 
 	VulkanUniform::VulkanUniform(const UniformType uniformType, const uint32_t instanceSize)
 		: uniformType{uniformType}
-		, descriptor{
-			UniformType::Uniform == uniformType
-				? uniformDescriptorSpec
-				: storageDescriptorSpec}
 	{
 		alignedSize = calculateAlignedSize(
 			instanceSize,
@@ -137,18 +130,13 @@ namespace RT::Vulkan
 
 	VulkanUniform::VulkanUniform(const Texture& sampler, const uint32_t binding)
 		: uniformType{UniformType::Sampler}
-		, descriptor{samplerDescriptorSpec}
 	{
 		const auto& vulkanSampler = static_cast<const VulkanTexture&>(sampler);
 
-		auto imgInfo = VkDescriptorImageInfo{};
+		imgInfo = VkDescriptorImageInfo{};
 		imgInfo.sampler = vulkanSampler.getSampler();
 		imgInfo.imageView = vulkanSampler.getImageView();
 		imgInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		//imgInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-		descriptor.writeImage(binding, imgInfo);
-		bindDescriptor(binding, descriptor);
 	}
 
 	VulkanUniform::~VulkanUniform()
@@ -164,16 +152,10 @@ namespace RT::Vulkan
 
 	void VulkanUniform::bind(const uint32_t binding) const
 	{
-		auto bufferInfo = VkDescriptorBufferInfo{};
+		bufferInfo = VkDescriptorBufferInfo{};
 		bufferInfo.offset = 0;
 		bufferInfo.range = VK_WHOLE_SIZE;
 		bufferInfo.buffer = uniBuffer;
-		switch (uniformType)
-		{
-			case RT::UniformType::Uniform: descriptor.writeUniform(binding, bufferInfo); break;
-			case RT::UniformType::Storage: descriptor.writeStorage(binding, bufferInfo); break;
-		}
-		bindDescriptor(binding, descriptor);
 	}
 
 	void VulkanUniform::setData(const void* data, const uint32_t size, const uint32_t offset)

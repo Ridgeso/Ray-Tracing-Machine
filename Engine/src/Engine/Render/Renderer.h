@@ -8,6 +8,7 @@
 #include "Engine/Render/Scene.h"
 #include "Engine/Render/Shader.h"
 #include "Engine/Render/Buffer.h"
+#include "Engine/Render/Pipeline.h"
 
 namespace RT
 {
@@ -26,7 +27,8 @@ namespace RT
 			const Camera& camera,
 			const Shader& shader,
 			const VertexBuffer& vbuffer,
-			const Scene& scene) = 0;
+			const Scene& scene,
+			const Pipeline& pipeline) = 0;
 	};
 
 	Local<Renderer> createRenderer();

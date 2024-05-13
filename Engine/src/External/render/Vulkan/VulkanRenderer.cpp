@@ -32,19 +32,10 @@ namespace RT::Vulkan
 
 		auto& deviceInstance = DeviceInstance;
 
-		pipeline = std::make_unique<Pipeline>();
 		deviceInstance.init(window);
 		recreateSwapchain();
 		
 		initImGui();
-
-		auto descriptorSpec = DescriptorSpec{};
-		descriptorSpec.bindTypes.push_back(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-		descriptorSpec.bindTypes.push_back(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE);
-		descriptorSpec.bindTypes.push_back(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-		descriptorSpec.poolSizes.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swapchain::MAX_FRAMES_IN_FLIGHT });
-		descriptorSpec.poolSizes.push_back({ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, Swapchain::MAX_FRAMES_IN_FLIGHT });
-		descriptorSpec.poolSizes.push_back({ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, Swapchain::MAX_FRAMES_IN_FLIGHT });
 
 		commandBuffers.resize(SwapchainInstance->getSwapChainImages().size());
 
@@ -67,7 +58,6 @@ namespace RT::Vulkan
 		vkDestroyDescriptorPool(deviceInstance.getDevice(), descriptorPool, nullptr);
 		ImGui_ImplVulkan_Shutdown();
 
-		vkDestroyPipelineLayout(deviceInstance.getDevice(), pipelineLayout, nullptr);
 		vkFreeCommandBuffers(
 			deviceInstance.getDevice(),
 			deviceInstance.getCommandPool(),
@@ -75,7 +65,6 @@ namespace RT::Vulkan
 			commandBuffers.data());
 		commandBuffers.clear();
 
-		pipeline->shutdown();
 		
 		SwapchainInstance->shutdown();
 		deviceInstance.shutdown();
@@ -86,15 +75,13 @@ namespace RT::Vulkan
 		const Camera& camera,
 		const Shader& shader,
 		const VertexBuffer& vbuffer,
-		const Scene& scene)
+		const Scene& scene,
+		const Pipeline& pipeline)
 	{
 		const auto& vkRenderPass = static_cast<const VulkanRenderPass&>(renderPass);
 		const auto& vkShader = static_cast<const VulkanShader&>(shader);
 		const auto& vkVbuffer = static_cast<const VulkanVertexBuffer&>(vbuffer);
-		if (pipeline->getGraphicsPipeline() == VK_NULL_HANDLE)
-		{
-			createPipeline(vkRenderPass.getRenderPass(), vkShader);
-		}
+		const auto& vkPipeline = static_cast<const VulkanPipeline&>(pipeline);
 
 		uint32_t imageIndex = 0u;
 		auto result = SwapchainInstance->acquireNextImage(imageIndex);
@@ -113,7 +100,7 @@ namespace RT::Vulkan
 
 		RT_ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, "failte to acquire swap chain image!");
 		
-		recordCommandbuffer(imageIndex, vkRenderPass, vkVbuffer);
+		recordCommandbuffer(imageIndex, vkRenderPass, vkVbuffer, vkPipeline);
 
 		result = SwapchainInstance->submitCommandBuffers(commandBuffers[imageIndex], imageIndex);
 		
@@ -129,7 +116,8 @@ namespace RT::Vulkan
 	void VulkanRenderer::recordCommandbuffer(
 		const uint32_t imIdx,
 		const VulkanRenderPass& renderPass,
-		const VulkanVertexBuffer& vkVbuffer)
+		const VulkanVertexBuffer& vkVbuffer,
+		const VulkanPipeline& vkPipeline)
 	{
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -174,7 +162,7 @@ namespace RT::Vulkan
 
 		vkCmdEndRenderPass(commandBuffers[imIdx]);
 
-		registerFrameBuff(commandBuffers[imIdx], renderPass, vkVbuffer);
+		registerFrameBuff(commandBuffers[imIdx], renderPass, vkVbuffer, vkPipeline);
 
 		RT_CORE_ASSERT(vkEndCommandBuffer(commandBuffers[imIdx]) == VK_SUCCESS, "failed to record command buffer");
 	}
@@ -277,19 +265,18 @@ namespace RT::Vulkan
 	void VulkanRenderer::registerFrameBuff(
 		VkCommandBuffer cmdBuffer,
 		const VulkanRenderPass& renderPass,
-		const VulkanVertexBuffer& vkVbuffer)
+		const VulkanVertexBuffer& vkVbuffer,
+		const VulkanPipeline& vkPipeline)
 	{
 		const uint8_t currFrame = SwapchainInstance->getCurrentFrame();
-		
-		const auto& bindedDescriptors = getBindedDescriptors();
 		
 		vkCmdBindDescriptorSets(
 			cmdBuffer,
 			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			pipelineLayout,
+			vkPipeline.getLayout(),
 			0,
-			bindedDescriptors.size(),
-			bindedDescriptors.data(),
+			frameBindings.size(),
+			frameBindings.data(),
 			0,
 			nullptr);
 
@@ -327,7 +314,7 @@ namespace RT::Vulkan
 		vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
 		vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 		
-		pipeline->bind(cmdBuffer);
+		vkPipeline.bind(cmdBuffer);
 		vkVbuffer.bind(cmdBuffer);
 		vkVbuffer.draw(cmdBuffer);
 		
@@ -339,29 +326,6 @@ namespace RT::Vulkan
 			VK_ACCESS_TRANSFER_WRITE_BIT,
 			VK_ACCESS_SHADER_READ_BIT,
 			cmdBuffer);
-	}
-
-	void VulkanRenderer::createPipeline(const VkRenderPass rp, const VulkanShader& vkShader)
-	{	
-		const auto& regLeyouts = getRegistredLayouts();
-
-		auto pipelineLayoutInfo = VkPipelineLayoutCreateInfo{};
-		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.setLayoutCount = regLeyouts.size();
-		pipelineLayoutInfo.pSetLayouts = regLeyouts.data();
-		pipelineLayoutInfo.pushConstantRangeCount = 0;
-		pipelineLayoutInfo.pPushConstantRanges = nullptr;
-
-		RT_CORE_ASSERT(
-			vkCreatePipelineLayout(DeviceInstance.getDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) == VK_SUCCESS,
-			"Could not create pipeline Layout");
-
-		auto pipelineConfig = PipelineConfigInfo{};
-		Pipeline::defaultPipelineConfigInfo(pipelineConfig);
-		pipelineConfig.renderPass = rp;
-		pipelineConfig.pipelineLayout = pipelineLayout;
-
-		pipeline->init(vkShader, pipelineConfig);
 	}
 
 }
