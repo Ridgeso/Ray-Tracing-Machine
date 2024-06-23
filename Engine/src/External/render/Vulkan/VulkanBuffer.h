@@ -52,7 +52,7 @@ namespace RT::Vulkan
 	{
 	public:
 		VulkanUniform(const UniformType uniformType, const uint32_t instanceSize);
-		VulkanUniform(const Texture& sampler, const uint32_t binding);
+		VulkanUniform(const Texture& sampler, const uint32_t binding, const UniformType samplerType);
 		~VulkanUniform() final;
 
 		VulkanUniform(const VulkanUniform&) = delete;

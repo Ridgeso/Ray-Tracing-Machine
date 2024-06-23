@@ -33,8 +33,8 @@ namespace RT
 		mainWindow(createWindow()),
 		renderer(createRenderer()),
 		rtShader(createShader()),
-		screenBuff(),
-		renderPass(),
+		//screenBuff(),
+		//renderPass(),
 		lastWinSize(0),
 		camera(45.0f, 0.01f, 100.0f)
 	{
@@ -77,15 +77,11 @@ namespace RT
 			scene.spheres[scene.spheres.size() - 1].materialId = scene.materials.size() - 1;
 		}
 
-		screenBuff = VertexBuffer::create(sizeof(screenVertices), screenVertices);
-		screenBuff->registerAttributes({ VertexElement::Float2, VertexElement::Float2 });
+		//screenBuff = VertexBuffer::create(sizeof(screenVertices), screenVertices);
+		//screenBuff->registerAttributes({ VertexElement::Float2, VertexElement::Float2 });
 
-		auto renderPassSpec = RenderPassSpec{};
-		renderPassSpec.size = lastWinSize;
-		renderPassSpec.attachmentsFormats.push_back(ImageFormat::RGBA32F);
-		renderPassSpec.attachmentsFormats.push_back(ImageFormat::RGBA32F);
-		renderPassSpec.attachmentsFormats.push_back(ImageFormat::Depth);
-		renderPass = RenderPass::create(renderPassSpec);
+		accumulationTexture = Texture::create(lastWinSize, ImageFormat::RGBA32F);
+		outTexture = Texture::create(lastWinSize, ImageFormat::RGBA8);
 
 		rtShader->load("..\\Engine\\assets\\shaders\\RayTracing.shader");
 
@@ -93,32 +89,35 @@ namespace RT
 		infoUniform.spheresCount = scene.spheres.size();
 		infoUniform.materialsCount = scene.materials.size();
 
-		accumulationSamplerUniform = Uniform::create(renderPass->getAttachment(0), 0);
+		accumulationSamplerUniform = Uniform::create(*accumulationTexture, 0, UniformType::Image);
+		outSamplerUniform = Uniform::create(*outTexture, 1, UniformType::Image);
 
 		ammountsUniform = Uniform::create(UniformType::Uniform, sizeof(InfoUniform));
 		ammountsUniform->setData(&infoUniform, sizeof(InfoUniform));
-		ammountsUniform->bind(1);
+		ammountsUniform->bind(2);
 
 		cameraUniform = Uniform::create(UniformType::Uniform, sizeof(Camera::Spec));
 		cameraUniform->setData(&camera.GetSpec(), sizeof(Camera::Spec));
-		cameraUniform->bind(2);
+		cameraUniform->bind(3);
 
 		materialsStorage = Uniform::create(UniformType::Storage, sizeof(Material) * scene.materials.size());
 		materialsStorage->setData(scene.materials.data(), sizeof(Material) * scene.materials.size());
-		materialsStorage->bind(3);
+		materialsStorage->bind(4);
 
 		spheresStorage = Uniform::create(UniformType::Storage, sizeof(Sphere) * scene.spheres.size());
 		spheresStorage->setData(scene.spheres.data(), sizeof(Sphere) * scene.spheres.size());
-		spheresStorage->bind(4);
+		spheresStorage->bind(5);
 
 		auto commonDescriptorLayoutSpec = DescriptorLayoutSpec();
-		commonDescriptorLayoutSpec.emplace_back(1, DescriptorType::Sampler);
+		commonDescriptorLayoutSpec.emplace_back(1, DescriptorType::Image);
+		commonDescriptorLayoutSpec.emplace_back(1, DescriptorType::Image);
 		commonDescriptorLayoutSpec.emplace_back(1, DescriptorType::Uniform);
 		commonDescriptorLayoutSpec.emplace_back(1, DescriptorType::Uniform);
 		commonDescriptorLayout = DescriptorLayout::create(commonDescriptorLayoutSpec);
 
 		auto commonDescriptorPoolSpec = DescriptorPoolSpec();
-		commonDescriptorPoolSpec.emplace_back(1, DescriptorType::Sampler);
+		commonDescriptorPoolSpec.emplace_back(1, DescriptorType::Image);
+		commonDescriptorPoolSpec.emplace_back(1, DescriptorType::Image);
 		commonDescriptorPoolSpec.emplace_back(1, DescriptorType::Uniform);
 		commonDescriptorPoolSpec.emplace_back(1, DescriptorType::Uniform);
 		commonDescriptorPool = DescriptorPool::create(commonDescriptorPoolSpec);
@@ -137,14 +136,15 @@ namespace RT
 		sceneDescriptorSet = DescriptorSet::create(*sceneDescriptorLayout, *sceneDescriptorPool);
 
 		commonDescriptorSet->write(0, *accumulationSamplerUniform);
-		commonDescriptorSet->write(1, *ammountsUniform);
-		commonDescriptorSet->write(2, *cameraUniform);
+		commonDescriptorSet->write(1, *outSamplerUniform);
+		commonDescriptorSet->write(2, *ammountsUniform);
+		commonDescriptorSet->write(3, *cameraUniform);
 		sceneDescriptorSet->write(0, *materialsStorage);
 		sceneDescriptorSet->write(1, *spheresStorage);
 
 		pipeline = Pipeline::create();
 		auto pipelineSets = PipelineLayouts{ commonDescriptorLayout.get(), sceneDescriptorLayout.get()};
-		pipeline->init(*rtShader, *renderPass, pipelineSets);
+		pipeline->initComp(*rtShader, pipelineSets);
 
 		lastMousePos = windowSize / 2;
 	}
@@ -152,6 +152,7 @@ namespace RT
 	Application::~Application()
 	{
 		accumulationSamplerUniform.reset();
+		outSamplerUniform.reset();
 		ammountsUniform.reset();
 		cameraUniform.reset();
 		materialsStorage.reset();
@@ -165,10 +166,12 @@ namespace RT
 		sceneDescriptorLayout.reset();
 		sceneDescriptorPool.reset();
 
+		accumulationTexture.reset();
+		outTexture.reset();
 		rtShader->destroy();
-		screenBuff.reset();
-		renderPass.reset();
-		pipeline.reset();
+		//screenBuff.reset();
+		//renderPass.reset();
+		pipeline->shutdown();
 		renderer->shutDown();
 		mainWindow->shutDown();
 	}
@@ -322,7 +325,7 @@ namespace RT
 		}
 
 		ImGui::Image(
-			renderPass->getAttachment(1).getTexId(),
+			outTexture->getTexId(),
 			viewportSize,
 			ImVec2(0, 1),
 			ImVec2(1, 0)
@@ -344,13 +347,6 @@ namespace RT
 		rtShader->use();
 		if (lastWinSize != winSize)
 		{
-			auto renderPassSpec = RenderPassSpec{};
-			renderPassSpec.size = winSize;
-			renderPassSpec.attachmentsFormats.push_back(ImageFormat::RGBA32F);
-			renderPassSpec.attachmentsFormats.push_back(ImageFormat::RGBA32F);
-			renderPassSpec.attachmentsFormats.push_back(ImageFormat::Depth);
-
-			renderPass = RenderPass::create(renderPassSpec);
 			infoUniform.resolution = winSize;
 			ammountsUniform->setData(&infoUniform.resolution, sizeof(glm::vec2), offsetof(InfoUniform, resolution));
 			lastWinSize = winSize;
@@ -363,7 +359,7 @@ namespace RT
 
 		Timer timeit;
 		camera.ResizeCamera((int32_t)viewportSize.x, (int32_t)viewportSize.y);
-		renderer->render(*renderPass, camera, *rtShader, *screenBuff, scene, *pipeline);
+		renderer->render(camera, *rtShader, scene, *pipeline, *accumulationTexture, *outTexture);
 		lastFrameDuration = timeit.Ellapsed();
 	}
 

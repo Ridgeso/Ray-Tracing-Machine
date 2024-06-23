@@ -15,6 +15,7 @@ namespace RT
 	struct Pipeline
 	{
 		virtual void init(const Shader& shader, const RenderPass& renderPass, const PipelineLayouts& pipelineLayouts) = 0;
+		virtual void initComp(const Shader& shader, const PipelineLayouts& pipelineLayouts) = 0;
 		virtual void shutdown() = 0;
 
 		static Local<Pipeline> create();

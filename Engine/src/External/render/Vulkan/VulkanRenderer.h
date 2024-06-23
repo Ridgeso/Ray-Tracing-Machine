@@ -28,28 +28,28 @@ namespace RT::Vulkan
 		void shutDown() final;
 
 		void render(
-			const RenderPass& renderPass,
 			const Camera& camera,
 			const Shader& shader,
-			const VertexBuffer& vbuffer,
 			const Scene& scene,
-			const Pipeline& pipeline) final;
+			const Pipeline& pipeline,
+			const Texture& accTexture,
+			const Texture& outTexture) final;
 	
 	private:
 		void recordCommandbuffer(
 			const uint32_t imIdx,
-			const VulkanRenderPass& renderPass,
-			const VulkanVertexBuffer& vkVbuffer,
-			const VulkanPipeline& vkPipeline);
+			const VulkanPipeline& vkPipeline,
+			const VulkanTexture& vkAccTexture,
+			const VulkanTexture& vkOutTexture);
 		void recreateSwapchain();
 
 		void initImGui();
 
 		void registerFrameBuff(
 			VkCommandBuffer cmdBuffer,
-			const VulkanRenderPass& renderPass,
-			const VulkanVertexBuffer& vkVbuffer,
-			const VulkanPipeline& vkPipeline);
+			const VulkanPipeline& vkPipeline,
+			const VulkanTexture& vkAccTexture,
+			const VulkanTexture& vkOutTexture);
 
 	private:
 		std::vector<VkCommandBuffer> commandBuffers = {};

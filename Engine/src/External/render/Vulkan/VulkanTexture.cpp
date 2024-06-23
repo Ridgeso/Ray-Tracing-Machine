@@ -51,37 +51,34 @@ namespace RT::Vulkan
 		copyToImage();
 	}
 
-	void VulkanTexture::transition(
-		const VkImageLayout oldLayout,
-		const VkImageLayout newLayout,
+	void VulkanTexture::barrier(
+		const VkCommandBuffer commandBuffer,
+		const VkImageSubresourceRange subresourceRange,
 		const VkAccessFlags srcAccessMask,
 		const VkAccessFlags dstAccessMask,
-		const VkCommandBuffer cmdBuffer) const
+		const VkImageLayout oldLayout,
+		const VkImageLayout newLayout) const
 	{
-		auto memoryBarrier = VkImageMemoryBarrier{};
-		memoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		memoryBarrier.srcAccessMask = srcAccessMask;
-		memoryBarrier.dstAccessMask = dstAccessMask;
-		memoryBarrier.oldLayout = oldLayout;
-		memoryBarrier.newLayout = newLayout;
-		memoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		memoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		memoryBarrier.image = image;
-		memoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		memoryBarrier.subresourceRange.levelCount = 1;
-		memoryBarrier.subresourceRange.layerCount = 1;
+		VkImageMemoryBarrier barrier;
+		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		barrier.pNext = nullptr;
+		barrier.srcAccessMask = srcAccessMask;
+		barrier.dstAccessMask = dstAccessMask;
+		barrier.oldLayout = oldLayout;
+		barrier.newLayout = newLayout;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.image = image;
+		barrier.subresourceRange = subresourceRange;
 
-		if (VK_NULL_HANDLE != cmdBuffer)
-		{
-			vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, NULL, 0, NULL, 1, &memoryBarrier);
-		}
-		else
-		{
-			DeviceInstance.execSingleCmdPass([memoryBarrier = memoryBarrier](const auto cmdBuffer) -> void
-			{
-				vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, NULL, 0, NULL, 1, &memoryBarrier);
-			});
-		}
+		vkCmdPipelineBarrier(
+			commandBuffer,
+			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+			0,
+			0, nullptr,
+			0, nullptr,
+			1, &barrier);
 	}
 
 	constexpr VkFormat VulkanTexture::imageFormat2VulkanFormat(const ImageFormat imageFormat)
@@ -121,7 +118,6 @@ namespace RT::Vulkan
 		imageCreateInfo.arrayLayers = 1;
 		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		//imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageCreateInfo.flags = 0;
@@ -134,9 +130,10 @@ namespace RT::Vulkan
 		else
 		{
 			imageCreateInfo.format = imageFormat2VulkanFormat(format);
-			imageCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-				VK_IMAGE_USAGE_SAMPLED_BIT |
-				VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+			imageCreateInfo.usage = VK_IMAGE_USAGE_STORAGE_BIT |
+				VK_IMAGE_USAGE_SAMPLED_BIT;
+				//VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+				//VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
 				//VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 		}
 
@@ -286,7 +283,6 @@ namespace RT::Vulkan
 			copyBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 			copyBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 			copyBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			//copyBarrier.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 			copyBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 			copyBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 			copyBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;

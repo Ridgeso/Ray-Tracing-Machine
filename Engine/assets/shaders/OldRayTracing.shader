@@ -1,4 +1,18 @@
-###SHADER COMPUTE
+###SHADER VERTEX
+#version 450 core
+
+layout (location = 0) in vec2 aPos;
+layout (location = 1) in vec2 aTexCoords;
+
+layout (location = 0) out vec2 TexCoords;
+
+void main()
+{
+    gl_Position = vec4(aPos, 0.0, 1.0);
+    TexCoords = aTexCoords;
+}
+
+###SHADER FRAGMENT
 #version 450 core
 
 #define LOWETS_THRESHOLD 1.0e-6F
@@ -6,12 +20,14 @@
 #define UINT_MAX 4294967295.0
 #define PI 3.141592653589793
 
-layout (local_size_x = 8, local_size_y = 8, local_size_y = 1) in;
+layout (location = 0) in vec2 TexCoords;
 
-layout(set = 0, binding = 0, rgba32f) uniform image2D AccumulationTexture;
-layout(set = 0, binding = 1, rgba8) uniform image2D OutTexture;
+layout (location = 0) out vec4 AccumulationColor;
+layout (location = 1) out vec4 ScreenColor;
 
-layout(std140, set = 0, binding = 2) uniform Amounts
+layout(set = 0, binding = 0) uniform sampler2D AccumulationTexture;
+
+layout(std140, set = 0, binding = 1) uniform Amounts
 {
     float DrawEnvironment;
     uint MaxBounces;
@@ -22,7 +38,7 @@ layout(std140, set = 0, binding = 2) uniform Amounts
     int SpheresCount;
 };
 
-layout(std140, set = 0, binding = 3) uniform CameraBuffer
+layout(std140, set = 0, binding = 2) uniform CameraBuffer
 {
     mat4 projection;
     mat4 view;
@@ -239,7 +255,7 @@ void scatter(inout Ray ray, in Payload payload)
 
 void main()
 {
-    vec2 pixelCoord = gl_GlobalInvocationID.xy / Resolution;
+    vec2 pixelCoord = gl_FragCoord.xy / Resolution;
     vec4 coord = Camera.projection * (2.0 * vec4(pixelCoord, 1.0, 1.0) - 1.0);
     
     Ray precalculatedRay;
@@ -252,7 +268,7 @@ void main()
     
     for (uint frame = 1; frame <= MaxFrames; frame++)
     {
-        Global.seed = uint(gl_GlobalInvocationID.y * Resolution.x + gl_GlobalInvocationID.x) + frame * FrameIndex * 735529;
+        Global.seed = uint(gl_FragCoord.y * Resolution.x + gl_FragCoord.x) + frame * FrameIndex * 735529;
         
         Ray ray = precalculatedRay;
         pixel.Contribution = vec3(1);
@@ -276,14 +292,12 @@ void main()
     }
     
     pixel.Color = pixel.Color / float(MaxFrames);
+    
     if (FrameIndex != 1)
     {
-        pixel.Color += imageLoad(AccumulationTexture, ivec2(gl_GlobalInvocationID.xy)).rgb;
+        pixel.Color += texture(AccumulationTexture, TexCoords).rgb;
     }
-    
-    vec3 outColor = pixel.Color / float(FrameIndex);
-    outColor = sqrt(outColor);
-    
-    imageStore(AccumulationTexture, ivec2(gl_GlobalInvocationID.xy), vec4(pixel.Color, 1.0));
-    imageStore(OutTexture, ivec2(gl_GlobalInvocationID.xy), vec4(outColor, 1.0));
+        
+    AccumulationColor = vec4(pixel.Color, 1.0);
+    ScreenColor = vec4(AccumulationColor.rgb / float(FrameIndex), 1.0);
 }

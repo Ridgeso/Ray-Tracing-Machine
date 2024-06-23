@@ -16,6 +16,7 @@ namespace
 			case RT::DescriptorType::Uniform: return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			case RT::DescriptorType::Storage: return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			case RT::DescriptorType::Sampler: return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+			case RT::DescriptorType::Image:   return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 		}
 		return VkDescriptorType{};
 	}
@@ -37,7 +38,7 @@ namespace RT::Vulkan
 			bindings[i].binding = i;
 			bindings[i].descriptorType = descType2VkType(setType);
 			bindings[i].descriptorCount = count;
-			bindings[i].stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
+			bindings[i].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_ALL_GRAPHICS;
 		}
 
 		auto descriptorSetLayoutInfo = VkDescriptorSetLayoutCreateInfo{};
@@ -139,6 +140,10 @@ namespace RT::Vulkan
 				break;
 			case UniformType::Sampler:
 				write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+				write.pImageInfo = &vkUniform.imgInfo;
+				break;
+			case UniformType::Image:
+				write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 				write.pImageInfo = &vkUniform.imgInfo;
 				break;
 		}

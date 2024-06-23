@@ -12,7 +12,8 @@ namespace RT
 	{
 		Uniform,
 		Storage,
-		Sampler
+		Sampler,
+		Image
 	};
 
 	using DescriptorLayoutSpec = std::vector<

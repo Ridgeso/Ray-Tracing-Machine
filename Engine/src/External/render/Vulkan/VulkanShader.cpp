@@ -96,7 +96,7 @@ namespace RT::Vulkan
                     : line.find("TESS_EVAULATION") != std::string::npos ? Type::TessEvaulation
                     : line.find("GEOMETRY") != std::string::npos ? Type::Geometry
                     : line.find("FRAGMENT") != std::string::npos ? Type::Fragment
-                    : line.find("FRAGMENT") != std::string::npos ? Type::Compute
+                    : line.find("COMPUTE") != std::string::npos ? Type::Compute
                     : Type::None;
 
                 if (foundShaders.find(shaderType) == foundShaders.end())

@@ -39,7 +39,8 @@ namespace RT
 		None,
 		Uniform,
 		Storage,
-		Sampler
+		Sampler,
+		Image
 	};
 
 	struct Uniform
@@ -50,7 +51,7 @@ namespace RT
 		virtual void setData(const void* data, const uint32_t size, const uint32_t offset = 0) = 0;
 	
 		static Local<Uniform> create(const UniformType uniformType, const uint32_t size);
-		static Local<Uniform> create(const Texture& sampler, const uint32_t binding);
+		static Local<Uniform> create(const Texture& sampler, const uint32_t binding, const UniformType samplerType);
 	};
 
 }

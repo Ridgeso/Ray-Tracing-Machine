@@ -52,12 +52,18 @@ namespace RT
 		Local<Renderer> renderer;
 		
 		Local<Shader> rtShader;
-		Local<VertexBuffer> screenBuff;
-		Share<RenderPass> renderPass;
+
+		// TODO: return renderPass and graphics pipeline for post processing
+		//Local<VertexBuffer> screenBuff;
+		//Share<RenderPass> renderPass;
 		
+		Local<Texture> accumulationTexture;
+		Local<Texture> outTexture;
+
 		Local<Uniform> cameraUniform;
 		Local<Uniform> ammountsUniform;
 		Local<Uniform> accumulationSamplerUniform;
+		Local<Uniform> outSamplerUniform;
 		Local<Uniform> materialsStorage;
 		Local<Uniform> spheresStorage;
 		
@@ -92,19 +98,19 @@ namespace RT
 			uint32_t renderTexture = 1;
 		} infoUniform;
 
-		struct Vertices
-		{
-			float Coords[2];
-			float TexCoords[2];
-		} static constexpr screenVertices[] = {
-			{ { -1.0f, -1.0f }, { 0.0f, 0.0f } },
-			{ {  1.0f, -1.0f }, { 1.0f, 0.0f } },
-			{ {  1.0f,  1.0f }, { 1.0f, 1.0f } },
-			{ {  1.0f,  1.0f }, { 1.0f, 1.0f } },
-			{ { -1.0f,  1.0f }, { 0.0f, 1.0f } },
-			{ { -1.0f, -1.0f }, { 0.0f, 0.0f } }
-		};
-		static constexpr int32_t screenVerticesCount = sizeof(screenVertices) / sizeof(float);
+		//struct Vertices
+		//{
+		//	float Coords[2];
+		//	float TexCoords[2];
+		//} static constexpr screenVertices[] = {
+		//	{ { -1.0f, -1.0f }, { 0.0f, 0.0f } },
+		//	{ {  1.0f, -1.0f }, { 1.0f, 0.0f } },
+		//	{ {  1.0f,  1.0f }, { 1.0f, 1.0f } },
+		//	{ {  1.0f,  1.0f }, { 1.0f, 1.0f } },
+		//	{ { -1.0f,  1.0f }, { 0.0f, 1.0f } },
+		//	{ { -1.0f, -1.0f }, { 0.0f, 0.0f } }
+		//};
+		//static constexpr int32_t screenVerticesCount = sizeof(screenVertices) / sizeof(float);
 	};
 
 	Application* CreateApplication(ApplicationCommandLineArgs args);

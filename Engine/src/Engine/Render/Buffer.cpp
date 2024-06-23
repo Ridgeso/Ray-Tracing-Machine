@@ -39,12 +39,12 @@ namespace RT
 		return nullptr;
 	}
 	
-	Local<Uniform> Uniform::create(const Texture& sampler, const uint32_t binding)
+	Local<Uniform> Uniform::create(const Texture& sampler, const uint32_t binding, const UniformType samplerType)
 	{
 		switch (GlobalRenderAPI)
 		{
 			// case RenderAPI::OpenGL: return makeLocal<OpenGl::OpenGlUniform>(sampler, binding); break;
-			case RenderAPI::Vulkan: return makeLocal<Vulkan::VulkanUniform>(sampler, binding); break;
+			case RenderAPI::Vulkan: return makeLocal<Vulkan::VulkanUniform>(sampler, binding, samplerType); break;
 		}
 		return nullptr;
 	}

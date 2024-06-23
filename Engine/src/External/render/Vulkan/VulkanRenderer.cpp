@@ -71,17 +71,17 @@ namespace RT::Vulkan
 	}
 
 	void VulkanRenderer::render(
-		const RenderPass& renderPass,
 		const Camera& camera,
 		const Shader& shader,
-		const VertexBuffer& vbuffer,
 		const Scene& scene,
-		const Pipeline& pipeline)
+		const Pipeline& pipeline,
+		const Texture& accTexture,
+		const Texture& outTexture)
 	{
-		const auto& vkRenderPass = static_cast<const VulkanRenderPass&>(renderPass);
 		const auto& vkShader = static_cast<const VulkanShader&>(shader);
-		const auto& vkVbuffer = static_cast<const VulkanVertexBuffer&>(vbuffer);
 		const auto& vkPipeline = static_cast<const VulkanPipeline&>(pipeline);
+		const auto& vkAccTexture = static_cast<const VulkanTexture&>(accTexture);
+		const auto& vkOutTexture = static_cast<const VulkanTexture&>(outTexture);
 
 		uint32_t imageIndex = 0u;
 		auto result = SwapchainInstance->acquireNextImage(imageIndex);
@@ -100,7 +100,7 @@ namespace RT::Vulkan
 
 		RT_ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, "failte to acquire swap chain image!");
 		
-		recordCommandbuffer(imageIndex, vkRenderPass, vkVbuffer, vkPipeline);
+		recordCommandbuffer(imageIndex, vkPipeline, vkAccTexture, vkOutTexture);
 
 		result = SwapchainInstance->submitCommandBuffers(commandBuffers[imageIndex], imageIndex);
 		
@@ -115,9 +115,9 @@ namespace RT::Vulkan
 
 	void VulkanRenderer::recordCommandbuffer(
 		const uint32_t imIdx,
-		const VulkanRenderPass& renderPass,
-		const VulkanVertexBuffer& vkVbuffer,
-		const VulkanPipeline& vkPipeline)
+		const VulkanPipeline& vkPipeline,
+		const VulkanTexture& vkAccTexture,
+		const VulkanTexture& vkOutTexture)
 	{
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -162,7 +162,7 @@ namespace RT::Vulkan
 
 		vkCmdEndRenderPass(commandBuffers[imIdx]);
 
-		registerFrameBuff(commandBuffers[imIdx], renderPass, vkVbuffer, vkPipeline);
+		registerFrameBuff(commandBuffers[imIdx], vkPipeline, vkAccTexture, vkOutTexture);
 
 		RT_CORE_ASSERT(vkEndCommandBuffer(commandBuffers[imIdx]) == VK_SUCCESS, "failed to record command buffer");
 	}
@@ -264,15 +264,14 @@ namespace RT::Vulkan
 
 	void VulkanRenderer::registerFrameBuff(
 		VkCommandBuffer cmdBuffer,
-		const VulkanRenderPass& renderPass,
-		const VulkanVertexBuffer& vkVbuffer,
-		const VulkanPipeline& vkPipeline)
+		const VulkanPipeline& vkPipeline,
+		const VulkanTexture& vkAccTexture,
+		const VulkanTexture& vkOutTexture)
 	{
-		const uint8_t currFrame = SwapchainInstance->getCurrentFrame();
-		
 		vkCmdBindDescriptorSets(
 			cmdBuffer,
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			//VK_PIPELINE_BIND_POINT_GRAPHICS,
+			VK_PIPELINE_BIND_POINT_COMPUTE,
 			vkPipeline.getLayout(),
 			0,
 			frameBindings.size(),
@@ -280,52 +279,80 @@ namespace RT::Vulkan
 			0,
 			nullptr);
 
-		const auto rpExtent = VkExtent2D(renderPass.getSize().x, renderPass.getSize().y);
+		auto subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+		vkAccTexture.barrier(
+			cmdBuffer,
+			subresourceRange,
+			0,
+			VK_ACCESS_SHADER_WRITE_BIT,
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_GENERAL);
+		vkOutTexture.barrier(
+			cmdBuffer,
+			subresourceRange,
+			0,
+			VK_ACCESS_SHADER_WRITE_BIT,
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_GENERAL);
 
-		VkRenderPassBeginInfo renderPassInfo{};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		
-		renderPassInfo.renderPass = renderPass.getRenderPass();
-		renderPassInfo.framebuffer = renderPass.getFrameBuffer(0);
-		
-		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = rpExtent;
-		
-		constexpr auto clearValues = std::array<VkClearValue, 3>{
-			VkClearValue{ { 0.1f, 0.1f, 0.1f, 1.0f } }, // color
-			VkClearValue{ { 0.1f, 0.1f, 0.1f, 1.0f } }, // color
-			VkClearValue{ { 1.0f, 0 } } // depthStencil
-		};
-		renderPassInfo.clearValueCount = clearValues.size();
-		renderPassInfo.pClearValues = clearValues.data();
-		
-		vkCmdBeginRenderPass(cmdBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-		
-		auto viewport = VkViewport{};
-		viewport.x = 0;
-		viewport.y = 0;
-		viewport.width = (float)rpExtent.width;
-		viewport.height = (float)rpExtent.height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		auto scissor = VkRect2D{};
-		scissor.offset = { 0, 0 };
-		scissor.extent = rpExtent;
-		vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
-		vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
-		
-		vkPipeline.bind(cmdBuffer);
-		vkVbuffer.bind(cmdBuffer);
-		vkVbuffer.draw(cmdBuffer);
-		
-		vkCmdEndRenderPass(cmdBuffer);
-		
-		static_cast<const VulkanTexture&>(renderPass.getAttachment(1)).transition(
-			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			VK_ACCESS_TRANSFER_WRITE_BIT,
+		vkPipeline.dispatch(cmdBuffer, vkAccTexture.getSize());
+
+		vkOutTexture.barrier(
+			cmdBuffer,
+			subresourceRange,
+			VK_ACCESS_SHADER_WRITE_BIT,
 			VK_ACCESS_SHADER_READ_BIT,
-			cmdBuffer);
+			VK_IMAGE_LAYOUT_GENERAL,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	}
 
 }
+
+///////////////////////////// Just a reminder for post processing /////////////////////////////
+
+//const auto rpExtent = VkExtent2D(renderPass.getSize().x, renderPass.getSize().y);
+
+//VkRenderPassBeginInfo renderPassInfo{};
+//renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+//
+//renderPassInfo.renderPass = renderPass.getRenderPass();
+//renderPassInfo.framebuffer = renderPass.getFrameBuffer(0);
+//
+//renderPassInfo.renderArea.offset = { 0, 0 };
+//renderPassInfo.renderArea.extent = rpExtent;
+//
+//constexpr auto clearValues = std::array<VkClearValue, 3>{
+//	VkClearValue{ { 0.1f, 0.1f, 0.1f, 1.0f } }, // color
+//	VkClearValue{ { 0.1f, 0.1f, 0.1f, 1.0f } }, // color
+//	VkClearValue{ { 1.0f, 0 } } // depthStencil
+//};
+//renderPassInfo.clearValueCount = clearValues.size();
+//renderPassInfo.pClearValues = clearValues.data();
+//
+//vkCmdBeginRenderPass(cmdBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+//auto viewport = VkViewport{};
+//viewport.x = 0;
+//viewport.y = 0;
+//viewport.width = (float)rpExtent.width;
+//viewport.height = (float)rpExtent.height;
+//viewport.minDepth = 0.0f;
+//viewport.maxDepth = 1.0f;
+//auto scissor = VkRect2D{};
+//scissor.offset = { 0, 0 };
+//scissor.extent = rpExtent;
+//vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
+//vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+
+//vkPipeline.bind(cmdBuffer);
+//vkVbuffer.bind(cmdBuffer);
+//vkVbuffer.draw(cmdBuffer);
+
+//vkCmdEndRenderPass(cmdBuffer);
+
+//static_cast<const VulkanTexture&>(renderPass.getAttachment(1)).transition(
+//	VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+//	VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+//	VK_ACCESS_TRANSFER_WRITE_BIT,
+//	VK_ACCESS_SHADER_READ_BIT,
+//	cmdBuffer);

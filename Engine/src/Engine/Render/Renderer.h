@@ -23,12 +23,12 @@ namespace RT
 		virtual void shutDown() = 0;
 
 		virtual void render(
-			const RenderPass& renderPass,
 			const Camera& camera,
 			const Shader& shader,
-			const VertexBuffer& vbuffer,
 			const Scene& scene,
-			const Pipeline& pipeline) = 0;
+			const Pipeline& pipeline,
+			const Texture& accTexture,
+			const Texture& outTexture) = 0;
 	};
 
 	Local<Renderer> createRenderer();

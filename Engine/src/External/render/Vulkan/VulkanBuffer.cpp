@@ -128,20 +128,20 @@ namespace RT::Vulkan
 		vkMapMemory(DeviceInstance.getDevice(), uniMemory, 0, VK_WHOLE_SIZE, 0, &mapped);
 	}
 
-	VulkanUniform::VulkanUniform(const Texture& sampler, const uint32_t binding)
-		: uniformType{UniformType::Sampler}
+	VulkanUniform::VulkanUniform(const Texture& sampler, const uint32_t binding, const UniformType samplerType)
+		: uniformType{ samplerType }
 	{
 		const auto& vulkanSampler = static_cast<const VulkanTexture&>(sampler);
 
 		imgInfo = VkDescriptorImageInfo{};
 		imgInfo.sampler = vulkanSampler.getSampler();
 		imgInfo.imageView = vulkanSampler.getImageView();
-		imgInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		imgInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 	}
 
 	VulkanUniform::~VulkanUniform()
 	{
-		if (UniformType::Sampler != uniformType)
+		if (UniformType::Sampler != uniformType && UniformType::Image != uniformType)
 		{
 			const auto device = DeviceInstance.getDevice();
 			vkUnmapMemory(device, uniMemory);

@@ -42,17 +42,22 @@ namespace RT::Vulkan
         VulkanPipeline& operator=(const VulkanPipeline&) = delete;
         VulkanPipeline&& operator=(VulkanPipeline&&) = delete;
 
-        void init(const Shader& shader, const RenderPass& renderPass, const PipelineLayouts& pipelineLayouts) override;
+        void init(const Shader& shader, const RenderPass& renderPass, const PipelineLayouts& pipelineLayouts) final;
+        void initComp(const Shader& shader, const PipelineLayouts& pipelineLayouts) final;
         void shutdown() final;
         
         VkPipeline getGraphicsPipeline() const { return graphicsPipeline; }
         void bind(const VkCommandBuffer commandBuffer) const;
+        void dispatch(const VkCommandBuffer commandBuffer, const glm::uvec2 size) const;
         const VkPipelineLayout getLayout() const { return pipelineLayout; }
 
         static void defaultPipelineConfigInfo(PipelineConfigInfo& configInfo);
 
     private:
+        void createPipelineLayout(const PipelineLayouts& pipelineLayouts);
+
         void createGraphicsPipeline(const VulkanShader& shader, const PipelineConfigInfo& configInfo);
+        void createComputePipeline(const VulkanShader& shader, const PipelineConfigInfo& configInfo);
 
     private:
         VkPipeline graphicsPipeline = {};
