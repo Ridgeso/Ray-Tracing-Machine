@@ -18,6 +18,9 @@ namespace RT
 		virtual void initComp(const Shader& shader, const PipelineLayouts& pipelineLayouts) = 0;
 		virtual void shutdown() = 0;
 
+		virtual void bind() const = 0;
+		virtual void dispatch(const glm::uvec2 groups) const = 0;
+
 		static Local<Pipeline> create();
 	};
 

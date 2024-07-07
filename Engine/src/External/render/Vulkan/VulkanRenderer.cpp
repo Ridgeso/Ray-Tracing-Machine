@@ -1,4 +1,5 @@
 #include "VulkanRenderer.h"
+#include "Context.h"
 
 #include "Engine/Core/Assert.h"
 #include "Engine/Core/Application.h"
@@ -70,21 +71,15 @@ namespace RT::Vulkan
 		deviceInstance.shutdown();
 	}
 
-	void VulkanRenderer::render(
-		const Camera& camera,
-		const Shader& shader,
-		const Scene& scene,
-		const Pipeline& pipeline,
-		const Texture& accTexture,
-		const Texture& outTexture)
+	void VulkanRenderer::stop()
 	{
-		const auto& vkShader = static_cast<const VulkanShader&>(shader);
-		const auto& vkPipeline = static_cast<const VulkanPipeline&>(pipeline);
-		const auto& vkAccTexture = static_cast<const VulkanTexture&>(accTexture);
-		const auto& vkOutTexture = static_cast<const VulkanTexture&>(outTexture);
+		vkDeviceWaitIdle(DeviceInstance.getDevice());
+	}
 
-		uint32_t imageIndex = 0u;
-		auto result = SwapchainInstance->acquireNextImage(imageIndex);
+	void VulkanRenderer::beginFrame()
+	{
+		uint32_t imgIdx = 0u;
+		auto result = SwapchainInstance->acquireNextImage(imgIdx);
 
 		auto& uniformsToFlush = getUniformsToFlush();
 		for (const auto* uniform : uniformsToFlush)
@@ -99,11 +94,23 @@ namespace RT::Vulkan
 		}
 
 		RT_ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, "failte to acquire swap chain image!");
-		
-		recordCommandbuffer(imageIndex, vkPipeline, vkAccTexture, vkOutTexture);
 
-		result = SwapchainInstance->submitCommandBuffers(commandBuffers[imageIndex], imageIndex);
-		
+		Context::imgIdx = imgIdx;
+		Context::frameCmds = commandBuffers[imgIdx];
+
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		RT_CORE_ASSERT(vkBeginCommandBuffer(Context::frameCmds, &beginInfo) == VK_SUCCESS, "failed to begin command buffer!");
+	}
+
+	void VulkanRenderer::endFrame()
+	{
+		recordCommandbuffer(Context::imgIdx);
+
+		RT_CORE_ASSERT(vkEndCommandBuffer(Context::frameCmds) == VK_SUCCESS, "failed to record command buffer");
+
+		auto result = SwapchainInstance->submitCommandBuffers(Context::frameCmds, Context::imgIdx);
+
 		if (VK_ERROR_OUT_OF_DATE_KHR == result || VK_SUBOPTIMAL_KHR == result)
 		{
 			recreateSwapchain();
@@ -111,19 +118,14 @@ namespace RT::Vulkan
 		}
 
 		RT_ASSERT(result == VK_SUCCESS, "failte to present swap chain image!");
+
+		Context::imgIdx = invalidImgIdx;
+		Context::frameCmds = VK_NULL_HANDLE;
+		Context::frameBindings.clear();
 	}
 
-	void VulkanRenderer::recordCommandbuffer(
-		const uint32_t imIdx,
-		const VulkanPipeline& vkPipeline,
-		const VulkanTexture& vkAccTexture,
-		const VulkanTexture& vkOutTexture)
+	void VulkanRenderer::recordCommandbuffer(const uint32_t imIdx)
 	{
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-		RT_CORE_ASSERT(vkBeginCommandBuffer(commandBuffers[imIdx], &beginInfo) == VK_SUCCESS, "failed to begin command buffer!");
-
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		
@@ -161,10 +163,6 @@ namespace RT::Vulkan
 		}
 
 		vkCmdEndRenderPass(commandBuffers[imIdx]);
-
-		registerFrameBuff(commandBuffers[imIdx], vkPipeline, vkAccTexture, vkOutTexture);
-
-		RT_CORE_ASSERT(vkEndCommandBuffer(commandBuffers[imIdx]) == VK_SUCCESS, "failed to record command buffer");
 	}
 
 	void VulkanRenderer::recreateSwapchain()
@@ -202,7 +200,7 @@ namespace RT::Vulkan
 
 	void VulkanRenderer::initImGui()
 	{
-		Vulkan::Device& device = DeviceInstance;
+		auto& device = DeviceInstance;
 
 		constexpr auto poolSizes = std::array<VkDescriptorPoolSize, 11>{
 			VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_SAMPLER, 100 },
@@ -260,50 +258,6 @@ namespace RT::Vulkan
 		});
 		vkDeviceWaitIdle(device.getDevice());
 		ImGui_ImplVulkan_DestroyFontUploadObjects();	
-	}
-
-	void VulkanRenderer::registerFrameBuff(
-		VkCommandBuffer cmdBuffer,
-		const VulkanPipeline& vkPipeline,
-		const VulkanTexture& vkAccTexture,
-		const VulkanTexture& vkOutTexture)
-	{
-		vkCmdBindDescriptorSets(
-			cmdBuffer,
-			//VK_PIPELINE_BIND_POINT_GRAPHICS,
-			VK_PIPELINE_BIND_POINT_COMPUTE,
-			vkPipeline.getLayout(),
-			0,
-			frameBindings.size(),
-			frameBindings.data(),
-			0,
-			nullptr);
-
-		auto subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-		vkAccTexture.barrier(
-			cmdBuffer,
-			subresourceRange,
-			0,
-			VK_ACCESS_SHADER_WRITE_BIT,
-			VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_IMAGE_LAYOUT_GENERAL);
-		vkOutTexture.barrier(
-			cmdBuffer,
-			subresourceRange,
-			0,
-			VK_ACCESS_SHADER_WRITE_BIT,
-			VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_IMAGE_LAYOUT_GENERAL);
-
-		vkPipeline.dispatch(cmdBuffer, vkAccTexture.getSize());
-
-		vkOutTexture.barrier(
-			cmdBuffer,
-			subresourceRange,
-			VK_ACCESS_SHADER_WRITE_BIT,
-			VK_ACCESS_SHADER_READ_BIT,
-			VK_IMAGE_LAYOUT_GENERAL,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	}
 
 }

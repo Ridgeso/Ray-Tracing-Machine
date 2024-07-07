@@ -28,13 +28,14 @@ namespace RT
 		spec.invView= glm::inverse(view);
 	}
 
-	void Camera::ResizeCamera(int32_t width, int32_t height)
+	bool Camera::ResizeCamera(int32_t width, int32_t height)
 	{
 		if (viewSize.x == width && viewSize.y == height)
-			return;
+			return false;
 
 		viewSize = { width, height };
 		RecalculateInvProjection();
+		return true;
 	}
 
 }

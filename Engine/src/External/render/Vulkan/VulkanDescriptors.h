@@ -12,8 +12,6 @@
 namespace RT::Vulkan
 {
 
-	extern std::vector<VkDescriptorSet> frameBindings;
-
 	using VulkanDescriptorLayoutSpec =std::vector<
 		std::tuple<
 			uint32_t,

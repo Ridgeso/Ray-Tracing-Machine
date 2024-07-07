@@ -21,14 +21,10 @@ namespace RT
 	{
 		virtual void init(const RenderSpecs& specs) = 0;
 		virtual void shutDown() = 0;
+		virtual void stop() = 0;
 
-		virtual void render(
-			const Camera& camera,
-			const Shader& shader,
-			const Scene& scene,
-			const Pipeline& pipeline,
-			const Texture& accTexture,
-			const Texture& outTexture) = 0;
+		virtual void beginFrame() = 0;
+		virtual void endFrame() = 0;
 	};
 
 	Local<Renderer> createRenderer();

@@ -11,6 +11,16 @@ namespace RT
 		R8, RGB8, RGBA8, RGBA32F, Depth
 	};
 
+	enum class ImageLayout
+	{
+		Undefined, General, ShaderRead
+	};
+
+	enum class ImageAccess
+	{
+		None, Write, Read
+	};
+
 	struct Texture
 	{
 		virtual ~Texture() = 0;
@@ -19,6 +29,9 @@ namespace RT
 
 		virtual const ImTextureID getTexId() const = 0;
 		virtual const glm::uvec2 getSize() const = 0;
+		
+		virtual void transition(const ImageAccess imageAccess, const ImageLayout imageLayout) const = 0;
+		virtual void barrier(const ImageAccess imageAccess, const ImageLayout imageLayout) const = 0;
 
 		static Local<Texture> create(const glm::uvec2 size, const ImageFormat imageFormat);
 	};

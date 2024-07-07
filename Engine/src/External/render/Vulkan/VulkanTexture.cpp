@@ -1,4 +1,6 @@
 #include "VulkanTexture.h"
+#include "Context.h"
+
 #include "Engine/Core/Assert.h"
 
 #include "Device.h"
@@ -51,20 +53,36 @@ namespace RT::Vulkan
 		copyToImage();
 	}
 
+	void VulkanTexture::transition(const ImageAccess imageAccess, const ImageLayout imageLayout) const
+	{
+		DeviceInstance.execSingleCmdPass([&](const auto cmdBuffer) -> void
+		{
+			auto dstAccessMask = imageAccess2VulkanAccess(imageAccess);
+			auto newLayout = imageLayout2VulkanLayout(imageLayout);
+			vulkanBarrier(cmdBuffer, dstAccessMask, newLayout);
+		});
+	}
+
 	void VulkanTexture::barrier(
-		const VkCommandBuffer commandBuffer,
-		const VkImageSubresourceRange subresourceRange,
-		const VkAccessFlags srcAccessMask,
+		const ImageAccess imageAccess,
+		const ImageLayout imageLayout) const
+	{
+		auto dstAccessMask = imageAccess2VulkanAccess(imageAccess);
+		auto newLayout = imageLayout2VulkanLayout(imageLayout);
+		vulkanBarrier(Context::frameCmds, dstAccessMask, newLayout);
+	}
+
+	void VulkanTexture::vulkanBarrier(
+		const VkCommandBuffer cmdBuff,
 		const VkAccessFlags dstAccessMask,
-		const VkImageLayout oldLayout,
 		const VkImageLayout newLayout) const
 	{
-		VkImageMemoryBarrier barrier;
+		auto barrier = VkImageMemoryBarrier{};
 		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 		barrier.pNext = nullptr;
-		barrier.srcAccessMask = srcAccessMask;
+		barrier.srcAccessMask = currAccessMask;
 		barrier.dstAccessMask = dstAccessMask;
-		barrier.oldLayout = oldLayout;
+		barrier.oldLayout = currLayout;
 		barrier.newLayout = newLayout;
 		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -72,13 +90,16 @@ namespace RT::Vulkan
 		barrier.subresourceRange = subresourceRange;
 
 		vkCmdPipelineBarrier(
-			commandBuffer,
+			cmdBuff,
 			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
 			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
 			0,
 			0, nullptr,
 			0, nullptr,
 			1, &barrier);
+
+		currAccessMask = dstAccessMask;
+		currLayout = newLayout;
 	}
 
 	constexpr VkFormat VulkanTexture::imageFormat2VulkanFormat(const ImageFormat imageFormat)
@@ -104,6 +125,28 @@ namespace RT::Vulkan
 			case ImageFormat::Depth:	return 0;
 		}
 		return 0;
+	}
+
+	constexpr VkImageLayout VulkanTexture::imageLayout2VulkanLayout(const ImageLayout imageLayout)
+	{
+		switch (imageLayout)
+		{
+			case ImageLayout::Undefined:  return VK_IMAGE_LAYOUT_UNDEFINED;
+			case ImageLayout::General:    return VK_IMAGE_LAYOUT_GENERAL;
+			case ImageLayout::ShaderRead: return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		}
+		return VK_IMAGE_LAYOUT_UNDEFINED;
+	}
+
+	constexpr VkAccessFlags VulkanTexture::imageAccess2VulkanAccess(const ImageAccess imageAccess)
+	{
+		switch (imageAccess)
+		{
+			case ImageAccess::None:  return VK_ACCESS_NONE;
+			case ImageAccess::Write: return VK_ACCESS_SHADER_WRITE_BIT;
+			case ImageAccess::Read:  return VK_ACCESS_SHADER_READ_BIT;
+		}
+		return VK_ACCESS_NONE;
 	}
 
 	void VulkanTexture::createImage()
@@ -279,18 +322,7 @@ namespace RT::Vulkan
 	{
 		DeviceInstance.execSingleCmdPass([this](const auto cmdBuffer) -> void
 		{
-			auto copyBarrier = VkImageMemoryBarrier{};
-			copyBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-			copyBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-			copyBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			copyBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-			copyBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			copyBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			copyBarrier.image = image;
-			copyBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			copyBarrier.subresourceRange.levelCount = 1;
-			copyBarrier.subresourceRange.layerCount = 1;
-			vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, NULL, 0, NULL, 1, &copyBarrier);
+			vulkanBarrier(cmdBuffer, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 			auto region = VkBufferImageCopy{};
 			region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -300,19 +332,7 @@ namespace RT::Vulkan
 			region.imageExtent.depth = 1;
 			vkCmdCopyBufferToImage(cmdBuffer, stagingBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-			auto useBarrier = VkImageMemoryBarrier{};
-			useBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-			useBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-			useBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-			useBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-			useBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			useBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			useBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			useBarrier.image = image;
-			useBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			useBarrier.subresourceRange.levelCount = 1;
-			useBarrier.subresourceRange.layerCount = 1;
-			vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, NULL, 0, NULL, 1, &useBarrier);
+			vulkanBarrier(cmdBuffer, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		});
 	}
 

@@ -1,4 +1,6 @@
 #include "VulkanPipeline.h"
+#include "Context.h"
+
 #include "Engine/Core/Assert.h"
 
 #include "VulkanBuffer.h"
@@ -39,18 +41,22 @@ namespace RT::Vulkan
     {
         auto device = DeviceInstance.getDevice();
         vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-        vkDestroyPipeline(device, graphicsPipeline, nullptr);
+        vkDestroyPipeline(device, pipeline, nullptr);
     }
 
-    void VulkanPipeline::bind(const VkCommandBuffer commandBuffer) const
+    void VulkanPipeline::bind() const
     {
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+        bindDescriptors<VK_PIPELINE_BIND_POINT_GRAPHICS>();
+
+        vkCmdBindPipeline(Context::frameCmds, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
     }
 
-    void VulkanPipeline::dispatch(const VkCommandBuffer commandBuffer, const glm::uvec2 size) const
+    void VulkanPipeline::dispatch(const glm::uvec2 groups) const
     {
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, graphicsPipeline);
-        vkCmdDispatch(commandBuffer, size.x / 8, size.y / 8, 1);
+        bindDescriptors<VK_PIPELINE_BIND_POINT_COMPUTE>();
+
+        vkCmdBindPipeline(Context::frameCmds, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
+        vkCmdDispatch(Context::frameCmds, groups.x / 8, groups.y / 8, 1);
     }
 
     void VulkanPipeline::defaultPipelineConfigInfo(PipelineConfigInfo& configInfo)
@@ -140,6 +146,20 @@ namespace RT::Vulkan
         configInfo.dynamicStateInfo.flags = 0;
     }
 
+    template <VkPipelineBindPoint PipelinePoint>
+    void VulkanPipeline::bindDescriptors() const
+    {
+        vkCmdBindDescriptorSets(
+            Context::frameCmds,
+            PipelinePoint,
+            pipelineLayout,
+            0,
+            Context::frameBindings.size(),
+            Context::frameBindings.data(),
+            0,
+            nullptr);
+    }
+
     void VulkanPipeline::createPipelineLayout(const PipelineLayouts& pipelineLayouts)
     {
         auto pSetLayouts = std::vector<VkDescriptorSetLayout>(pipelineLayouts.size());
@@ -207,7 +227,7 @@ namespace RT::Vulkan
             1,
             &pipelineInfo,
             nullptr,
-            &graphicsPipeline) == VK_SUCCESS,
+            &pipeline) == VK_SUCCESS,
             "failed to create graphics pipeline");
     }
 
@@ -234,7 +254,7 @@ namespace RT::Vulkan
             1,
             &pipelineInfo,
             nullptr,
-            &graphicsPipeline) == VK_SUCCESS,
+            &pipeline) == VK_SUCCESS,
             "failed to create graphics pipeline");
     }
 

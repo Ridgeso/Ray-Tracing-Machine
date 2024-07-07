@@ -81,6 +81,8 @@ namespace RT
 		//screenBuff->registerAttributes({ VertexElement::Float2, VertexElement::Float2 });
 
 		accumulationTexture = Texture::create(lastWinSize, ImageFormat::RGBA32F);
+		accumulationTexture->transition(ImageAccess::Write, ImageLayout::General);
+
 		outTexture = Texture::create(lastWinSize, ImageFormat::RGBA8);
 
 		rtShader->load("..\\Engine\\assets\\shaders\\RayTracing.shader");
@@ -143,7 +145,7 @@ namespace RT
 		sceneDescriptorSet->write(1, *spheresStorage);
 
 		pipeline = Pipeline::create();
-		auto pipelineSets = PipelineLayouts{ commonDescriptorLayout.get(), sceneDescriptorLayout.get()};
+		auto pipelineSets = PipelineLayouts{ commonDescriptorLayout.get(), sceneDescriptorLayout.get() };
 		pipeline->initComp(*rtShader, pipelineSets);
 
 		lastMousePos = windowSize / 2;
@@ -193,6 +195,8 @@ namespace RT
 
 			appFrameDuration = appTimer.Ellapsed();
 		}
+
+		renderer->stop();
 	}
 
     void Application::layout()
@@ -343,23 +347,27 @@ namespace RT
 		glm::ivec2 winSize = mainWindow->getSize();
 		
 		updateView(appFrameDuration / 1000.0f);
-		
-		rtShader->use();
+
 		if (lastWinSize != winSize)
 		{
 			infoUniform.resolution = winSize;
 			ammountsUniform->setData(&infoUniform.resolution, sizeof(glm::vec2), offsetof(InfoUniform, resolution));
 			lastWinSize = winSize;
 		}
-		cameraUniform->setData(&camera.GetSpec(), sizeof(Camera::Spec));
-		rtShader->unuse();
+		
+		auto timeit = Timer{};
+		renderer->beginFrame();
 
 		commonDescriptorSet->bind(0);
 		sceneDescriptorSet->bind(1);
 
-		Timer timeit;
-		camera.ResizeCamera((int32_t)viewportSize.x, (int32_t)viewportSize.y);
-		renderer->render(camera, *rtShader, scene, *pipeline, *accumulationTexture, *outTexture);
+		outTexture->barrier(ImageAccess::Write, ImageLayout::General);
+
+		pipeline->dispatch(outTexture->getSize());
+
+		outTexture->barrier(ImageAccess::Read, ImageLayout::ShaderRead);
+
+		renderer->endFrame();
 		lastFrameDuration = timeit.Ellapsed();
 	}
 
@@ -436,10 +444,13 @@ namespace RT
 			mainWindow->cursorMode(GLFW_CURSOR_NORMAL);
 		}
 
+		moved |= camera.ResizeCamera((int32_t)viewportSize.x, (int32_t)viewportSize.y);
+
 		if (moved)
 		{
 			camera.RecalculateInvView();
 			infoUniform.frameIndex = 0;
+			cameraUniform->setData(&camera.GetSpec(), sizeof(Camera::Spec));
 		}
 	}
 

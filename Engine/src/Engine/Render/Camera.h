@@ -38,7 +38,7 @@ namespace RT
 		void RecalculateInvProjection();
 		void RecalculateInvView();
 
-		void ResizeCamera(int32_t width, int32_t height);
+		bool ResizeCamera(int32_t width, int32_t height);
 
 	private:
 		Spec spec;

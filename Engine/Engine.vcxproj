@@ -69,6 +69,7 @@
     <ClInclude Include="src\External\Render\OpenGl\OpenGlRenderer.h" />
     <ClInclude Include="src\Engine\Render\Scene.h" />
     <ClInclude Include="src\External\render\OpenGl\OpenGlBuffer.h" />
+    <ClInclude Include="src\External\render\Vulkan\Context.h" />
     <ClInclude Include="src\External\Render\Vulkan\VulkanDescriptors.h" />
     <ClInclude Include="src\External\render\Vulkan\VulkanPipeline.h" />
     <ClInclude Include="src\External\render\Vulkan\VulkanRenderPass.h" />

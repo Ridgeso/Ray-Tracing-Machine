@@ -1,4 +1,5 @@
 #include "VulkanDescriptors.h"
+#include "Context.h"
 
 #include <algorithm>
 
@@ -25,8 +26,6 @@ namespace
 
 namespace RT::Vulkan
 {
-
-	std::vector<VkDescriptorSet> frameBindings = std::vector<VkDescriptorSet>();
 
 	VulkanDescriptorLayout::VulkanDescriptorLayout(const DescriptorLayoutSpec& spec)
 	{
@@ -154,11 +153,11 @@ namespace RT::Vulkan
 
 	void VulkanDescriptorSet::bind(const uint32_t binding) const
 	{
-		if (frameBindings.size() <= binding)
+		if (Context::frameBindings.size() <= binding)
 		{
-			frameBindings.resize(binding + 1);
+			Context::frameBindings.resize(binding + 1);
 		}
-		frameBindings[binding] = set;
+		Context::frameBindings[binding] = set;
 	}
 
 }

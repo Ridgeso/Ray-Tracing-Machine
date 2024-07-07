@@ -137,7 +137,7 @@ namespace RT::Vulkan
         auto compiler = shaderc::Compiler{};
         auto options = shaderc::CompileOptions{};
 
-        options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
+        options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_1);
         constexpr bool optimize = false;
         if (optimize)
         {
