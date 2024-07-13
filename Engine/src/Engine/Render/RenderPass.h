@@ -8,10 +8,12 @@
 namespace RT
 {
 
+	using AttachmentFormats = std::vector<ImageFormat>;
+
 	struct RenderPassSpec
 	{
 		glm::uvec2 size = {};
-		std::vector<ImageFormat> attachmentsFormats = {};
+		AttachmentFormats attachmentsFormats = {};
 	};
 
 	struct RenderPass

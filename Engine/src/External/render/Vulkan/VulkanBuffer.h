@@ -28,6 +28,11 @@ namespace RT::Vulkan
 		VulkanVertexBuffer(const uint32_t size);
 		VulkanVertexBuffer(const uint32_t size, const void* data);
 		~VulkanVertexBuffer() final;
+		
+		VulkanVertexBuffer(const VulkanVertexBuffer&) = delete;
+		VulkanVertexBuffer(VulkanVertexBuffer&&) = delete;
+		VulkanVertexBuffer& operator=(const VulkanVertexBuffer&) = delete;
+		VulkanVertexBuffer&& operator=(VulkanVertexBuffer&&) = delete;
 
 		void registerAttributes(const VertexElements& elements) const final;
 		void setData(const uint32_t size, const void* data) const final;
@@ -67,7 +72,7 @@ namespace RT::Vulkan
 
 		VkBuffer getBuffer() const { return uniBuffer; }
 
-		friend class VulkanDescriptorSet;
+		friend class VulkanDescriptor;
 
 	private:
 		static constexpr VkBufferUsageFlagBits uniformType2VkBuffBit(const UniformType uniformType);

@@ -30,6 +30,11 @@ namespace RT::Vulkan
 
         vkDestroyRenderPass(device, renderPass, nullptr);
     }
+
+    VulkanRenderPass::VulkanRenderPass(const AttachmentFormats& compatibleFormats)
+    {
+        createRenderPass(compatibleFormats);
+    }
     
     void VulkanRenderPass::createAttachments(const std::vector<ImageFormat>& attachmentTypes)
     {

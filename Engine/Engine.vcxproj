@@ -11,7 +11,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Engine\Render\Descriptors.cpp" />
     <ClCompile Include="src\Engine\Core\Log.cpp" />
     <ClCompile Include="src\Engine\Render\Buffer.cpp" />
     <ClCompile Include="src\Engine\Render\Pipeline.cpp" />
@@ -19,7 +18,6 @@
     <ClCompile Include="src\Engine\Render\Texture.cpp" />
     <ClCompile Include="src\External\render\OpenGl\OpenGlRenderPass.cpp" />
     <ClCompile Include="src\External\render\OpenGl\OpenGlTexture.cpp" />
-    <ClCompile Include="src\Engine\Render\Shader.cpp" />
     <ClCompile Include="src\External\Render\OpenGl\OpenGlShader.cpp" />
     <ClCompile Include="src\Engine\Core\Application.cpp" />
     <ClCompile Include="src\Engine\Render\Renderer.cpp" />
@@ -37,7 +35,7 @@
     <ClCompile Include="src\External\render\Vulkan\utils\Debug.cpp" />
     <ClCompile Include="src\External\render\Vulkan\VulkanBuffer.cpp" />
     <ClCompile Include="src\External\render\Vulkan\VulkanRenderer.cpp" />
-    <ClCompile Include="src\External\render\Vulkan\VulkanShader.cpp" />
+    <ClCompile Include="src\External\render\Vulkan\Shader.cpp" />
     <ClCompile Include="src\External\render\Vulkan\VulkanTexture.cpp" />
     <ClCompile Include="src\External\window\GlfwWindow\Utils.cpp" />
     <ClCompile Include="src\External\Window\GlfwWindow\GlfwWindow.cpp" />
@@ -45,7 +43,6 @@
     <ClCompile Include="src\External\window\ImGuiImpl.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\Engine\Render\Descriptors.h" />
     <ClInclude Include="src\Engine\Core\Assert.h" />
     <ClInclude Include="src\Engine\Core\Log.h" />
     <ClInclude Include="src\Engine\Core\Utils.h" />
@@ -56,7 +53,6 @@
     <ClInclude Include="src\Engine\Render\Texture.h" />
     <ClInclude Include="src\External\render\OpenGl\OpenGlRenderPass.h" />
     <ClInclude Include="src\External\render\OpenGl\OpenGlTexture.h" />
-    <ClInclude Include="src\Engine\Render\Shader.h" />
     <ClInclude Include="src\External\Render\OpenGl\OpenGlShader.h" />
     <ClInclude Include="src\Engine\Core\Application.h" />
     <ClInclude Include="src\Engine\Core\Base.h" />
@@ -79,7 +75,7 @@
     <ClInclude Include="src\External\Render\Vulkan\utils\Utils.h" />
     <ClInclude Include="src\External\render\Vulkan\VulkanBuffer.h" />
     <ClInclude Include="src\External\render\Vulkan\VulkanRenderer.h" />
-    <ClInclude Include="src\External\render\Vulkan\VulkanShader.h" />
+    <ClInclude Include="src\External\render\Vulkan\Shader.h" />
     <ClInclude Include="src\External\render\Vulkan\VulkanTexture.h" />
     <ClInclude Include="src\External\Window\GlfwWindow\GlfwWindow.fwd.h" />
     <ClInclude Include="src\External\Window\GlfwWindow\GlfwWindow.h" />

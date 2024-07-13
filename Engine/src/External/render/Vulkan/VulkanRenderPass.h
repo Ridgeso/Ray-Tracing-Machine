@@ -18,6 +18,8 @@ namespace RT::Vulkan
 		VulkanRenderPass(const RenderPassSpec& spec);
 		~VulkanRenderPass() final;
 
+		VulkanRenderPass(const AttachmentFormats& compatibleFormats);
+		
 		const Texture& getAttachment(const uint32_t idx = 0) const final
 		{
 			return attachments[idx];

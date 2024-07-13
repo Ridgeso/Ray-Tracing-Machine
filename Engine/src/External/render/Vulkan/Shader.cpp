@@ -1,4 +1,4 @@
-#include "VulkanShader.h"
+#include "Shader.h"
 #include "Device.h"
 
 #include <fstream>
@@ -11,15 +11,12 @@
 namespace RT::Vulkan
 {
 
-	void VulkanShader::use() const
-	{
-	}
+    Shader::Shader(const Path& shaderName)
+    {
+        load(shaderName);
+    }
 
-	void VulkanShader::unuse() const
-	{
-	}
-
-	void VulkanShader::destroy()
+	Shader::~Shader()
 	{
         for (auto shaderModule : shaderModules)
         {
@@ -27,12 +24,7 @@ namespace RT::Vulkan
         }
 	}
 
-	const uint32_t VulkanShader::getId() const
-	{
-		return 0;
-	}
-
-	void VulkanShader::load(const std::string& shaderName)
+	void Shader::load(const Path& shaderName)
 	{
         //shaderPath = Path{""} / shaderDir / shaderName;
         shaderPath = shaderName;
@@ -42,7 +34,7 @@ namespace RT::Vulkan
         auto compiledSources = compileSources(shadersSources);
 
         shaderModules.reserve(compiledSources.size());
-        shaderStages.reserve(compiledSources.size());
+        stages.reserve(compiledSources.size());
         for (const auto& [type, source] : compiledSources)
         {
             auto createInfo = VkShaderModuleCreateInfo{};
@@ -56,14 +48,14 @@ namespace RT::Vulkan
                 vkCreateShaderModule(DeviceInstance.getDevice(), &createInfo, nullptr, &shaderModule) == VK_SUCCESS,
                 "failed to create shader module");
         
-            auto& shaderStage = shaderStages.emplace_back();
-            shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-            shaderStage.stage = shaderType2VkType(type);
-            shaderStage.module = shaderModule;
-            shaderStage.pName = "main";
-            shaderStage.flags = 0;
-            shaderStage.pNext = nullptr;
-            shaderStage.pSpecializationInfo = nullptr;
+            auto& stage = stages.emplace_back();
+            stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+            stage.stage = shaderType2VkType(type);
+            stage.module = shaderModule;
+            stage.pName = "main";
+            stage.flags = 0;
+            stage.pNext = nullptr;
+            stage.pSpecializationInfo = nullptr;
         }
 
         //TODO: full implementation with setUniformImpl
@@ -73,7 +65,7 @@ namespace RT::Vulkan
         //}
 	}
 
-    VulkanShader::SourceMap<std::stringstream> VulkanShader::readSources() const
+    Shader::SourceMap<std::stringstream> Shader::readSources() const
     {
         auto shaders = std::ifstream(shaderPath, std::ios::in);
         if (!shaders.is_open())
@@ -115,7 +107,7 @@ namespace RT::Vulkan
     }
 
     // TODO: when cashing shaders will be implemented
-    VulkanShader::SourceMap<std::vector<char>> VulkanShader::readBinaries() const
+    Shader::SourceMap<std::vector<char>> Shader::readBinaries() const
     {
         auto file = std::ifstream(shaderPath, std::ios::ate | std::ios::binary);
 
@@ -132,7 +124,7 @@ namespace RT::Vulkan
         return {};
     }
 
-    VulkanShader::SourceMap<std::vector<uint32_t>> VulkanShader::compileSources(const SourceMap<std::stringstream>& sources) const
+    Shader::SourceMap<std::vector<uint32_t>> Shader::compileSources(const SourceMap<std::stringstream>& sources) const
     {
         auto compiler = shaderc::Compiler{};
         auto options = shaderc::CompileOptions{};
@@ -167,7 +159,7 @@ namespace RT::Vulkan
         return sourceMap;
     }
 
-    void VulkanShader::reflect(const Type type, const std::vector<uint32_t>& shaderData) const
+    void Shader::reflect(const Type type, const std::vector<uint32_t>& shaderData) const
     {
         auto compiler = spirv_cross::Compiler(shaderData);
         auto resources = compiler.get_shader_resources();
@@ -191,7 +183,7 @@ namespace RT::Vulkan
         }
     }
 
-    constexpr VkShaderStageFlagBits VulkanShader::shaderType2VkType(const Type type)
+    constexpr VkShaderStageFlagBits Shader::shaderType2VkType(const Type type)
     {
         switch (type)
         {
@@ -205,7 +197,7 @@ namespace RT::Vulkan
         return VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
     }
 
-    constexpr shaderc_shader_kind VulkanShader::shaderType2ShaderC(const Type type)
+    constexpr shaderc_shader_kind Shader::shaderType2ShaderC(const Type type)
     {
         switch (type)
         {
@@ -219,7 +211,7 @@ namespace RT::Vulkan
         return static_cast<shaderc_shader_kind>(0xFF);
     }
 
-    constexpr const char* VulkanShader::shaderType2Suffix(const Type type)
+    constexpr const char* Shader::shaderType2Suffix(const Type type)
     {
         switch (type)
         {
@@ -233,7 +225,7 @@ namespace RT::Vulkan
         return "";
     }
 
-    constexpr const char* VulkanShader::shaderType2String(const Type type)
+    constexpr const char* Shader::shaderType2String(const Type type)
     {
         #define TypeAsString(ShaderType) case Type:: ShaderType: return #ShaderType
         switch (type)

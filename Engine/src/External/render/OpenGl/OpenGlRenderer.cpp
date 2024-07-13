@@ -28,7 +28,7 @@ namespace RT::OpenGl
     void OpenGlRenderer::render(
         const RenderPass& renderPass,
         const Camera& camera,
-        const Shader& shader,
+        //const Shader& shader,
         const VertexBuffer& vbuffer,
         const Scene& scene)
     {

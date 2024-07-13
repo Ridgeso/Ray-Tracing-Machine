@@ -32,7 +32,6 @@ namespace RT
 		viewportSize(),
 		mainWindow(createWindow()),
 		renderer(createRenderer()),
-		rtShader(createShader()),
 		//screenBuff(),
 		//renderPass(),
 		lastWinSize(0),
@@ -80,12 +79,14 @@ namespace RT
 		//screenBuff = VertexBuffer::create(sizeof(screenVertices), screenVertices);
 		//screenBuff->registerAttributes({ VertexElement::Float2, VertexElement::Float2 });
 
+		//auto renderPassSpec = RenderPassSpec{};
+		//renderPassSpec.size = lastWinSize;
+		//renderPassSpec.attachmentsFormats = AttachmentFormats{ ImageFormat::RGBA32F, ImageFormat::RGBA32F, ImageFormat::Depth };
+		//renderPass = RenderPass::create(renderPassSpec);
 		accumulationTexture = Texture::create(lastWinSize, ImageFormat::RGBA32F);
 		accumulationTexture->transition(ImageAccess::Write, ImageLayout::General);
 
 		outTexture = Texture::create(lastWinSize, ImageFormat::RGBA8);
-
-		rtShader->load("..\\Engine\\assets\\shaders\\RayTracing.shader");
 
 		infoUniform.resolution = lastWinSize;
 		infoUniform.spheresCount = scene.spheres.size();
@@ -110,43 +111,21 @@ namespace RT
 		spheresStorage->setData(scene.spheres.data(), sizeof(Sphere) * scene.spheres.size());
 		spheresStorage->bind(5);
 
-		auto commonDescriptorLayoutSpec = DescriptorLayoutSpec();
-		commonDescriptorLayoutSpec.emplace_back(1, DescriptorType::Image);
-		commonDescriptorLayoutSpec.emplace_back(1, DescriptorType::Image);
-		commonDescriptorLayoutSpec.emplace_back(1, DescriptorType::Uniform);
-		commonDescriptorLayoutSpec.emplace_back(1, DescriptorType::Uniform);
-		commonDescriptorLayout = DescriptorLayout::create(commonDescriptorLayoutSpec);
+		auto pipelineSpec = PipelineSpec{};
+		pipelineSpec.shaderPath = std::filesystem::path("..") / "Engine" / "assets" / "shaders" / "RayTracing.shader";
+		pipelineSpec.uniformLayouts = UniformLayouts{
+			{ .nrOfSets = 1, .layout = { UniformType::Image, UniformType::Image, UniformType::Uniform, UniformType::Uniform } },
+			{ .nrOfSets = 1, .layout = { UniformType::Storage, UniformType::Storage } }
+		};
+		pipelineSpec.attachmentFormats = {};
+		pipeline = Pipeline::create(pipelineSpec);
 
-		auto commonDescriptorPoolSpec = DescriptorPoolSpec();
-		commonDescriptorPoolSpec.emplace_back(1, DescriptorType::Image);
-		commonDescriptorPoolSpec.emplace_back(1, DescriptorType::Image);
-		commonDescriptorPoolSpec.emplace_back(1, DescriptorType::Uniform);
-		commonDescriptorPoolSpec.emplace_back(1, DescriptorType::Uniform);
-		commonDescriptorPool = DescriptorPool::create(commonDescriptorPoolSpec);
-
-		auto sceneDescriptorLayoutSpec = DescriptorLayoutSpec();
-		sceneDescriptorLayoutSpec.emplace_back(1, DescriptorType::Storage);
-		sceneDescriptorLayoutSpec.emplace_back(1, DescriptorType::Storage);
-		sceneDescriptorLayout = DescriptorLayout::create(sceneDescriptorLayoutSpec);
-
-		auto sceneDescriptorPoolSpec = DescriptorPoolSpec();
-		sceneDescriptorPoolSpec.emplace_back(1, DescriptorType::Storage);
-		sceneDescriptorPoolSpec.emplace_back(1, DescriptorType::Storage);
-		sceneDescriptorPool = DescriptorPool::create(sceneDescriptorPoolSpec);
-
-		commonDescriptorSet = DescriptorSet::create(*commonDescriptorLayout, *commonDescriptorPool);
-		sceneDescriptorSet = DescriptorSet::create(*sceneDescriptorLayout, *sceneDescriptorPool);
-
-		commonDescriptorSet->write(0, *accumulationSamplerUniform);
-		commonDescriptorSet->write(1, *outSamplerUniform);
-		commonDescriptorSet->write(2, *ammountsUniform);
-		commonDescriptorSet->write(3, *cameraUniform);
-		sceneDescriptorSet->write(0, *materialsStorage);
-		sceneDescriptorSet->write(1, *spheresStorage);
-
-		pipeline = Pipeline::create();
-		auto pipelineSets = PipelineLayouts{ commonDescriptorLayout.get(), sceneDescriptorLayout.get() };
-		pipeline->initComp(*rtShader, pipelineSets);
+		pipeline->updateSet(0, 0, 0, *accumulationSamplerUniform);
+		pipeline->updateSet(0, 0, 1, *outSamplerUniform);
+		pipeline->updateSet(0, 0, 2, *ammountsUniform);
+		pipeline->updateSet(0, 0, 3, *cameraUniform);
+		pipeline->updateSet(1, 0, 0, *materialsStorage);
+		pipeline->updateSet(1, 0, 1, *spheresStorage);
 
 		lastMousePos = windowSize / 2;
 	}
@@ -160,20 +139,11 @@ namespace RT
 		materialsStorage.reset();
 		spheresStorage.reset();
 
-		commonDescriptorSet.reset();
-		sceneDescriptorSet.reset();
-
-		commonDescriptorLayout.reset();
-		commonDescriptorPool.reset();
-		sceneDescriptorLayout.reset();
-		sceneDescriptorPool.reset();
-
 		accumulationTexture.reset();
 		outTexture.reset();
-		rtShader->destroy();
 		//screenBuff.reset();
 		//renderPass.reset();
-		pipeline->shutdown();
+		pipeline.reset();
 		renderer->shutDown();
 		mainWindow->shutDown();
 	}
@@ -214,7 +184,6 @@ namespace RT
 			infoUniform.frameIndex = 1;
 		}
 
-		rtShader->use();
 		if (ImGui::DragInt("Bounces Limit", (int32_t*)&infoUniform.maxBounces, 1, 1, 15))
 		{
 			ammountsUniform->setData(&infoUniform.maxBounces, sizeof(uint32_t), offsetof(InfoUniform, maxBounces));
@@ -316,7 +285,6 @@ namespace RT
 				spheresStorage->bind(4);
 			}
 		}
-		rtShader->unuse();
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 		ImGui::Begin("Viewport");
@@ -358,8 +326,8 @@ namespace RT
 		auto timeit = Timer{};
 		renderer->beginFrame();
 
-		commonDescriptorSet->bind(0);
-		sceneDescriptorSet->bind(1);
+		pipeline->bindSet(0, 0);
+		pipeline->bindSet(1, 0);
 
 		outTexture->barrier(ImageAccess::Write, ImageLayout::General);
 

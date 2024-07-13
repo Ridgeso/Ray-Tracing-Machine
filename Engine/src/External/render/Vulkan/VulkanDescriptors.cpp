@@ -6,18 +6,19 @@
 #include "Engine/Core/Assert.h"
 
 #include "Swapchain.h"
+#include "VulkanBuffer.h"
 
 namespace
 {
 
-	constexpr VkDescriptorType descType2VkType(const RT::DescriptorType descriptorType)
+	constexpr VkDescriptorType descriptorType2VkType(const RT::UniformType uniformType)
 	{
-		switch (descriptorType)
+		switch (uniformType)
 		{
-			case RT::DescriptorType::Uniform: return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			case RT::DescriptorType::Storage: return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			case RT::DescriptorType::Sampler: return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-			case RT::DescriptorType::Image:   return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			case RT::UniformType::Uniform: return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			case RT::UniformType::Storage: return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			case RT::UniformType::Sampler: return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+			case RT::UniformType::Image:   return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 		}
 		return VkDescriptorType{};
 	}
@@ -27,54 +28,89 @@ namespace
 namespace RT::Vulkan
 {
 
-	VulkanDescriptorLayout::VulkanDescriptorLayout(const DescriptorLayoutSpec& spec)
+	VulkanDescriptor::VulkanDescriptor(const UniformLayouts& uniformLayouts)
 	{
-		auto bindings = std::vector<VkDescriptorSetLayoutBinding>(spec.size());
+		createLayout(uniformLayouts);
+		createPool(uniformLayouts);
+		allocateSets(uniformLayouts);
+	}
 
-		for (uint32_t i = 0; i < spec.size(); i++)
+	VulkanDescriptor::~VulkanDescriptor()
+	{
+		for (const auto& sets : layoutSets)
 		{
-			const auto [count, setType] = spec[i];
-			bindings[i].binding = i;
-			bindings[i].descriptorType = descType2VkType(setType);
-			bindings[i].descriptorCount = count;
-			bindings[i].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_ALL_GRAPHICS;
+			vkFreeDescriptorSets(
+				DeviceInstance.getDevice(),
+				descriptorPool,
+				sets.size(),
+				sets.data());
 		}
 
-		auto descriptorSetLayoutInfo = VkDescriptorSetLayoutCreateInfo{};
-		descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		descriptorSetLayoutInfo.bindingCount = bindings.size();
-		descriptorSetLayoutInfo.pBindings = bindings.data();
+		vkDestroyDescriptorPool(DeviceInstance.getDevice(), descriptorPool, nullptr);
 
-		RT_CORE_ASSERT(
-			vkCreateDescriptorSetLayout(
-				DeviceInstance.getDevice(),
-				&descriptorSetLayoutInfo,
-				nullptr,
-				&descriptorLayout) == VK_SUCCESS,
-			"failed to create descriptor set layout!");
-	}
-
-	VulkanDescriptorLayout::~VulkanDescriptorLayout()
-	{
-		vkDestroyDescriptorSetLayout(DeviceInstance.getDevice(), descriptorLayout, nullptr);
-	}
-
-	VulkanDescriptorPool::VulkanDescriptorPool(const DescriptorPoolSpec& spec)
-	{
-		auto vkSpec = VulkanDescriptorPoolSpec(spec.size());
-		for (uint32_t i = 0; i < spec.size(); i++)
+		for (auto descriptorLayout : descriptorLayouts)
 		{
-			const auto [count, setType] = spec[i];
-			vkSpec[i].type = descType2VkType(setType);
-			vkSpec[i].descriptorCount = count;
+			vkDestroyDescriptorSetLayout(DeviceInstance.getDevice(), descriptorLayout, nullptr);
+		}
+	}
+
+	void VulkanDescriptor::createLayout(const UniformLayouts& uniformLayouts)
+	{
+		for (const auto& uniformLayout : uniformLayouts)
+		{
+			auto bindings = std::vector<VkDescriptorSetLayoutBinding>(uniformLayout.layout.size());
+
+			for (uint32_t i = 0; i < uniformLayout.layout.size(); i++)
+			{
+				bindings[i].binding = i;
+				bindings[i].descriptorType = descriptorType2VkType(uniformLayout.layout[i]);
+				bindings[i].descriptorCount = uniformLayout.nrOfSets;
+				bindings[i].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_ALL_GRAPHICS;
+			}
+
+			auto descriptorSetLayoutInfo = VkDescriptorSetLayoutCreateInfo{};
+			descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+			descriptorSetLayoutInfo.bindingCount = bindings.size();
+			descriptorSetLayoutInfo.pBindings = bindings.data();
+
+			auto& descriptorLayout = descriptorLayouts.emplace_back();
+
+			RT_CORE_ASSERT(
+				vkCreateDescriptorSetLayout(
+					DeviceInstance.getDevice(),
+					&descriptorSetLayoutInfo,
+					nullptr,
+					&descriptorLayout) == VK_SUCCESS,
+				"failed to create descriptor set layout!");
+		}
+	}
+
+	void VulkanDescriptor::createPool(const UniformLayouts& uniformLayouts)
+	{
+		auto descriptors = std::unordered_map<UniformType, uint32_t>{};
+		for (const auto& uniformLayout : uniformLayouts)
+		{
+			for (int32_t i = 0; i < uniformLayout.layout.size(); i++)
+			{
+				descriptors[uniformLayout.layout[i]] += uniformLayout.nrOfSets;
+			}
+		}
+
+		auto pools = std::vector<VkDescriptorPoolSize>(descriptors.size());
+		int32_t poolIdx = 0;
+		for (auto [type, count] : descriptors)
+		{
+			pools[poolIdx].type = descriptorType2VkType(type);
+			pools[poolIdx].descriptorCount = count;
+			poolIdx++;
 		}
 
 		auto descriptorPoolInfo = VkDescriptorPoolCreateInfo{};
 		descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		descriptorPoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 		descriptorPoolInfo.maxSets = Swapchain::MAX_FRAMES_IN_FLIGHT;
-		descriptorPoolInfo.poolSizeCount = vkSpec.size();
-		descriptorPoolInfo.pPoolSizes = vkSpec.data();
+		descriptorPoolInfo.poolSizeCount = pools.size();
+		descriptorPoolInfo.pPoolSizes = pools.data();
 
 		RT_CORE_ASSERT(
 			vkCreateDescriptorPool(
@@ -85,47 +121,47 @@ namespace RT::Vulkan
 			"failed to create descriptor pool!");
 	}
 
-	VulkanDescriptorPool::~VulkanDescriptorPool()
+	void VulkanDescriptor::allocateSets(const UniformLayouts& uniformLayouts)
 	{
-		vkDestroyDescriptorPool(DeviceInstance.getDevice(), descriptorPool, nullptr);
+		layoutSets.resize(uniformLayouts.size());
+		for (int32_t layoutIdx = 0; layoutIdx < uniformLayouts.size(); layoutIdx++)
+		{
+			auto& sets = layoutSets[layoutIdx];
+
+			auto setsLayouts = std::vector<VkDescriptorSetLayout>(uniformLayouts[layoutIdx].nrOfSets);
+			for (int32_t i = 0; i < uniformLayouts[layoutIdx].nrOfSets; i++)
+			{
+				setsLayouts[i] = descriptorLayouts[layoutIdx];
+			}
+
+			auto allocInfo = VkDescriptorSetAllocateInfo{};
+			allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+			allocInfo.descriptorPool = descriptorPool;
+			allocInfo.descriptorSetCount = setsLayouts.size();
+			allocInfo.pSetLayouts = setsLayouts.data();
+
+			sets.resize(setsLayouts.size());
+
+			RT_CORE_ASSERT(
+				vkAllocateDescriptorSets(
+					DeviceInstance.getDevice(),
+					&allocInfo,
+					sets.data()) == VK_SUCCESS,
+				"failed to create descriptor set!");
+		}
 	}
 
-	VulkanDescriptorSet::VulkanDescriptorSet(const DescriptorLayout& rtLayout, const DescriptorPool& rtPool)
-		: layout{static_cast<const VulkanDescriptorLayout&>(rtLayout)}
-		, pool{static_cast<const VulkanDescriptorPool&>(rtPool)}
-	{
-		auto pSetLayout = std::array {layout.getLayout()};
-
-		auto allocInfo = VkDescriptorSetAllocateInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocInfo.descriptorPool = pool.getPool();
-		allocInfo.descriptorSetCount = pSetLayout.size();
-		allocInfo.pSetLayouts = pSetLayout.data();
-
-		RT_CORE_ASSERT(
-			vkAllocateDescriptorSets(
-				DeviceInstance.getDevice(),
-				&allocInfo,
-				&set) == VK_SUCCESS,
-			"failed to create descriptor set!");
-	}
-
-	VulkanDescriptorSet::~VulkanDescriptorSet()
-	{
-		vkFreeDescriptorSets(
-			DeviceInstance.getDevice(),
-			pool.getPool(),
-			1,
-			&set);
-	}
-
-	void VulkanDescriptorSet::write(const uint32_t binding, const Uniform& uniform) const
+	void VulkanDescriptor::write(
+		const uint32_t layout,
+		const uint32_t set,
+		const uint32_t binding,
+		const Uniform& uniform) const
 	{
 		const auto& vkUniform = static_cast<const VulkanUniform&>(uniform);
 
 		auto write = VkWriteDescriptorSet{};
 		write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		write.dstSet = set;
+		write.dstSet = layoutSets[layout][set];
 		write.dstBinding = binding;
 		switch (vkUniform.uniformType)
 		{
@@ -149,15 +185,6 @@ namespace RT::Vulkan
 		write.descriptorCount = 1;
 
 		vkUpdateDescriptorSets(DeviceInstance.getDevice(), 1, &write, 0, nullptr);
-	}
-
-	void VulkanDescriptorSet::bind(const uint32_t binding) const
-	{
-		if (Context::frameBindings.size() <= binding)
-		{
-			Context::frameBindings.resize(binding + 1);
-		}
-		Context::frameBindings[binding] = set;
 	}
 
 }

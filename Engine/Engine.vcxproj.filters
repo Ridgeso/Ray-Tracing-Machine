@@ -42,9 +42,6 @@
     <ClCompile Include="src\External\Render\OpenGl\OpenGlShader.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
-    <ClCompile Include="src\Engine\Render\Shader.cpp">
-      <Filter>Pliki źródłowe</Filter>
-    </ClCompile>
     <ClCompile Include="src\External\render\OpenGl\OpenGlTexture.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
@@ -66,7 +63,7 @@
     <ClCompile Include="src\External\render\Vulkan\VulkanRenderer.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
-    <ClCompile Include="src\External\render\Vulkan\VulkanShader.cpp">
+    <ClCompile Include="src\External\render\Vulkan\Shader.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
     <ClCompile Include="src\External\render\Vulkan\VulkanTexture.cpp">
@@ -103,9 +100,6 @@
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
     <ClCompile Include="src\External\Render\Vulkan\VulkanDescriptors.cpp">
-      <Filter>Pliki źródłowe</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Engine\Render\Descriptors.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
     <ClCompile Include="src\Engine\Render\Pipeline.cpp">
@@ -152,9 +146,6 @@
     <ClInclude Include="src\External\Render\OpenGl\OpenGlShader.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
-    <ClInclude Include="src\Engine\Render\Shader.h">
-      <Filter>Pliki nagłówkowe</Filter>
-    </ClInclude>
     <ClInclude Include="src\External\render\OpenGl\OpenGlTexture.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
@@ -179,7 +170,7 @@
     <ClInclude Include="src\Engine\Render\RenderBase.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
-    <ClInclude Include="src\External\render\Vulkan\VulkanShader.h">
+    <ClInclude Include="src\External\render\Vulkan\Shader.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="src\External\render\Vulkan\VulkanTexture.h">
@@ -222,9 +213,6 @@
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="src\External\Render\Vulkan\VulkanDescriptors.h">
-      <Filter>Pliki nagłówkowe</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Engine\Render\Descriptors.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="src\Engine\Render\Pipeline.h">

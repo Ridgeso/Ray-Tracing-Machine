@@ -7,14 +7,16 @@
 namespace RT
 {
 
-	Local<Pipeline> Pipeline::create()
+	Local<Pipeline> Pipeline::create(const PipelineSpec& spec)
 	{
 		switch (GlobalRenderAPI)
 		{
 			// case RT::RenderAPI::OpenGL: return nullptr;
-			case RT::RenderAPI::Vulkan: return makeLocal<Vulkan::VulkanPipeline>();
+			case RT::RenderAPI::Vulkan: return makeLocal<Vulkan::VulkanPipeline>(spec);
 		}
 		return nullptr;
 	}
+
+	Pipeline::~Pipeline() {}
 
 }

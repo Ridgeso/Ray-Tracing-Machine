@@ -6,10 +6,8 @@
 
 #include "Engine/Window/Window.h"
 #include "Engine/Render/Renderer.h"
-#include "Engine/Render/Shader.h"
 #include "Engine/Render/Buffer.h"
 #include "Engine/Render/RenderPass.h"
-#include "Engine/Render/Descriptors.h"
 #include "Engine/Render/Pipeline.h"
 
 namespace RT
@@ -51,8 +49,6 @@ namespace RT
 		Local<Window> mainWindow;
 		Local<Renderer> renderer;
 		
-		Local<Shader> rtShader;
-
 		// TODO: return renderPass and graphics pipeline for post processing
 		//Local<VertexBuffer> screenBuff;
 		//Share<RenderPass> renderPass;
@@ -66,13 +62,6 @@ namespace RT
 		Local<Uniform> outSamplerUniform;
 		Local<Uniform> materialsStorage;
 		Local<Uniform> spheresStorage;
-		
-		Local<DescriptorLayout> commonDescriptorLayout;
-		Local<DescriptorPool> commonDescriptorPool;
-		Local<DescriptorSet> commonDescriptorSet;
-		Local<DescriptorLayout> sceneDescriptorLayout;
-		Local<DescriptorPool> sceneDescriptorPool;
-		Local<DescriptorSet> sceneDescriptorSet;
 
 		Local<Pipeline> pipeline;
 

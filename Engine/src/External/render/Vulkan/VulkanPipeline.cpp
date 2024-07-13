@@ -10,57 +10,10 @@
 namespace RT::Vulkan
 {
 
-    void VulkanPipeline::init(const Shader& shader, const RenderPass& renderPass, const PipelineLayouts& pipelineLayouts)
+    VulkanPipeline::ConfigInfo VulkanPipeline::ConfigInfo::defaultConfig()
     {
-        const auto& vkShader = static_cast<const VulkanShader&>(shader);
-        const auto& vkRednerPass = static_cast<const VulkanRenderPass&>(renderPass);
+        auto configInfo = VulkanPipeline::ConfigInfo{};
 
-        createPipelineLayout(pipelineLayouts);
-
-        auto pipelineConfigInfo = PipelineConfigInfo{};
-        defaultPipelineConfigInfo(pipelineConfigInfo);
-        pipelineConfigInfo.renderPass = vkRednerPass.getRenderPass();
-        pipelineConfigInfo.pipelineLayout = pipelineLayout;
-
-        createGraphicsPipeline(vkShader, pipelineConfigInfo);
-    }
-
-    void VulkanPipeline::initComp(const Shader& shader, const PipelineLayouts& pipelineLayouts)
-    {
-        const auto& vkShader = static_cast<const VulkanShader&>(shader);
-
-        createPipelineLayout(pipelineLayouts);
-
-        auto pipelineConfigInfo = PipelineConfigInfo{};
-        pipelineConfigInfo.pipelineLayout = pipelineLayout;
-
-        createComputePipeline(vkShader, pipelineConfigInfo);
-    }
-
-    void VulkanPipeline::shutdown()
-    {
-        auto device = DeviceInstance.getDevice();
-        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-        vkDestroyPipeline(device, pipeline, nullptr);
-    }
-
-    void VulkanPipeline::bind() const
-    {
-        bindDescriptors<VK_PIPELINE_BIND_POINT_GRAPHICS>();
-
-        vkCmdBindPipeline(Context::frameCmds, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-    }
-
-    void VulkanPipeline::dispatch(const glm::uvec2 groups) const
-    {
-        bindDescriptors<VK_PIPELINE_BIND_POINT_COMPUTE>();
-
-        vkCmdBindPipeline(Context::frameCmds, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
-        vkCmdDispatch(Context::frameCmds, groups.x / 8, groups.y / 8, 1);
-    }
-
-    void VulkanPipeline::defaultPipelineConfigInfo(PipelineConfigInfo& configInfo)
-    {
         configInfo.inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
         configInfo.inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
         configInfo.inputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
@@ -144,6 +97,63 @@ namespace RT::Vulkan
         configInfo.dynamicStateInfo.dynamicStateCount = configInfo.dynamicStatesEnables.size();
         configInfo.dynamicStateInfo.pDynamicStates = configInfo.dynamicStatesEnables.data();
         configInfo.dynamicStateInfo.flags = 0;
+
+        return configInfo;
+    }
+
+    VulkanPipeline::VulkanPipeline(const PipelineSpec& spec)
+        : descriptor{spec.uniformLayouts}
+    {
+        createPipelineLayout();
+
+        auto pipelineConfigInfo = ConfigInfo::defaultConfig();
+        pipelineConfigInfo.pipelineLayout = pipelineLayout;
+        
+        auto shader = Shader(spec.shaderPath);
+        if (shader.isCompute())
+        {
+            createComputePipeline(pipelineConfigInfo, shader);
+        }
+        else
+        {
+            createGraphicsPipeline(pipelineConfigInfo, shader, spec.attachmentFormats);
+        }
+    }
+
+    VulkanPipeline::~VulkanPipeline()
+    {
+        auto device = DeviceInstance.getDevice();
+        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+        vkDestroyPipeline(device, pipeline, nullptr);
+    }
+
+    void VulkanPipeline::updateSet(const uint32_t layout, const uint32_t set, const uint32_t binding, const Uniform& uniform) const
+    {
+        descriptor.write(layout, set, binding, uniform);
+    }
+
+    void VulkanPipeline::bindSet(const uint32_t layout, const uint32_t set) const
+    {
+        if (bindingSets.size() <= layout)
+        {
+            bindingSets.resize(layout + 1);
+        }
+        bindingSets[layout] = descriptor.sets()[layout][set];
+    }
+
+    void VulkanPipeline::bind() const
+    {
+        bindDescriptors<VK_PIPELINE_BIND_POINT_GRAPHICS>();
+
+        vkCmdBindPipeline(Context::frameCmds, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    }
+
+    void VulkanPipeline::dispatch(const glm::uvec2 groups) const
+    {
+        bindDescriptors<VK_PIPELINE_BIND_POINT_COMPUTE>();
+
+        vkCmdBindPipeline(Context::frameCmds, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
+        vkCmdDispatch(Context::frameCmds, groups.x / 8, groups.y / 8, 1);
     }
 
     template <VkPipelineBindPoint PipelinePoint>
@@ -154,24 +164,19 @@ namespace RT::Vulkan
             PipelinePoint,
             pipelineLayout,
             0,
-            Context::frameBindings.size(),
-            Context::frameBindings.data(),
+            bindingSets.size(),
+            bindingSets.data(),
             0,
             nullptr);
+        bindingSets.clear();
     }
-
-    void VulkanPipeline::createPipelineLayout(const PipelineLayouts& pipelineLayouts)
+    
+    void VulkanPipeline::createPipelineLayout()
     {
-        auto pSetLayouts = std::vector<VkDescriptorSetLayout>(pipelineLayouts.size());
-        for (int32_t i = 0; i < pipelineLayouts.size(); i++)
-        {
-            pSetLayouts[i] = static_cast<const VulkanDescriptorLayout*>(pipelineLayouts[i])->getLayout();
-        }
-
         auto pipelineLayoutInfo = VkPipelineLayoutCreateInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = pSetLayouts.size();
-        pipelineLayoutInfo.pSetLayouts = pSetLayouts.data();
+        pipelineLayoutInfo.setLayoutCount = descriptor.layouts().size();
+        pipelineLayoutInfo.pSetLayouts = descriptor.layouts().data();
         pipelineLayoutInfo.pushConstantRangeCount = 0;
         pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
@@ -180,14 +185,40 @@ namespace RT::Vulkan
             "Could not create pipeline Layout");
     }
 
-    void VulkanPipeline::createGraphicsPipeline(const VulkanShader& shader, const PipelineConfigInfo& configInfo)
+    void VulkanPipeline::createComputePipeline(ConfigInfo& configInfo, const Shader& shader)
     {
         RT_CORE_ASSERT(
             configInfo.pipelineLayout != VK_NULL_HANDLE,
-            "Cannot create graphics pipeline: no pipelineLayout provided in configInfo");
-        RT_CORE_ASSERT(
-            configInfo.renderPass != VK_NULL_HANDLE,
-            "Cannot create graphics pipeline: no renderPass provided in configInfo")
+            "Cannot create compute pipeline: no pipelineLayout provided in configInfo");
+
+        auto shaderStages = shader.getStages();
+
+        auto pipelineInfo = VkComputePipelineCreateInfo{};
+        pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+        pipelineInfo.stage = shaderStages[0];
+
+        pipelineInfo.layout = configInfo.pipelineLayout;
+
+        pipelineInfo.basePipelineIndex = -1;
+        pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+
+        RT_CORE_ASSERT(vkCreateComputePipelines(
+            DeviceInstance.getDevice(),
+            VK_NULL_HANDLE,
+            1,
+            &pipelineInfo,
+            nullptr,
+            &pipeline) == VK_SUCCESS,
+            "failed to create graphics pipeline");
+    }
+
+    void VulkanPipeline::createGraphicsPipeline(
+        ConfigInfo& configInfo,
+        const Shader& shader,
+        const AttachmentFormats& formats)
+    {
+        auto renderPass = VulkanRenderPass(formats);
+        configInfo.renderPass = renderPass.getRenderPass();
 
         auto shaderStages = shader.getStages();
 
@@ -222,33 +253,6 @@ namespace RT::Vulkan
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
         RT_CORE_ASSERT(vkCreateGraphicsPipelines(
-            DeviceInstance.getDevice(),
-            VK_NULL_HANDLE,
-            1,
-            &pipelineInfo,
-            nullptr,
-            &pipeline) == VK_SUCCESS,
-            "failed to create graphics pipeline");
-    }
-
-    void VulkanPipeline::createComputePipeline(const VulkanShader& shader, const PipelineConfigInfo& configInfo)
-    {
-        RT_CORE_ASSERT(
-            configInfo.pipelineLayout != VK_NULL_HANDLE,
-            "Cannot create compute pipeline: no pipelineLayout provided in configInfo");
-    
-        auto shaderStages = shader.getStages();
-
-        auto pipelineInfo = VkComputePipelineCreateInfo{};
-        pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-        pipelineInfo.stage = shaderStages[0];
-
-        pipelineInfo.layout = configInfo.pipelineLayout;
-
-        pipelineInfo.basePipelineIndex = -1;
-        pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-
-        RT_CORE_ASSERT(vkCreateComputePipelines(
             DeviceInstance.getDevice(),
             VK_NULL_HANDLE,
             1,

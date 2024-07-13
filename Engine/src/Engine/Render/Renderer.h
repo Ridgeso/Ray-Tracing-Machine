@@ -6,7 +6,6 @@
 #include "Engine/Render/RenderPass.h"
 #include "Engine/Render/Camera.h"
 #include "Engine/Render/Scene.h"
-#include "Engine/Render/Shader.h"
 #include "Engine/Render/Buffer.h"
 #include "Engine/Render/Pipeline.h"
 

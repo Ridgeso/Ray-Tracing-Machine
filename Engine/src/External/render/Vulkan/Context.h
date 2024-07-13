@@ -14,7 +14,6 @@ namespace RT::Vulkan
 	public:
 		static inline uint32_t imgIdx = 0u;
 		static inline VkCommandBuffer frameCmds = {};
-		static inline std::vector<VkDescriptorSet> frameBindings = {};
 	};
 
 }

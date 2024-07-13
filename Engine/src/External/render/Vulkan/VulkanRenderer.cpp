@@ -121,7 +121,6 @@ namespace RT::Vulkan
 
 		Context::imgIdx = invalidImgIdx;
 		Context::frameCmds = VK_NULL_HANDLE;
-		Context::frameBindings.clear();
 	}
 
 	void VulkanRenderer::recordCommandbuffer(const uint32_t imIdx)

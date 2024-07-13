@@ -7,15 +7,13 @@
 #include <shaderc/shaderc.hpp>
 #include <vulkan/vulkan.h>
 
-#include "Engine/Render/Shader.h"
-
 namespace RT::Vulkan
 {
 
-	class VulkanShader : public Shader
+	class Shader
 	{
 	public:
-		using ShaderStages = std::vector<VkPipelineShaderStageCreateInfo>;
+		using Stages = std::vector<VkPipelineShaderStageCreateInfo>;
 
 		enum class Type : uint8_t
 		{
@@ -34,14 +32,13 @@ namespace RT::Vulkan
 		using Path = std::filesystem::path;
 
 	public:
-		void use() const final;
-		void unuse() const final;
-		void destroy() final;
-		const uint32_t getId() const final;
+        Shader(const Path& shaderName);
+        ~Shader();
 
-		void load(const std::string& shaderName) final;
+		void load(const Path& shaderName);
+		bool isCompute() const { return VK_SHADER_STAGE_COMPUTE_BIT == stages[0].stage; }
 
-		const ShaderStages& getStages() const { return shaderStages; }
+		const Stages& getStages() const { return stages; }
 
 	private:
 		SourceMap<std::stringstream> readSources() const;
@@ -58,7 +55,7 @@ namespace RT::Vulkan
 		Path shaderPath = "";
 
 		std::vector<VkShaderModule> shaderModules = {};
-		ShaderStages shaderStages = {};
+		Stages stages = {};
 
 		static constexpr std::string_view shaderDir = "..\\Engine\\assets\\shaders\\";
 	};
