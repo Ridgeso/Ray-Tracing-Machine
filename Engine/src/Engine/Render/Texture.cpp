@@ -1,4 +1,4 @@
-#include "RenderBase.h"
+#include "RenderApi.h"
 #include "Texture.h"
 
 #include "External/Render/OpenGl/OpenGlTexture.h"
@@ -9,10 +9,10 @@ namespace RT
 	
 	Local<Texture> Texture::create(const glm::uvec2 size, const ImageFormat imageFormat)
 	{
-		switch (GlobalRenderAPI)
+		switch (RenderApi::api)
 		{
-			// case RenderAPI::OpenGL: return makeLocal<OpenGl::OpenGlTexture>(size, imageFormat);
-			case RenderAPI::Vulkan: return makeLocal<Vulkan::VulkanTexture>(size, imageFormat);
+			// case RenderApi::Api::OpenGL: return makeLocal<OpenGl::OpenGlTexture>(size, imageFormat);
+			case RenderApi::Api::Vulkan: return makeLocal<Vulkan::VulkanTexture>(size, imageFormat);
 		}
 		return nullptr;
 	}

@@ -5,7 +5,7 @@
 #include <imgui.h>
 #include <glad/glad.h>
 
-#include "Engine/Render/RenderBase.h"
+#include "Engine/Render/RenderApi.h"
 
 #include "External/window/ImGuiImpl.h"
 
@@ -19,7 +19,7 @@ namespace RT
         {
             return;
         }
-        if (GlobalRenderAPI == RenderAPI::Vulkan)
+        if (RenderApi::api == RenderApi::Api::Vulkan)
         {
             glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
             glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
@@ -50,6 +50,11 @@ namespace RT
 
         glfwDestroyWindow(window);
         glfwTerminate();
+    }
+
+    void GlfwWindow::setTitleBar(const std::string& title)
+    {
+        glfwSetWindowTitle(window, title.c_str());
     }
 
     bool GlfwWindow::update()

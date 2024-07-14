@@ -6,6 +6,9 @@
 #include <glm/glm.hpp>
 
 #include "Engine/Render/Renderer.h"
+#include "Engine/Render/Camera.h"
+#include "Engine/Render/Scene.h"
+
 #include "OpenGlRenderPass.h"
 #include "OpenGlShader.h"
 #include "OpenGlTexture.h"
@@ -20,7 +23,7 @@ namespace RT::OpenGl
 		OpenGlRenderer() = default;
 		~OpenGlRenderer() = default;
 
-		void init(const RenderSpecs& specs); // final;
+		void init(); // final;
 		void shutDown(); // final;
 
 		void render(
@@ -30,13 +33,8 @@ namespace RT::OpenGl
 			const VertexBuffer& vbuffer,
 			const Scene& scene); // final;
 
-		const RenderSpecs& getSpecs() const { return specs; }
-
 	private:
 		static void loadOpenGlForGlfw();
-
-	private:
-		RenderSpecs specs;
 	};
 
 }

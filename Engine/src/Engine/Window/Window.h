@@ -14,16 +14,15 @@ namespace RT
 		bool isMinimized;
 	};
 
-	struct Window
+	class Window
 	{
+		friend class Application;
+
+	public:
 		virtual void init(const WindowSpecs& specs) = 0;
 		virtual void shutDown() = 0;
-
-		virtual bool update() = 0;
-		virtual bool pullEvents() = 0;
-
-		virtual void beginUI() = 0;
-		virtual void endUI() = 0;
+		
+		virtual void setTitleBar(const std::string& title) = 0;
 
 		virtual glm::vec2 getMousePos() const = 0;
 		virtual bool isKeyPressed(int32_t key) const = 0;
@@ -33,9 +32,18 @@ namespace RT
 		virtual void cursorMode(int32_t state) const = 0;
 
 		virtual void* getNativWindow() = 0;
-		virtual const void* getNativWindow() const = 0;
-	};
 
-	Local<Window> createWindow();
+		static Local<Window>& instance() { return window; }
+		
+	private:
+		virtual bool update() = 0;
+		virtual bool pullEvents() = 0;
+
+		virtual void beginUI() = 0;
+		virtual void endUI() = 0;
+
+	private:
+		static Local<Window> window;
+	};
 
 }

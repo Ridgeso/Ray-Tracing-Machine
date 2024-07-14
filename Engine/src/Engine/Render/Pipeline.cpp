@@ -1,5 +1,4 @@
-#include "RenderBase.h"
-
+#include "RenderApi.h"
 #include "Pipeline.h"
 
 #include "External/render/Vulkan/VulkanPipeline.h"
@@ -9,10 +8,10 @@ namespace RT
 
 	Local<Pipeline> Pipeline::create(const PipelineSpec& spec)
 	{
-		switch (GlobalRenderAPI)
+		switch (RenderApi::api)
 		{
-			// case RT::RenderAPI::OpenGL: return nullptr;
-			case RT::RenderAPI::Vulkan: return makeLocal<Vulkan::VulkanPipeline>(spec);
+			// case RenderApi::Api::OpenGL: return nullptr;
+			case RenderApi::Api::Vulkan: return makeLocal<Vulkan::VulkanPipeline>(spec);
 		}
 		return nullptr;
 	}

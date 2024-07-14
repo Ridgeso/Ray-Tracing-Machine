@@ -9,4 +9,6 @@ namespace RT
 		return makeLocal<GlfwWindow>();
 	}
 
+	Local<Window> Window::window = createWindow();
+
 }

@@ -1,7 +1,5 @@
-#include "VulkanDescriptors.h"
+#include "Descriptors.h"
 #include "Context.h"
-
-#include <algorithm>
 
 #include "Engine/Core/Assert.h"
 
@@ -28,14 +26,14 @@ namespace
 namespace RT::Vulkan
 {
 
-	VulkanDescriptor::VulkanDescriptor(const UniformLayouts& uniformLayouts)
+	Descriptors::Descriptors(const UniformLayouts& uniformLayouts)
 	{
 		createLayout(uniformLayouts);
 		createPool(uniformLayouts);
 		allocateSets(uniformLayouts);
 	}
 
-	VulkanDescriptor::~VulkanDescriptor()
+	Descriptors::~Descriptors()
 	{
 		for (const auto& sets : layoutSets)
 		{
@@ -54,7 +52,7 @@ namespace RT::Vulkan
 		}
 	}
 
-	void VulkanDescriptor::createLayout(const UniformLayouts& uniformLayouts)
+	void Descriptors::createLayout(const UniformLayouts& uniformLayouts)
 	{
 		for (const auto& uniformLayout : uniformLayouts)
 		{
@@ -85,7 +83,7 @@ namespace RT::Vulkan
 		}
 	}
 
-	void VulkanDescriptor::createPool(const UniformLayouts& uniformLayouts)
+	void Descriptors::createPool(const UniformLayouts& uniformLayouts)
 	{
 		auto descriptors = std::unordered_map<UniformType, uint32_t>{};
 		for (const auto& uniformLayout : uniformLayouts)
@@ -121,7 +119,7 @@ namespace RT::Vulkan
 			"failed to create descriptor pool!");
 	}
 
-	void VulkanDescriptor::allocateSets(const UniformLayouts& uniformLayouts)
+	void Descriptors::allocateSets(const UniformLayouts& uniformLayouts)
 	{
 		layoutSets.resize(uniformLayouts.size());
 		for (int32_t layoutIdx = 0; layoutIdx < uniformLayouts.size(); layoutIdx++)
@@ -151,7 +149,7 @@ namespace RT::Vulkan
 		}
 	}
 
-	void VulkanDescriptor::write(
+	void Descriptors::write(
 		const uint32_t layout,
 		const uint32_t set,
 		const uint32_t binding,

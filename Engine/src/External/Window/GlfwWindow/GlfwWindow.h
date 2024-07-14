@@ -5,7 +5,6 @@
 #include <glm/glm.hpp>
 #include <GLFW/glfw3.h>
 
-#include "GlfwWindow.fwd.h"
 #include "Engine/Window/Window.h"
 
 namespace RT
@@ -19,6 +18,8 @@ namespace RT
 		
 		void init(const WindowSpecs& specs) final;
 		void shutDown() final;
+
+		void setTitleBar(const std::string& title) final;
 
 		bool update() final;
 		bool pullEvents() final;
@@ -34,18 +35,17 @@ namespace RT
 		void cursorMode(int32_t state) const final;
 
 		void* getNativWindow() override { return window; }
-		const void* getNativWindow() const override { return window; }
 
 	private:
 		void initImGui();
 
 	private:
-		std::string title;
-		int32_t width, height;
+		std::string title = "";
+		int32_t width = 0, height = 0;
 
-		bool isMinimized;
+		bool isMinimized = false;
 
-		GLFWwindow* window;
+		GLFWwindow* window = nullptr;
 	};
 
 }

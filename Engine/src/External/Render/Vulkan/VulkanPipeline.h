@@ -8,7 +8,7 @@
 #include "Device.h"
 #include "Shader.h"
 
-#include "VulkanDescriptors.h"
+#include "Descriptors.h"
 
 namespace RT::Vulkan
 {
@@ -65,7 +65,7 @@ namespace RT::Vulkan
         VkPipeline pipeline = {};
         VkPipelineLayout pipelineLayout = {};
 
-        VulkanDescriptor descriptor;
+        Descriptors descriptors;
         mutable std::vector<VkDescriptorSet> bindingSets = {};
     };
 

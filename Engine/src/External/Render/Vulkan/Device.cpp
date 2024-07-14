@@ -5,17 +5,19 @@
 #include "Engine/Core/Assert.h"
 #include "utils/Debug.h"
 
+#include "Engine/Window/Window.h"
+
 #include <GLFW/glfw3.h>
 
 namespace RT::Vulkan
 {
     
-    Device Device::deviceInstance = createDeviceInstance();
+    Device Device::deviceInstance = Device{};
 
-    void Device::init(Window& window)
+    void Device::init()
     {
         createInstance();
-        createSurface(window);
+        createSurface();
         pickPhysicalDevice();
         createLogicalDevice();
         createCommandPool();
@@ -117,16 +119,11 @@ namespace RT::Vulkan
         RT_CORE_ASSERT(false, "failed to find suitable memory type!");
     }
 
-    Device createDeviceInstance()
-    {
-        return Device();
-    }
-
     void Device::createInstance()
     {
         auto appInfo = VkApplicationInfo{};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        appInfo.pApplicationName = "LittleVulkanEngine App";
+        appInfo.pApplicationName = "RT App";
         appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
         appInfo.pEngineName = "No Engine";
         appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
@@ -135,7 +132,6 @@ namespace RT::Vulkan
         auto createInfo = VkInstanceCreateInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         createInfo.pApplicationInfo = &appInfo;
-        const void* VkInstanceCreateInfo::*pNextPtr = &VkInstanceCreateInfo::pNext;
 
         auto extensions = getRequiredExtensions();
         createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
@@ -150,13 +146,14 @@ namespace RT::Vulkan
         setupDebugMessenger(instance);
     }
 
-    void Device::createSurface(Window& window)
+    void Device::createSurface()
     {
-        RT_CORE_ASSERT(glfwCreateWindowSurface(
-            instance,
-            (GLFWwindow*)window.getNativWindow(),
-            nullptr,
-            &surface) == VK_SUCCESS,
+        RT_CORE_ASSERT(
+            glfwCreateWindowSurface(
+                instance,
+                (GLFWwindow*)Window::instance()->getNativWindow(),
+                nullptr,
+                &surface) == VK_SUCCESS,
             "failed to craete window surface");
     }
 

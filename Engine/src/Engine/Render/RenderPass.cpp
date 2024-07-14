@@ -1,4 +1,4 @@
-#include "RenderBase.h"
+#include "RenderApi.h"
 #include "RenderPass.h"
 
 #include "External/Render/OpenGl/OpenGlRenderPass.h"
@@ -9,10 +9,10 @@ namespace RT
 
 	Share<RenderPass> RenderPass::create(const RenderPassSpec& spec)
 	{
-		switch (GlobalRenderAPI)
+		switch (RenderApi::api)
 		{
-			// case RenderAPI::OpenGL: return makeShare<OpenGl::OpenGlRenderPass>(spec);
-			case RenderAPI::Vulkan: return makeShare<Vulkan::VulkanRenderPass>(spec);
+			// case RenderApi::Api: return makeShare<OpenGl::OpenGlRenderPass>(spec);
+			case RenderApi::Api::Vulkan: return makeShare<Vulkan::VulkanRenderPass>(spec);
 		}
 		return nullptr;
 	}

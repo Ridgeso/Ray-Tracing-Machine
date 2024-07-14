@@ -14,11 +14,9 @@
 namespace RT::OpenGl
 {
 
-    void OpenGlRenderer::init(const RenderSpecs& specs)
+    void OpenGlRenderer::init()
     {
         loadOpenGlForGlfw();
-
-        this->specs = specs;
     }
 
     void OpenGlRenderer::shutDown()

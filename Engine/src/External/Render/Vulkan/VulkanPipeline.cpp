@@ -5,7 +5,6 @@
 
 #include "VulkanBuffer.h"
 #include "VulkanRenderPass.h"
-#include "VulkanDescriptors.h"
 
 namespace RT::Vulkan
 {
@@ -102,7 +101,7 @@ namespace RT::Vulkan
     }
 
     VulkanPipeline::VulkanPipeline(const PipelineSpec& spec)
-        : descriptor{spec.uniformLayouts}
+        : descriptors{spec.uniformLayouts}
     {
         createPipelineLayout();
 
@@ -129,7 +128,7 @@ namespace RT::Vulkan
 
     void VulkanPipeline::updateSet(const uint32_t layout, const uint32_t set, const uint32_t binding, const Uniform& uniform) const
     {
-        descriptor.write(layout, set, binding, uniform);
+        descriptors.write(layout, set, binding, uniform);
     }
 
     void VulkanPipeline::bindSet(const uint32_t layout, const uint32_t set) const
@@ -138,7 +137,7 @@ namespace RT::Vulkan
         {
             bindingSets.resize(layout + 1);
         }
-        bindingSets[layout] = descriptor.sets()[layout][set];
+        bindingSets[layout] = descriptors.sets()[layout][set];
     }
 
     void VulkanPipeline::bind() const
@@ -175,8 +174,8 @@ namespace RT::Vulkan
     {
         auto pipelineLayoutInfo = VkPipelineLayoutCreateInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = descriptor.layouts().size();
-        pipelineLayoutInfo.pSetLayouts = descriptor.layouts().data();
+        pipelineLayoutInfo.setLayoutCount = descriptors.layouts().size();
+        pipelineLayoutInfo.pSetLayouts = descriptors.layouts().data();
         pipelineLayoutInfo.pushConstantRangeCount = 0;
         pipelineLayoutInfo.pPushConstantRanges = nullptr;
 

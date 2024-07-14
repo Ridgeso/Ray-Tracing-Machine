@@ -55,6 +55,8 @@ namespace RT::Vulkan
 
 	class VulkanUniform : public Uniform
 	{
+		friend class Descriptors;
+
 	public:
 		VulkanUniform(const UniformType uniformType, const uint32_t instanceSize);
 		VulkanUniform(const Texture& sampler, const uint32_t binding, const UniformType samplerType);
@@ -72,7 +74,6 @@ namespace RT::Vulkan
 
 		VkBuffer getBuffer() const { return uniBuffer; }
 
-		friend class VulkanDescriptor;
 
 	private:
 		static constexpr VkBufferUsageFlagBits uniformType2VkBuffBit(const UniformType uniformType);

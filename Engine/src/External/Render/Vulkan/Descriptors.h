@@ -1,6 +1,5 @@
 #pragma once
 #include <vector>
-#include <tuple>
 
 #include "Engine/Render/Pipeline.h"
 
@@ -11,11 +10,11 @@
 namespace RT::Vulkan
 {
 
-	class VulkanDescriptor
+	class Descriptors
 	{
 	public:
-		VulkanDescriptor(const UniformLayouts& uniformLayouts);
-		~VulkanDescriptor();
+		Descriptors(const UniformLayouts& uniformLayouts);
+		~Descriptors();
 
 		void write(const uint32_t layout, const uint32_t set, const uint32_t binding, const Uniform& uniform) const;
 

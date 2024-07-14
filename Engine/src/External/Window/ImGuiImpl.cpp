@@ -7,36 +7,36 @@
 #include <backends/imgui_impl_vulkan.h>
 #include <backends/imgui_impl_glfw.h>
 
-#include "External/render/Vulkan/Device.h"
+#include "External/Render/Vulkan/Device.h"
 
 #include "Engine/Core/Assert.h"
-#include "Engine/render/RenderBase.h"
+#include "Engine/Render/RenderApi.h"
 
 namespace RT::ImGuiImpl
 {
 
     void initImGui(GLFWwindow* window)
     {
-        switch (GlobalRenderAPI)
+        switch (RenderApi::api)
         {
-            case RT::RenderAPI::OpenGL:
-                ImGui_ImplGlfw_InitForOpenGL(window, true);
-                ImGui_ImplOpenGL3_Init("#version 450 core");
-                ImGui::GetIO().Fonts->Build();
-                break;
-            case RT::RenderAPI::Vulkan:
+            //case RenderApi::Api::OpenGL:
+            //    ImGui_ImplGlfw_InitForOpenGL(window, true);
+            //    ImGui_ImplOpenGL3_Init("#version 450 core");
+            //    ImGui::GetIO().Fonts->Build();
+            //    break;
+            case RenderApi::Api::Vulkan:
                 break;
         }
     }
 
     void shutdown()
     {
-        switch (GlobalRenderAPI)
+        switch (RenderApi::api)
         {
-            case RT::RenderAPI::OpenGL:
-                ImGui_ImplOpenGL3_Shutdown();
-                break;
-            case RT::RenderAPI::Vulkan:
+            //case RenderApi::Api::OpenGL:
+            //    ImGui_ImplOpenGL3_Shutdown();
+            //    break;
+            case RenderApi::Api::Vulkan:
                 break;
         }
         ImGui_ImplGlfw_Shutdown();
@@ -44,13 +44,13 @@ namespace RT::ImGuiImpl
 
     void begin()
     {
-        switch (GlobalRenderAPI)
+        switch (RenderApi::api)
         {
-            case RT::RenderAPI::OpenGL:
-                ImGui_ImplOpenGL3_NewFrame();
-                ImGui_ImplGlfw_NewFrame();
-                break;
-            case RT::RenderAPI::Vulkan:
+            //case RenderApi::Api::OpenGL:
+            //    ImGui_ImplOpenGL3_NewFrame();
+            //    ImGui_ImplGlfw_NewFrame();
+            //    break;
+            case RenderApi::Api::Vulkan:
                 ImGui_ImplVulkan_NewFrame();
                 ImGui_ImplGlfw_NewFrame();
                 break;
@@ -59,12 +59,12 @@ namespace RT::ImGuiImpl
 
     void end()
     {
-        switch (GlobalRenderAPI)
+        switch (RenderApi::api)
         {
-            case RT::RenderAPI::OpenGL:
-                ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-                break;
-            case RT::RenderAPI::Vulkan:
+            //case RenderApi::Api::OpenGL:
+            //    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+            //    break;
+            case RenderApi::Api::Vulkan:
                 break;
         }
     }

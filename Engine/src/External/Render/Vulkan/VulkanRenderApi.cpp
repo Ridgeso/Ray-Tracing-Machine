@@ -1,11 +1,13 @@
-#include "VulkanRenderer.h"
-#include "Context.h"
-
-#include "Engine/Core/Assert.h"
-#include "Engine/Core/Application.h"
-
+#include "VulkanRenderApi.h"
 #include "utils/Debug.h"
+#include "Context.h"
+#include "Device.h"
+#include "Swapchain.h"
+#include "VulkanBuffer.h"
+
 #include "Engine/Core/Assert.h"
+#include "Engine/Window/Window.h"
+
 
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
@@ -17,7 +19,7 @@
 namespace RT::Vulkan
 {
 
-	VulkanRenderer::VulkanRenderer()
+	VulkanRenderApi::VulkanRenderApi()
 	{
 		if (EnableValidationLayers)
 		{
@@ -25,15 +27,14 @@ namespace RT::Vulkan
 		}
 	}
 
-	void VulkanRenderer::init(const RenderSpecs& specs)
+	void VulkanRenderApi::init()
 	{
-		auto& window = *Application::Get().getWindow();
-		auto size = window.getSize();
+		auto size = Window::instance()->getSize();
 		extent = VkExtent2D{ (uint32_t)size.x, (uint32_t)size.y };
 
 		auto& deviceInstance = DeviceInstance;
 
-		deviceInstance.init(window);
+		deviceInstance.init();
 		recreateSwapchain();
 		
 		initImGui();
@@ -51,7 +52,7 @@ namespace RT::Vulkan
 			"failed to allocate command buffers!");
 	}
 
-	void VulkanRenderer::shutDown()
+	void VulkanRenderApi::shutdown()
 	{
 		auto& deviceInstance = DeviceInstance;
 		vkDeviceWaitIdle(deviceInstance.getDevice());
@@ -71,12 +72,12 @@ namespace RT::Vulkan
 		deviceInstance.shutdown();
 	}
 
-	void VulkanRenderer::stop()
+	void VulkanRenderApi::stop()
 	{
 		vkDeviceWaitIdle(DeviceInstance.getDevice());
 	}
 
-	void VulkanRenderer::beginFrame()
+	void VulkanRenderApi::beginFrame()
 	{
 		uint32_t imgIdx = 0u;
 		auto result = SwapchainInstance->acquireNextImage(imgIdx);
@@ -103,7 +104,7 @@ namespace RT::Vulkan
 		RT_CORE_ASSERT(vkBeginCommandBuffer(Context::frameCmds, &beginInfo) == VK_SUCCESS, "failed to begin command buffer!");
 	}
 
-	void VulkanRenderer::endFrame()
+	void VulkanRenderApi::endFrame()
 	{
 		recordCommandbuffer(Context::imgIdx);
 
@@ -123,7 +124,7 @@ namespace RT::Vulkan
 		Context::frameCmds = VK_NULL_HANDLE;
 	}
 
-	void VulkanRenderer::recordCommandbuffer(const uint32_t imIdx)
+	void VulkanRenderApi::recordCommandbuffer(const uint32_t imIdx)
 	{
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -164,13 +165,12 @@ namespace RT::Vulkan
 		vkCmdEndRenderPass(commandBuffers[imIdx]);
 	}
 
-	void VulkanRenderer::recreateSwapchain()
+	void VulkanRenderApi::recreateSwapchain()
 	{
-		auto& window = *Application::Get().getWindow();
-		auto size = window.getSize();
+		auto size = Window::instance()->getSize();
 		while (size.x == 0 || size.y == 0)
 		{
-			size = window.getSize();
+			size = Window::instance()->getSize();
 			glfwWaitEvents();
 		}
 		vkDeviceWaitIdle(DeviceInstance.getDevice());
@@ -197,7 +197,7 @@ namespace RT::Vulkan
 		}
 	}
 
-	void VulkanRenderer::initImGui()
+	void VulkanRenderApi::initImGui()
 	{
 		auto& device = DeviceInstance;
 
@@ -226,9 +226,8 @@ namespace RT::Vulkan
 			vkCreateDescriptorPool(device.getDevice(), &poolInfo, nullptr, &descriptorPool) == VK_SUCCESS,
 			"failed to create descriptor pool!");
 
-		auto& window = *Application::Get().getWindow();
 		RT_ASSERT(
-			ImGui_ImplGlfw_InitForVulkan((GLFWwindow*)window.getNativWindow(), true),
+			ImGui_ImplGlfw_InitForVulkan((GLFWwindow*)Window::instance()->getNativWindow(), true),
 			"ImGui not implemented");
 
 		// init ImGui for vulkan

@@ -4,7 +4,6 @@
 
 #include <vulkan/vulkan.h>
 
-#include "Engine/Window/Window.h"
 #include "utils/Utils.h"
 
 namespace RT::Vulkan
@@ -22,7 +21,7 @@ namespace RT::Vulkan
 
         static Device& getDeviceInstance() { return deviceInstance; }
 
-        void init(Window& window);
+        void init();
         void shutdown();
 
         void createImageWithInfo(
@@ -69,7 +68,7 @@ namespace RT::Vulkan
         Device() = default;
 
         void createInstance();
-        void createSurface(Window& window);
+        void createSurface();
         void pickPhysicalDevice();
         void createLogicalDevice();
         void createCommandPool();
@@ -102,8 +101,6 @@ namespace RT::Vulkan
 
         static Device deviceInstance;
     };
-
-    static Device createDeviceInstance();
 
     #define DeviceInstance ::RT::Vulkan::Device::getDeviceInstance()
 
