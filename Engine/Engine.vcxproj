@@ -135,6 +135,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)Engine\src;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\glfw\include;$(SolutionDir)Dependencies\glad\include;$(SolutionDir)Dependencies\spdlog\include;$(VULKAN_SDK)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -142,7 +143,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
-      <AdditionalDependencies>gdi32.lib;user32.lib;kernel32.lib;opengl32.lib;$(SolutionDir)Dependencies\glfw\lib-vc2022\glfw3.lib;$(VULKAN_SDK)\Lib\vulkan-1.lib;$(VULKAN_SDK)\Lib\shaderc_sharedd.lib;$(VULKAN_SDK)\Lib\spirv-cross-cored.lib</AdditionalDependencies>
+      <AdditionalDependencies>gdi32.lib;user32.lib;kernel32.lib;$(SolutionDir)Dependencies\glfw\lib-vc2022\glfw3.lib;$(VULKAN_SDK)\Lib\vulkan-1.lib;$(VULKAN_SDK)\Lib\shaderc_sharedd.lib;$(VULKAN_SDK)\Lib\spirv-cross-cored.lib</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -157,6 +158,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)Engine\src;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\glfw\include;$(SolutionDir)Dependencies\glad\include;$(SolutionDir)Dependencies\spdlog\include;$(VULKAN_SDK)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <DebugInformationFormat>None</DebugInformationFormat>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -166,7 +168,7 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
     </Link>
     <Lib>
-      <AdditionalDependencies>gdi32.lib;user32.lib;kernel32.lib;opengl32.lib;$(SolutionDir)Dependencies\glfw\lib-vc2022\glfw3.lib;$(VULKAN_SDK)\Lib\vulkan-1.lib;$(VULKAN_SDK)\Lib\shaderc_shared.lib;$(VULKAN_SDK)\Lib\spirv-cross-core.lib</AdditionalDependencies>
+      <AdditionalDependencies>gdi32.lib;user32.lib;kernel32.lib;$(SolutionDir)Dependencies\glfw\lib-vc2022\glfw3.lib;$(VULKAN_SDK)\Lib\vulkan-1.lib;$(VULKAN_SDK)\Lib\shaderc_shared.lib;$(VULKAN_SDK)\Lib\spirv-cross-core.lib</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
