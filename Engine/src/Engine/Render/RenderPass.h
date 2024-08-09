@@ -18,7 +18,7 @@ namespace RT
 
 	struct RenderPass
 	{
-		virtual ~RenderPass() = 0;
+		virtual ~RenderPass() = 0 {}
 
 		virtual const Texture& getAttachment(const uint32_t idx = 0) const = 0;
 

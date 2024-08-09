@@ -5,7 +5,7 @@
 #include "Engine/Core/Assert.h"
 #include "utils/Debug.h"
 
-#include "Engine/Window/Window.h"
+#include "Engine/Core/Application.h"
 
 #include <GLFW/glfw3.h>
 
@@ -151,7 +151,7 @@ namespace RT::Vulkan
         RT_CORE_ASSERT(
             glfwCreateWindowSurface(
                 instance,
-                (GLFWwindow*)Window::instance()->getNativWindow(),
+                (GLFWwindow*)Application::getWindow()->getNativWindow(),
                 nullptr,
                 &surface) == VK_SUCCESS,
             "failed to craete window surface");

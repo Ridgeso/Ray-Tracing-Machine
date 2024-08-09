@@ -8,7 +8,7 @@
 namespace RT::Vulkan
 {
 
-	class VulkanRenderApi : public RenderApi
+	class VulkanRenderApi final : public RenderApi
 	{
 	public:
 		VulkanRenderApi();

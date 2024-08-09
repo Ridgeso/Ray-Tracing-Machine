@@ -3,12 +3,12 @@
 
 #include "Engine/Core/Application.h"
 #include "Engine/Core/Log.h"
-#include "Engine/Render/Renderer.h"
-#include "Engine/Window/Window.h"
+
+extern RT::ApplicationSpecs CreateApplicationSpec();
 
 namespace RT
 {
-
+	
 	struct CommandLineArgs
 	{
 		int32_t argc;
@@ -19,30 +19,15 @@ namespace RT
 	{
 		RT::Core::Log::init();
 	}
-
-	static void initApp()
-	{
-		auto winSpecs = WindowSpecs{ "Engine", 1280, 720, false };
-		Window::instance()->init(winSpecs);
-
-		Renderer::init();
-	}
-
-	static void shutdownApp()
-	{
-		Renderer::shutdown();
-		Window::instance()->shutDown();
-	}
+	
 
 	static void runCore()
 	{
-		initApp();
+		auto specs = CreateApplicationSpec();
 
-		auto* application = RT::CreateApplication();
+		auto* application = new Application(specs);
 		application->run();
 		delete application;
-
-		shutdownApp();
 	}
 
 	static void postShutdownCore()

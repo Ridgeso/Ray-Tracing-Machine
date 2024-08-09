@@ -13,7 +13,7 @@
 namespace RT::Vulkan
 {
 
-	class VulkanPipeline : public Pipeline
+	class VulkanPipeline final : public Pipeline
 	{
     private:
         struct ConfigInfo

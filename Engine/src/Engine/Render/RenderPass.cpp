@@ -17,6 +17,4 @@ namespace RT
 		return nullptr;
 	}
 
-	RenderPass::~RenderPass() { }
-
 }

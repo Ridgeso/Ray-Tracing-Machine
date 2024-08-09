@@ -6,8 +6,7 @@
 #include "VulkanBuffer.h"
 
 #include "Engine/Core/Assert.h"
-#include "Engine/Window/Window.h"
-
+#include "Engine/Core/Application.h"
 
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
@@ -29,7 +28,7 @@ namespace RT::Vulkan
 
 	void VulkanRenderApi::init()
 	{
-		auto size = Window::instance()->getSize();
+		auto size = Application::getWindow()->getSize();
 		extent = VkExtent2D{ (uint32_t)size.x, (uint32_t)size.y };
 
 		auto& deviceInstance = DeviceInstance;
@@ -162,10 +161,10 @@ namespace RT::Vulkan
 
 	void VulkanRenderApi::recreateSwapchain()
 	{
-		auto size = Window::instance()->getSize();
+		auto size = Application::getWindow()->getSize();
 		while (size.x == 0 || size.y == 0)
 		{
-			size = Window::instance()->getSize();
+			size = Application::getWindow()->getSize();
 			glfwWaitEvents();
 		}
 		vkDeviceWaitIdle(DeviceInstance.getDevice());
@@ -222,7 +221,7 @@ namespace RT::Vulkan
 			"failed to create descriptor pool!");
 
 		RT_ASSERT(
-			ImGui_ImplGlfw_InitForVulkan((GLFWwindow*)Window::instance()->getNativWindow(), true),
+			ImGui_ImplGlfw_InitForVulkan((GLFWwindow*)Application::getWindow()->getNativWindow(), true),
 			"ImGui not implemented");
 
 		// init ImGui for vulkan

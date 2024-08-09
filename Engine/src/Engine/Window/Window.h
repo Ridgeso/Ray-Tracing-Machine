@@ -19,6 +19,8 @@ namespace RT
 		friend class Application;
 
 	public:
+		virtual ~Window() = 0 {}
+
 		virtual void init(const WindowSpecs& specs) = 0;
 		virtual void shutDown() = 0;
 		
@@ -32,18 +34,15 @@ namespace RT
 		virtual void cursorMode(int32_t state) const = 0;
 
 		virtual void* getNativWindow() = 0;
-
-		static Local<Window>& instance() { return window; }
 		
+		static Local<Window> createWindow();
+
 	private:
 		virtual bool update() = 0;
 		virtual bool pullEvents() = 0;
 
 		virtual void beginUI() = 0;
 		virtual void endUI() = 0;
-
-	private:
-		static Local<Window> window;
 	};
 
 }

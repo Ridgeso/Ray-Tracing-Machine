@@ -6,7 +6,7 @@
 namespace RT::Vulkan
 {
 
-	class VulkanTexture : public Texture
+	class VulkanTexture final : public Texture
 	{
 	public:
 		VulkanTexture(const glm::uvec2 size, const ImageFormat imageFormat);

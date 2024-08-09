@@ -197,6 +197,9 @@
     <ClInclude Include="src\External\Render\Vulkan\utils\Constants.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
+    <ClInclude Include="src\Engine\Frame\Frame.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="imgui.ini" />

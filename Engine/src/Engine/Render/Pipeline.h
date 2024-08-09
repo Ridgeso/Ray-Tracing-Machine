@@ -28,7 +28,7 @@ namespace RT
 
 	struct Pipeline
 	{
-		virtual ~Pipeline() = 0;
+		virtual ~Pipeline() = 0 {}
 
 		virtual void updateSet(const uint32_t layout, const uint32_t set, const uint32_t binding, const Uniform& uniform) const = 0;
 		virtual void updateSet(const uint32_t layout, const uint32_t set, const uint32_t binding, const Texture& sampler) const = 0;

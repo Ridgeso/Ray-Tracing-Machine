@@ -24,7 +24,7 @@ namespace RT::Vulkan
 		static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
 	};
 
-	class VulkanVertexBuffer : public VertexBuffer
+	class VulkanVertexBuffer final : public VertexBuffer
 	{
 	public:
 		VulkanVertexBuffer(const uint32_t size);
@@ -55,7 +55,7 @@ namespace RT::Vulkan
 		uint32_t vertexCount = 0u;
 	};
 
-	class VulkanUniform : public Uniform
+	class VulkanUniform final : public Uniform
 	{
 		friend class Descriptors;
 

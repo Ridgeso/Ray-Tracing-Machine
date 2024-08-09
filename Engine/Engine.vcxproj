@@ -42,6 +42,7 @@
     <ClInclude Include="src\Engine\Core\Assert.h" />
     <ClInclude Include="src\Engine\Core\Log.h" />
     <ClInclude Include="src\Engine\Core\Utils.h" />
+    <ClInclude Include="src\Engine\Frame\Frame.h" />
     <ClInclude Include="src\Engine\Render\Buffer.h" />
     <ClInclude Include="src\Engine\Render\Pipeline.h" />
     <ClInclude Include="src\Engine\Render\Renderer.h" />

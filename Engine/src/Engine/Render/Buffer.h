@@ -21,7 +21,7 @@ namespace RT
 
 	struct VertexBuffer
 	{
-		virtual ~VertexBuffer() = 0;
+		virtual ~VertexBuffer() = 0 {}
 
 		virtual void registerAttributes(const VertexElements& elements) const = 0;
 		virtual void setData(const uint32_t size, const void* data) const = 0;
@@ -45,7 +45,7 @@ namespace RT
 
 	struct Uniform
 	{
-		virtual ~Uniform() = 0;
+		virtual ~Uniform() = 0 {}
 
 		virtual void setData(const void* data, const uint32_t size, const uint32_t offset = 0) = 0;
 	

@@ -23,7 +23,7 @@ namespace RT
 
 	struct Texture
 	{
-		virtual ~Texture() = 0;
+		virtual ~Texture() = 0 {}
 
 		virtual void setBuff(const void* data) = 0;
 

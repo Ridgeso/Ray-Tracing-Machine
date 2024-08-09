@@ -11,31 +11,44 @@ namespace RT
 
 	Application::Application(const ApplicationSpecs& specs)
 		: specs(specs)
+		, isRunning(true)
 		, appFrameDuration(0)
+		, window(Window::createWindow())
 	{
 		MainApp = this;
 
-		Window::instance()->setTitleBar(specs.name);
+		auto winSpecs = WindowSpecs{ specs.name, 1280, 720, false };
+		window->init(winSpecs);
+
+		Renderer::init();
+
+		frame = specs.startupFrameMaker();
+		frame->onInit();
 	}
 
 	Application::~Application()
 	{
+		frame->onShutdown();
+		frame.reset();
+
+		Renderer::shutdown();
+		window->shutDown();
 	}
 
 	void Application::run()
 	{
-		while (specs.isRunning)
+		while (isRunning)
 		{
 			auto appTimer = Timer{};
 
-			update();
+			frame->update();
 
-			Window::instance()->beginUI();
-			layout();
-			Window::instance()->endUI();
+			window->beginUI();
+			frame->layout();
+			window->endUI();
 
-			specs.isRunning &= Window::instance()->update();
-			specs.isRunning &= Window::instance()->pullEvents();
+			isRunning &= window->update();
+			isRunning &= window->pullEvents();
 
 			appFrameDuration = appTimer.Ellapsed();
 		}

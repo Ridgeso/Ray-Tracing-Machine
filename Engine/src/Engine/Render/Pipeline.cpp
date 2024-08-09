@@ -16,6 +16,4 @@ namespace RT
 		return nullptr;
 	}
 
-	Pipeline::~Pipeline() {}
-
 }

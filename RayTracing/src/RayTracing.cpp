@@ -23,13 +23,14 @@ float FastRandom(uint32_t& seed)
 	return (float)seed / std::numeric_limits<uint32_t>::max();
 }
 
-class RayTracingClient : public RT::Application
+class RayTracingClient : public RT::Frame
 {
 public:
-	RayTracingClient(RT::ApplicationSpecs specs)
-		: Application(specs)
-		, viewportSize{}
-		, lastWinSize{ RT::Window::instance()->getSize() }
+	RayTracingClient()
+		: viewportSize{}
+		, lastFrameDuration{0.0f}
+		, lastMousePos{0.0f}
+		, lastWinSize{RT::Application::getWindow()->getSize()}
 		, camera(45.0f, 0.01f, 100.0f)
 		, scene{}
 	{
@@ -128,9 +129,9 @@ public:
 	{
 		ImGui::Begin("Settings");
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-		ImGui::Text("App frame took: %.3fms", appDuration());
+		ImGui::Text("App frame took: %.3fms", RT::Application::Get().appDuration());
 		ImGui::Text("CPU time: %.3fms", lastFrameDuration);
-		ImGui::Text("GPU time: %.3fms", appDuration() - lastFrameDuration);
+		ImGui::Text("GPU time: %.3fms", RT::Application::Get().appDuration() - lastFrameDuration);
 		ImGui::Text("Frames: %d", infoUniform.frameIndex);
 
 		infoUniform.frameIndex++;
@@ -265,9 +266,9 @@ public:
 
 	void update() final
 	{
-		const auto winSize = RT::Window::instance()->getSize();
+		const auto winSize = RT::Application::getWindow()->getSize();
 
-		updateView(appDuration() / 1000.0f);
+		updateView(RT::Application::Get().appDuration() / 1000.0f);
 
 		if (lastWinSize != winSize)
 		{
@@ -303,52 +304,52 @@ public:
 		glm::vec3 right = glm::cross(forward, up);
 		bool moved = false;
 
-		glm::vec2 newMousePos = RT::Window::instance()->getMousePos();
+		glm::vec2 newMousePos = RT::Application::getWindow()->getMousePos();
 		glm::vec2 mouseDelta = (newMousePos - lastMousePos) * mouseSenisity;
 		lastMousePos = newMousePos;
 
-		if (RT::Window::instance()->isKeyPressed(GLFW_KEY_W))
+		if (RT::Application::getWindow()->isKeyPressed(GLFW_KEY_W))
 		{
 			glm::vec3 step = camera.GetPosition() + forward * speed * ts;
 			camera.SetPosition(step);
 			moved = true;
 		}
-		if (RT::Window::instance()->isKeyPressed(GLFW_KEY_S))
+		if (RT::Application::getWindow()->isKeyPressed(GLFW_KEY_S))
 		{
 			glm::vec3 step = camera.GetPosition() - forward * speed * ts;
 			camera.SetPosition(step);
 			moved = true;
 		}
 
-		if (RT::Window::instance()->isKeyPressed(GLFW_KEY_D))
+		if (RT::Application::getWindow()->isKeyPressed(GLFW_KEY_D))
 		{
 			glm::vec3 step = camera.GetPosition() + right * speed * ts;
 			camera.SetPosition(step);
 			moved = true;
 		}
-		if (RT::Window::instance()->isKeyPressed(GLFW_KEY_A))
+		if (RT::Application::getWindow()->isKeyPressed(GLFW_KEY_A))
 		{
 			glm::vec3 step = camera.GetPosition() - right * speed * ts;
 			camera.SetPosition(step);
 			moved = true;
 		}
 
-		if (RT::Window::instance()->isKeyPressed(GLFW_KEY_Q))
+		if (RT::Application::getWindow()->isKeyPressed(GLFW_KEY_Q))
 		{
 			glm::vec3 step = camera.GetPosition() + up * speed * ts;
 			camera.SetPosition(step);
 			moved = true;
 		}
-		if (RT::Window::instance()->isKeyPressed(GLFW_KEY_E))
+		if (RT::Application::getWindow()->isKeyPressed(GLFW_KEY_E))
 		{
 			glm::vec3 step = camera.GetPosition() - up * speed * ts;
 			camera.SetPosition(step);
 			moved = true;
 		}
 
-		if (RT::Window::instance()->isMousePressed(GLFW_MOUSE_BUTTON_RIGHT))
+		if (RT::Application::getWindow()->isMousePressed(GLFW_MOUSE_BUTTON_RIGHT))
 		{
-			RT::Window::instance()->cursorMode(GLFW_CURSOR_DISABLED);
+			RT::Application::getWindow()->cursorMode(GLFW_CURSOR_DISABLED);
 			if (mouseDelta != glm::vec2(0.0f))
 			{
 				mouseDelta *= rotationSpeed;
@@ -362,7 +363,7 @@ public:
 		}
 		else
 		{
-			RT::Window::instance()->cursorMode(GLFW_CURSOR_NORMAL);
+			RT::Application::getWindow()->cursorMode(GLFW_CURSOR_NORMAL);
 		}
 
 		moved |= camera.ResizeCamera((int32_t)viewportSize.x, (int32_t)viewportSize.y);
@@ -428,8 +429,4 @@ private:
 	//static constexpr int32_t screenVerticesCount = sizeof(screenVertices) / sizeof(float);
 };
 
-RT::Application* RT::CreateApplication()
-{
-	RT::ApplicationSpecs specs = { "Ray Tracing", true };
-	return new RayTracingClient(specs);
-}
+RegisterStartupFrame("Ray Tracing", RayTracingClient)

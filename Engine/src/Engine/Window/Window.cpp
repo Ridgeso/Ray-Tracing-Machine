@@ -4,11 +4,9 @@
 namespace RT
 {
 
-	Local<Window> createWindow()
+	Local<Window> Window::createWindow()
 	{
 		return makeLocal<GlfwWindow>();
 	}
-
-	Local<Window> Window::window = createWindow();
 
 }

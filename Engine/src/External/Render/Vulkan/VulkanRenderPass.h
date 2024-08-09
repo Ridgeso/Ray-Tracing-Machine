@@ -12,7 +12,7 @@ namespace RT::Vulkan
 
 	class Swapchain;
 
-	class VulkanRenderPass : public RenderPass
+	class VulkanRenderPass final : public RenderPass
 	{
 	public:
 		VulkanRenderPass(const RenderPassSpec& spec);

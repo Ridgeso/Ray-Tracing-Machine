@@ -27,8 +27,6 @@ namespace RT
 		return nullptr;
 	}
 
-	VertexBuffer::~VertexBuffer() {}
-
 	Local<Uniform> Uniform::create(const UniformType uniformType, const uint32_t size)
 	{
 		switch (RenderApi::api)
@@ -38,7 +36,5 @@ namespace RT
 		}
 		return nullptr;
 	}
-
-	Uniform::~Uniform() {}
 
 }
