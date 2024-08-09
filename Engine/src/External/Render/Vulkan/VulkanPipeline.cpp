@@ -100,8 +100,8 @@ namespace RT::Vulkan
         return configInfo;
     }
 
-    VulkanPipeline::VulkanPipeline(const PipelineSpec& spec)
-        : descriptors{spec.uniformLayouts}
+    VulkanPipeline::VulkanPipeline(PipelineSpec& spec)
+        : layouts{std::move(spec.uniformLayouts)}, descriptors{ layouts }
     {
         createPipelineLayout();
 
@@ -128,7 +128,12 @@ namespace RT::Vulkan
 
     void VulkanPipeline::updateSet(const uint32_t layout, const uint32_t set, const uint32_t binding, const Uniform& uniform) const
     {
-        descriptors.write(layout, set, binding, uniform);
+        descriptors.write(layout, set, binding, static_cast<const VulkanUniform&>(uniform));
+    }
+
+    void VulkanPipeline::updateSet(const uint32_t layout, const uint32_t set, const uint32_t binding, const Texture& sampler) const
+    {
+        descriptors.write(layout, set, binding, static_cast<const VulkanTexture&>(sampler), layouts[layout].layout[binding]);
     }
 
     void VulkanPipeline::bindSet(const uint32_t layout, const uint32_t set) const
@@ -137,7 +142,7 @@ namespace RT::Vulkan
         {
             bindingSets.resize(layout + 1);
         }
-        bindingSets[layout] = descriptors.sets()[layout][set];
+        bindingSets[layout] = descriptors.currFrameSet(layout, set);
     }
 
     void VulkanPipeline::bind() const

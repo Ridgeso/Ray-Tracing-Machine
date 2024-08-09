@@ -35,7 +35,7 @@ namespace RT::Vulkan
         };
 
     public:
-        VulkanPipeline(const PipelineSpec& spec);
+        VulkanPipeline(PipelineSpec& spec);
         ~VulkanPipeline() final;
 
         VulkanPipeline(const VulkanPipeline&) = delete;
@@ -44,6 +44,7 @@ namespace RT::Vulkan
         VulkanPipeline&& operator=(VulkanPipeline&&) = delete;
 
         void updateSet(const uint32_t layout, const uint32_t set, const uint32_t binding, const Uniform& uniform) const final;
+        void updateSet(const uint32_t layout, const uint32_t set, const uint32_t binding, const Texture& sampler) const final;
         void bindSet(const uint32_t layout, const uint32_t set) const final;
 
         void bind() const final;
@@ -65,6 +66,7 @@ namespace RT::Vulkan
         VkPipeline pipeline = {};
         VkPipelineLayout pipelineLayout = {};
 
+        UniformLayouts layouts = {};
         Descriptors descriptors;
         mutable std::vector<VkDescriptorSet> bindingSets = {};
     };

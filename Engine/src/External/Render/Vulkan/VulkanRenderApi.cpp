@@ -41,7 +41,7 @@ namespace RT::Vulkan
 
 		commandBuffers.resize(SwapchainInstance->getSwapChainImages().size());
 
-		VkCommandBufferAllocateInfo allocInfo{};
+		auto allocInfo = VkCommandBufferAllocateInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		allocInfo.commandPool = deviceInstance.getCommandPool();
@@ -66,7 +66,6 @@ namespace RT::Vulkan
 			static_cast<uint32_t>(commandBuffers.size()),
 			commandBuffers.data());
 		commandBuffers.clear();
-
 		
 		SwapchainInstance->shutdown();
 		deviceInstance.shutdown();
@@ -82,12 +81,7 @@ namespace RT::Vulkan
 		uint32_t imgIdx = 0u;
 		auto result = SwapchainInstance->acquireNextImage(imgIdx);
 
-		auto& uniformsToFlush = getUniformsToFlush();
-		for (const auto* uniform : uniformsToFlush)
-		{
-			uniform->flush();
-		}
-		uniformsToFlush.clear();
+		flushUniforms();
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR)
 		{
@@ -99,8 +93,9 @@ namespace RT::Vulkan
 		Context::imgIdx = imgIdx;
 		Context::frameCmds = commandBuffers[imgIdx];
 
-		VkCommandBufferBeginInfo beginInfo{};
+		auto beginInfo = VkCommandBufferBeginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		vkResetCommandBuffer(Context::frameCmds, 0);
 		RT_CORE_ASSERT(vkBeginCommandBuffer(Context::frameCmds, &beginInfo) == VK_SUCCESS, "failed to begin command buffer!");
 	}
 
@@ -256,6 +251,25 @@ namespace RT::Vulkan
 		});
 		vkDeviceWaitIdle(device.getDevice());
 		ImGui_ImplVulkan_DestroyFontUploadObjects();	
+	}
+
+	void VulkanRenderApi::flushUniforms()
+	{
+		auto& uniformsToFlush = getUniformsToFlush();
+		int32_t i = 0;
+		int32_t flashedUniformsFrom = uniformsToFlush.size();
+		while (i < uniformsToFlush.size())
+		{
+			if (not uniformsToFlush[i]->flush())
+			{
+				std::swap(uniformsToFlush[i], uniformsToFlush[--flashedUniformsFrom]);
+			}
+			else
+			{
+				i++;
+			}
+		}
+		uniformsToFlush.erase(uniformsToFlush.begin() + flashedUniformsFrom, uniformsToFlush.end());
 	}
 
 }

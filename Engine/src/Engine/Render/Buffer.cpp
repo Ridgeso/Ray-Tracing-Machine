@@ -38,16 +38,6 @@ namespace RT
 		}
 		return nullptr;
 	}
-	
-	Local<Uniform> Uniform::create(const Texture& sampler, const uint32_t binding, const UniformType samplerType)
-	{
-		switch (RenderApi::api)
-		{
-			// case RenderApi::Api::OpenGL: return makeLocal<OpenGl::OpenGlUniform>(sampler, binding); break;
-			case RenderApi::Api::Vulkan: return makeLocal<Vulkan::VulkanUniform>(sampler, binding, samplerType); break;
-		}
-		return nullptr;
-	}
 
 	Uniform::~Uniform() {}
 

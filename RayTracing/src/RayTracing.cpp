@@ -80,9 +80,6 @@ public:
 		infoUniform.spheresCount = scene.spheres.size();
 		infoUniform.materialsCount = scene.materials.size();
 
-		accumulationSamplerUniform = RT::Uniform::create(*accumulationTexture, 0, RT::UniformType::Image);
-		outSamplerUniform = RT::Uniform::create(*outTexture, 1, RT::UniformType::Image);
-
 		ammountsUniform = RT::Uniform::create(RT::UniformType::Uniform, sizeof(InfoUniform));
 		ammountsUniform->setData(&infoUniform, sizeof(InfoUniform));
 
@@ -104,8 +101,8 @@ public:
 		pipelineSpec.attachmentFormats = {};
 		pipeline = RT::Pipeline::create(pipelineSpec);
 
-		pipeline->updateSet(0, 0, 0, *accumulationSamplerUniform);
-		pipeline->updateSet(0, 0, 1, *outSamplerUniform);
+		pipeline->updateSet(0, 0, 0, *accumulationTexture);
+		pipeline->updateSet(0, 0, 1, *outTexture);
 		pipeline->updateSet(0, 0, 2, *ammountsUniform);
 		pipeline->updateSet(0, 0, 3, *cameraUniform);
 		pipeline->updateSet(1, 0, 0, *materialsStorage);
@@ -117,8 +114,6 @@ public:
 		//screenBuff.reset();
 		//renderPass.reset();
 
-		accumulationSamplerUniform.reset();
-		outSamplerUniform.reset();
 		ammountsUniform.reset();
 		cameraUniform.reset();
 		materialsStorage.reset();
@@ -270,7 +265,7 @@ public:
 
 	void update() final
 	{
-		glm::ivec2 winSize = RT::Window::instance()->getSize();
+		const auto winSize = RT::Window::instance()->getSize();
 
 		updateView(appDuration() / 1000.0f);
 
@@ -285,7 +280,7 @@ public:
 		RT::Renderer::beginFrame();
 
 		pipeline->bindSet(0, 0);
-		//pipeline->bindSet(1, 0);
+		pipeline->bindSet(1, 0);
 
 		outTexture->barrier(RT::ImageAccess::Write, RT::ImageLayout::General);
 
@@ -394,8 +389,6 @@ private:
 
 	RT::Local<RT::Uniform> cameraUniform;
 	RT::Local<RT::Uniform> ammountsUniform;
-	RT::Local<RT::Uniform> accumulationSamplerUniform;
-	RT::Local<RT::Uniform> outSamplerUniform;
 	RT::Local<RT::Uniform> materialsStorage;
 	RT::Local<RT::Uniform> spheresStorage;
 

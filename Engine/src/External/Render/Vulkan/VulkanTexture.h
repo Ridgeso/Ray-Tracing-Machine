@@ -28,6 +28,8 @@ namespace RT::Vulkan
 			const VkAccessFlags dstAccessMask,
 			const VkImageLayout newLayout) const;
 
+		const VkDescriptorImageInfo getWriteImageInfo() const;
+
 		static constexpr VkFormat imageFormat2VulkanFormat(const ImageFormat imageFormat);
 		static constexpr uint32_t format2Size(const ImageFormat imageFormat);
 		static constexpr VkImageLayout imageLayout2VulkanLayout(const ImageLayout imageLayout);

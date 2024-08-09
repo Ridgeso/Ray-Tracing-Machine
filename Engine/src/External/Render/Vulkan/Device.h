@@ -62,7 +62,6 @@ namespace RT::Vulkan
         const Utils::SwapChainSupportDetails& getSwapChainSupportDetails() const { return swapChainSupportDetails; }
         Utils::QueueFamilyIndices getQueueFamilyIndices() const { return queueFamilyIndices; }
 
-        friend static Device createDeviceInstance();
         friend class Swapchain;
     private:
         Device() = default;

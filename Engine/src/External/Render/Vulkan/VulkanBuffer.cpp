@@ -1,3 +1,5 @@
+#include <numeric>
+
 #include "VulkanBuffer.h"
 
 #include "Engine/Core/Log.h"
@@ -108,74 +110,91 @@ namespace RT::Vulkan
 		return attribDesc;
 	}
 
-
 	VulkanUniform::VulkanUniform(const UniformType uniformType, const uint32_t instanceSize)
 		: uniformType{uniformType}
 	{
-		alignedSize = calculateAlignedSize(
-			instanceSize,
+		const auto vkLimits = DeviceInstance.getLimits();
+		const auto minalignment = std::lcm(
+			vkLimits.nonCoherentAtomSize,
 			UniformType::Uniform == uniformType ?
-				DeviceInstance.getLimits().minUniformBufferOffsetAlignment :
-				DeviceInstance.getLimits().minStorageBufferOffsetAlignment);
-		
+				vkLimits.minUniformBufferOffsetAlignment :
+				vkLimits.minStorageBufferOffsetAlignment);
+
+		alignedSize = calculateAlignedSize(instanceSize, minalignment);
+
+		masterBuffer.resize(alignedSize);
+		std::fill(masterBuffer.begin(), masterBuffer.end(), 0);
+
 		DeviceInstance.createBuffer(
-			alignedSize,
+			wholeSize(),
 			uniformType2VkBuffBit(uniformType),
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
 			uniBuffer,
 			uniMemory);
+		vkMapMemory(DeviceInstance.getDevice(), uniMemory, 0, wholeSize(), 0, &mapped);
 
-		vkMapMemory(DeviceInstance.getDevice(), uniMemory, 0, VK_WHOLE_SIZE, 0, &mapped);
-	}
-
-	VulkanUniform::VulkanUniform(const Texture& sampler, const uint32_t binding, const UniformType samplerType)
-		: uniformType{ samplerType }
-	{
-		const auto& vulkanSampler = static_cast<const VulkanTexture&>(sampler);
-
-		imgInfo = VkDescriptorImageInfo{};
-		imgInfo.sampler = vulkanSampler.getSampler();
-		imgInfo.imageView = vulkanSampler.getImageView();
-		imgInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+		descriptorInfo = std::array<VkDescriptorBufferInfo, Constants::MAX_FRAMES_IN_FLIGHT>{};
+		for (uint32_t offsetIdx = 0u; offsetIdx < descriptorInfo.size(); offsetIdx++)
+		{
+			auto& bufferInfo = descriptorInfo[offsetIdx];
+			bufferInfo.offset = offsetIdx * alignedSize;
+			bufferInfo.range = alignedSize;
+			bufferInfo.buffer = uniBuffer;
+		}
 	}
 
 	VulkanUniform::~VulkanUniform()
 	{
-		if (UniformType::Sampler != uniformType && UniformType::Image != uniformType)
-		{
-			const auto device = DeviceInstance.getDevice();
-			vkUnmapMemory(device, uniMemory);
-			vkDestroyBuffer(device, uniBuffer, nullptr);
-			vkFreeMemory(device, uniMemory, nullptr);
-		}
-	}
-
-	void VulkanUniform::bind(const uint32_t binding) const
-	{
-		bufferInfo = VkDescriptorBufferInfo{};
-		bufferInfo.offset = 0;
-		bufferInfo.range = VK_WHOLE_SIZE;
-		bufferInfo.buffer = uniBuffer;
+		const auto device = DeviceInstance.getDevice();
+		vkUnmapMemory(device, uniMemory);
+		vkDestroyBuffer(device, uniBuffer, nullptr);
+		vkFreeMemory(device, uniMemory, nullptr);
 	}
 
 	void VulkanUniform::setData(const void* data, const uint32_t size, const uint32_t offset)
 	{
-		void* dst = (uint8_t*)mapped + offset;
+		auto* dst = masterBuffer.data() + offset;
 		std::memcpy(dst, data, size);
 
-		uniformsToFlush.push_back(this);
+		if (not stillNeedFlush())
+		{
+			uniformsToFlush.push_back(this);
+		}
+		std::fill(flashInThisFrame.begin(), flashInThisFrame.end(), true);
 	}
 
-	void VulkanUniform::flush() const
+	bool VulkanUniform::flush() const
 	{
+		const auto currFrame = SwapchainInstance->getCurrentFrame();
+		if (not flashInThisFrame[currFrame])
+		{
+			return true;
+		}
+
+		copyToRegionBuff(currFrame);
+
 		auto memRange = VkMappedMemoryRange{};
 		memRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
 		memRange.memory = uniMemory;
-		memRange.offset = 0;
-		memRange.size = VK_WHOLE_SIZE;
+		memRange.offset = alignedSize * currFrame;
+		memRange.size = alignedSize;
 		RT_CORE_ASSERT(
 			vkFlushMappedMemoryRanges(DeviceInstance.getDevice(), 1, &memRange) == VK_SUCCESS,
 			"Failed to flush uniform buffer!");
+		
+		flashInThisFrame[currFrame] = false;
+		return stillNeedFlush();
+	}
+
+	bool VulkanUniform::stillNeedFlush() const
+	{
+		return std::any_of(flashInThisFrame.begin(), flashInThisFrame.end(), [](bool flashed) { return flashed; });
+	}
+
+	void VulkanUniform::copyToRegionBuff(const uint8_t buffIdx) const
+	{
+		auto dst = (uint8_t*)mapped + buffIdx * alignedSize;
+		std::memcpy(dst, masterBuffer.data(), alignedSize);
 	}
 
 	constexpr VkBufferUsageFlagBits VulkanUniform::uniformType2VkBuffBit(const UniformType uniformType)

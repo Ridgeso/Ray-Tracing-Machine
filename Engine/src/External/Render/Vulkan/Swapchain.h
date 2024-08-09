@@ -5,6 +5,7 @@
 
 #include "Device.h"
 #include "utils/Utils.h"
+#include "utils/Constants.h"
 
 namespace RT::Vulkan
 {
@@ -44,9 +45,6 @@ namespace RT::Vulkan
 
         static constexpr uint32_t minImageCount() { return 2; }
 
-    public:
-        static constexpr uint8_t MAX_FRAMES_IN_FLIGHT = 2;
-
     private:
         void createSwapChain();
         void createImageViews();
@@ -64,7 +62,6 @@ namespace RT::Vulkan
             const std::vector<VkPresentModeKHR>& availablePresentModes);
         
     private:
-        
         VkSwapchainKHR swapChain = {};
         VkRenderPass renderPass = {};
         std::vector<VkFramebuffer> swapChainFramebuffers = {};
@@ -78,9 +75,9 @@ namespace RT::Vulkan
         std::vector<VkImageView> swapChainImageViews = {};
         uint32_t imageCount = 0u;
 
-        std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> imageAvailableSemaphores = {};
-        std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores = {};
-        std::array<VkFence, MAX_FRAMES_IN_FLIGHT> inFlightFences = {};
+        std::array<VkSemaphore, Constants::MAX_FRAMES_IN_FLIGHT> imageAvailableSemaphores = {};
+        std::array<VkSemaphore, Constants::MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores = {};
+        std::array<VkFence, Constants::MAX_FRAMES_IN_FLIGHT> inFlightFences = {};
         std::vector<VkFence> imagesInFlight = {};
         uint8_t currentFrame = 0u;
 

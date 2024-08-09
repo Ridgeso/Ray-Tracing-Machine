@@ -4,12 +4,11 @@
 #include "Engine/Core/Assert.h"
 
 #include "Swapchain.h"
-#include "VulkanBuffer.h"
 
 namespace
 {
 
-	constexpr VkDescriptorType descriptorType2VkType(const RT::UniformType uniformType)
+	constexpr VkDescriptorType uniformType2VkDescriptorType(const RT::UniformType uniformType)
 	{
 		switch (uniformType)
 		{
@@ -41,7 +40,7 @@ namespace RT::Vulkan
 				DeviceInstance.getDevice(),
 				descriptorPool,
 				sets.size(),
-				sets.data());
+				(VkDescriptorSet*)sets.data());
 		}
 
 		vkDestroyDescriptorPool(DeviceInstance.getDevice(), descriptorPool, nullptr);
@@ -50,6 +49,57 @@ namespace RT::Vulkan
 		{
 			vkDestroyDescriptorSetLayout(DeviceInstance.getDevice(), descriptorLayout, nullptr);
 		}
+	}
+
+	void Descriptors::write(
+		const uint32_t layout,
+		const uint32_t set,
+		const uint32_t binding,
+		const VulkanUniform& uniform) const
+	{
+		auto writeSets = MultiVkWriteDescriptorSet{};
+		uint32_t setNr = 0u;
+		for (auto& write : writeSets)
+		{
+			write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			write.dstSet = layoutSets[layout][set][setNr];
+			write.dstBinding = binding;
+			write.descriptorType = uniformType2VkDescriptorType(uniform.uniformType);
+			write.descriptorCount = 1;
+			write.pBufferInfo = uniform.getWriteBufferInfo(setNr);
+			setNr++;
+		}
+
+		vkUpdateDescriptorSets(DeviceInstance.getDevice(), writeSets.size(), writeSets.data(), 0, nullptr);
+	}
+	
+	void Descriptors::write(
+		const uint32_t layout,
+		const uint32_t set,
+		const uint32_t binding,
+		const VulkanTexture& sampler,
+		const RT::UniformType samplerType) const
+	{
+		const auto info = sampler.getWriteImageInfo();
+		auto writeSets = MultiVkWriteDescriptorSet{};
+		uint32_t setNr = 0u;
+		for (auto& write : writeSets)
+		{
+			write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			write.dstSet = layoutSets[layout][set][setNr];
+			write.dstBinding = binding;
+			write.descriptorType = uniformType2VkDescriptorType(samplerType);
+			write.descriptorCount = 1;
+			write.pImageInfo = &info;
+			setNr++;
+		}
+
+		vkUpdateDescriptorSets(DeviceInstance.getDevice(), writeSets.size(), writeSets.data(), 0, nullptr);
+	}
+
+	VkDescriptorSet Descriptors::currFrameSet(const uint32_t layout, const uint32_t set) const
+	{
+		return layoutSets[layout][set][SwapchainInstance->getCurrentFrame()];
 	}
 
 	void Descriptors::createLayout(const UniformLayouts& uniformLayouts)
@@ -61,7 +111,7 @@ namespace RT::Vulkan
 			for (uint32_t i = 0; i < uniformLayout.layout.size(); i++)
 			{
 				bindings[i].binding = i;
-				bindings[i].descriptorType = descriptorType2VkType(uniformLayout.layout[i]);
+				bindings[i].descriptorType = uniformType2VkDescriptorType(uniformLayout.layout[i]);
 				bindings[i].descriptorCount = uniformLayout.nrOfSets;
 				bindings[i].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_ALL_GRAPHICS;
 			}
@@ -86,11 +136,13 @@ namespace RT::Vulkan
 	void Descriptors::createPool(const UniformLayouts& uniformLayouts)
 	{
 		auto descriptors = std::unordered_map<UniformType, uint32_t>{};
+		uint32_t setsCount = 0u;
 		for (const auto& uniformLayout : uniformLayouts)
 		{
-			for (int32_t i = 0; i < uniformLayout.layout.size(); i++)
+			setsCount += uniformLayout.nrOfSets;
+			for (const auto layout : uniformLayout.layout)
 			{
-				descriptors[uniformLayout.layout[i]] += uniformLayout.nrOfSets;
+				descriptors[layout] += uniformLayout.nrOfSets * Constants::MAX_FRAMES_IN_FLIGHT;
 			}
 		}
 
@@ -98,7 +150,7 @@ namespace RT::Vulkan
 		int32_t poolIdx = 0;
 		for (auto [type, count] : descriptors)
 		{
-			pools[poolIdx].type = descriptorType2VkType(type);
+			pools[poolIdx].type = uniformType2VkDescriptorType(type);
 			pools[poolIdx].descriptorCount = count;
 			poolIdx++;
 		}
@@ -106,7 +158,7 @@ namespace RT::Vulkan
 		auto descriptorPoolInfo = VkDescriptorPoolCreateInfo{};
 		descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		descriptorPoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-		descriptorPoolInfo.maxSets = Swapchain::MAX_FRAMES_IN_FLIGHT;
+		descriptorPoolInfo.maxSets = setsCount * Constants::MAX_FRAMES_IN_FLIGHT;
 		descriptorPoolInfo.poolSizeCount = pools.size();
 		descriptorPoolInfo.pPoolSizes = pools.data();
 
@@ -126,17 +178,17 @@ namespace RT::Vulkan
 		{
 			auto& sets = layoutSets[layoutIdx];
 
-			auto setsLayouts = std::vector<VkDescriptorSetLayout>(uniformLayouts[layoutIdx].nrOfSets);
-			for (int32_t i = 0; i < uniformLayouts[layoutIdx].nrOfSets; i++)
+			auto setsLayouts = std::vector<MultiVkDescriptorSetLayout>(uniformLayouts[layoutIdx].nrOfSets);
+			for (auto& setsLayout : setsLayouts)
 			{
-				setsLayouts[i] = descriptorLayouts[layoutIdx];
+				setsLayout.fill(descriptorLayouts[layoutIdx]);
 			}
 
 			auto allocInfo = VkDescriptorSetAllocateInfo{};
 			allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 			allocInfo.descriptorPool = descriptorPool;
-			allocInfo.descriptorSetCount = setsLayouts.size();
-			allocInfo.pSetLayouts = setsLayouts.data();
+			allocInfo.descriptorSetCount = setsLayouts.size() * Constants::MAX_FRAMES_IN_FLIGHT;
+			allocInfo.pSetLayouts = (const VkDescriptorSetLayout*)setsLayouts.data();
 
 			sets.resize(setsLayouts.size());
 
@@ -144,45 +196,9 @@ namespace RT::Vulkan
 				vkAllocateDescriptorSets(
 					DeviceInstance.getDevice(),
 					&allocInfo,
-					sets.data()) == VK_SUCCESS,
+					(VkDescriptorSet*)sets.data()) == VK_SUCCESS,
 				"failed to create descriptor set!");
 		}
-	}
-
-	void Descriptors::write(
-		const uint32_t layout,
-		const uint32_t set,
-		const uint32_t binding,
-		const Uniform& uniform) const
-	{
-		const auto& vkUniform = static_cast<const VulkanUniform&>(uniform);
-
-		auto write = VkWriteDescriptorSet{};
-		write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		write.dstSet = layoutSets[layout][set];
-		write.dstBinding = binding;
-		switch (vkUniform.uniformType)
-		{
-			case UniformType::Uniform:
-				write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-				write.pBufferInfo = &vkUniform.bufferInfo;
-				break;
-			case UniformType::Storage:
-				write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-				write.pBufferInfo = &vkUniform.bufferInfo;
-				break;
-			case UniformType::Sampler:
-				write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-				write.pImageInfo = &vkUniform.imgInfo;
-				break;
-			case UniformType::Image:
-				write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-				write.pImageInfo = &vkUniform.imgInfo;
-				break;
-		}
-		write.descriptorCount = 1;
-
-		vkUpdateDescriptorSets(DeviceInstance.getDevice(), 1, &write, 0, nullptr);
 	}
 
 }

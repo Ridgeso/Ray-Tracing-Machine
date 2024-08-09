@@ -32,6 +32,8 @@ namespace RT::Vulkan
 
 		void initImGui();
 
+		static void flushUniforms();
+
 	private:
 		std::vector<VkCommandBuffer> commandBuffers = {};
 		

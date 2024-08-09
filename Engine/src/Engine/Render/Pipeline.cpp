@@ -6,7 +6,7 @@
 namespace RT
 {
 
-	Local<Pipeline> Pipeline::create(const PipelineSpec& spec)
+	Local<Pipeline> Pipeline::create(PipelineSpec& spec)
 	{
 		switch (RenderApi::api)
 		{

@@ -1,9 +1,11 @@
 #pragma once
+#include <array>
 #include <vector>
 
 #include "Engine/Render/Buffer.h"
 
 #include "Device.h"
+#include "utils/Constants.h"
 
 #define GLM_FORCE_RADAINS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -59,7 +61,6 @@ namespace RT::Vulkan
 
 	public:
 		VulkanUniform(const UniformType uniformType, const uint32_t instanceSize);
-		VulkanUniform(const Texture& sampler, const uint32_t binding, const UniformType samplerType);
 		~VulkanUniform() final;
 
 		VulkanUniform(const VulkanUniform&) = delete;
@@ -67,39 +68,38 @@ namespace RT::Vulkan
 		VulkanUniform& operator=(const VulkanUniform&) = delete;
 		VulkanUniform&& operator=(VulkanUniform&&) = delete;
 
-		void bind(const uint32_t binding) const final;
 		void setData(const void* data, const uint32_t size, const uint32_t offset = 0u) final;
-		
-		void flush() const;
+
+		bool flush() const;
+		const VkDescriptorBufferInfo* getWriteBufferInfo(const uint32_t buffNr) const
+		{
+			return descriptorInfo.data() + buffNr;
+		}
 
 		VkBuffer getBuffer() const { return uniBuffer; }
 
-
 	private:
+		const uint32_t wholeSize() const { return alignedSize * Constants::MAX_FRAMES_IN_FLIGHT; }
+
+		bool stillNeedFlush() const;
+		void copyToRegionBuff(const uint8_t buffIdx) const;
+
 		static constexpr VkBufferUsageFlagBits uniformType2VkBuffBit(const UniformType uniformType);
 		static constexpr uint32_t calculateAlignedSize(const uint32_t initialSize, const uint32_t minAlignment);
 
 	private:
 		UniformType uniformType = UniformType::None;
 		uint32_t alignedSize = 0u;
+		std::vector<uint8_t> masterBuffer = {};
 
 		VkBuffer uniBuffer = {};
 		VkDeviceMemory uniMemory = {};
 		void* mapped = nullptr;
-
-		mutable VkDescriptorBufferInfo bufferInfo = {};
-		mutable VkDescriptorImageInfo imgInfo = {};
-	};
-
-	class MockVulkanUniform : public Uniform
-	{
-	public:
-		MockVulkanUniform(const UniformType uniformType, const uint32_t instanceSize) {}
-		MockVulkanUniform(const Texture& sampler, const uint32_t binding) {}
-		~MockVulkanUniform() final {}
-
-		void bind(const uint32_t binding) const final {}
-		void setData(const void* data, const uint32_t size, const uint32_t offset = 0u) final {}
+		
+		std::array<VkDescriptorBufferInfo, Constants::MAX_FRAMES_IN_FLIGHT> descriptorInfo = {};
+		mutable std::array<bool, Constants::MAX_FRAMES_IN_FLIGHT> flashInThisFrame = {};
+		
+		//VkDescriptorImageInfo imgInfo;
 	};
 
 	std::vector<VulkanUniform*>& getUniformsToFlush();

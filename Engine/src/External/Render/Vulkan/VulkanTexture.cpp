@@ -102,6 +102,15 @@ namespace RT::Vulkan
 		currLayout = newLayout;
 	}
 
+	const VkDescriptorImageInfo VulkanTexture::getWriteImageInfo() const
+	{
+		auto info = VkDescriptorImageInfo();
+		info.sampler = sampler;
+		info.imageView = imageView;
+		info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+		return info;
+	}
+
 	constexpr VkFormat VulkanTexture::imageFormat2VulkanFormat(const ImageFormat imageFormat)
 	{
 		switch (imageFormat)

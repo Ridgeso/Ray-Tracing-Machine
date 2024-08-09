@@ -6,6 +6,7 @@
 
 #include "RenderPass.h"
 #include "Buffer.h"
+#include "Texture.h"
 
 namespace RT
 {
@@ -30,12 +31,13 @@ namespace RT
 		virtual ~Pipeline() = 0;
 
 		virtual void updateSet(const uint32_t layout, const uint32_t set, const uint32_t binding, const Uniform& uniform) const = 0;
+		virtual void updateSet(const uint32_t layout, const uint32_t set, const uint32_t binding, const Texture& sampler) const = 0;
 		virtual void bindSet(const uint32_t layout, const uint32_t set) const = 0;
 
 		virtual void bind() const = 0;
 		virtual void dispatch(const glm::uvec2 groups) const = 0;
 
-		static Local<Pipeline> create(const PipelineSpec& spec);
+		static Local<Pipeline> create(PipelineSpec& spec);
 	};
 
 }
