@@ -27,9 +27,6 @@ namespace RT
 		virtual void setData(const uint32_t size, const void* data) const = 0;
 		virtual const int32_t getCount() const = 0;
 
-		virtual void bind() const = 0;
-		virtual void unbind() const = 0;
-		
 		static Local<VertexBuffer> create(const uint32_t size);
 		static Local<VertexBuffer> create(const uint32_t size, const void* data);
 	};

@@ -72,7 +72,7 @@ namespace RT::Vulkan
             &imageIndex);
     }
 
-    VkResult Swapchain::submitCommandBuffers(const VkCommandBuffer& buffers, uint32_t& imageIndex)
+    VkResult Swapchain::submitCommandBuffers(const VkCommandBuffer& frameBuffer, const VkCommandBuffer& guiBuffer, uint32_t& imageIndex)
     {
         const auto& deviceInstance = DeviceInstance;
 
@@ -82,15 +82,17 @@ namespace RT::Vulkan
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
         constexpr auto waitStages = std::array<VkPipelineStageFlags, 1>{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-        submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pWaitSemaphores = &imageAvailableSemaphores[currentFrame];
+        auto waitStagesSemaphores = std::array{ imageAvailableSemaphores[currentFrame] };
+        submitInfo.waitSemaphoreCount = waitStagesSemaphores.size();
+        submitInfo.pWaitSemaphores = waitStagesSemaphores.data();
         submitInfo.pWaitDstStageMask = waitStages.data();
 
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &buffers;
+        const auto buffers = std::array{ frameBuffer, guiBuffer };
+        submitInfo.commandBufferCount = buffers.size();
+        submitInfo.pCommandBuffers = buffers.data();
 
-        auto signalSemaphores = std::array<VkSemaphore, 1>{ renderFinishedSemaphores[currentFrame] };
-        submitInfo.signalSemaphoreCount = 1;
+        auto signalSemaphores = std::array{ renderFinishedSemaphores[currentFrame] };
+        submitInfo.signalSemaphoreCount = signalSemaphores.size();
         submitInfo.pSignalSemaphores = signalSemaphores.data();
 
         RT_CORE_ASSERT(
@@ -100,7 +102,7 @@ namespace RT::Vulkan
         auto presentInfo = VkPresentInfoKHR{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
-        presentInfo.waitSemaphoreCount = 1;
+        presentInfo.waitSemaphoreCount = signalSemaphores.size();
         presentInfo.pWaitSemaphores = signalSemaphores.data();
 
         presentInfo.swapchainCount = 1;

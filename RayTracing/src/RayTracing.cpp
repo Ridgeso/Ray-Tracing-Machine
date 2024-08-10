@@ -264,7 +264,7 @@ public:
 		//ImGui::ShowDemoWindow(&demo);
 	}
 
-	void update() final
+	void update(const float ts) final
 	{
 		const auto winSize = RT::Application::getWindow()->getSize();
 

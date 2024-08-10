@@ -148,23 +148,21 @@ namespace RT::Vulkan
     void VulkanPipeline::bind() const
     {
         bindDescriptors<VK_PIPELINE_BIND_POINT_GRAPHICS>();
-
-        vkCmdBindPipeline(Context::frameCmds, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+        vkCmdBindPipeline(Context::frameCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
     }
 
     void VulkanPipeline::dispatch(const glm::uvec2 groups) const
     {
         bindDescriptors<VK_PIPELINE_BIND_POINT_COMPUTE>();
-
-        vkCmdBindPipeline(Context::frameCmds, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
-        vkCmdDispatch(Context::frameCmds, groups.x / 8, groups.y / 8, 1);
+        vkCmdBindPipeline(Context::frameCmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
+        vkCmdDispatch(Context::frameCmd, groups.x / 8, groups.y / 8, 1);
     }
 
     template <VkPipelineBindPoint PipelinePoint>
     void VulkanPipeline::bindDescriptors() const
     {
         vkCmdBindDescriptorSets(
-            Context::frameCmds,
+            Context::frameCmd,
             PipelinePoint,
             pipelineLayout,
             0,

@@ -59,7 +59,11 @@ namespace RT::Vulkan
 		{
 			auto dstAccessMask = imageAccess2VulkanAccess(imageAccess);
 			auto newLayout = imageLayout2VulkanLayout(imageLayout);
+			
 			vulkanBarrier(cmdBuffer, dstAccessMask, newLayout);
+
+			currAccessMask = dstAccessMask;
+			currLayout = newLayout;
 		});
 	}
 
@@ -69,7 +73,11 @@ namespace RT::Vulkan
 	{
 		auto dstAccessMask = imageAccess2VulkanAccess(imageAccess);
 		auto newLayout = imageLayout2VulkanLayout(imageLayout);
-		vulkanBarrier(Context::frameCmds, dstAccessMask, newLayout);
+
+		vulkanBarrier(Context::frameCmd, dstAccessMask, newLayout);
+
+		currAccessMask = dstAccessMask;
+		currLayout = newLayout;
 	}
 
 	void VulkanTexture::vulkanBarrier(
@@ -97,9 +105,6 @@ namespace RT::Vulkan
 			0, nullptr,
 			0, nullptr,
 			1, &barrier);
-
-		currAccessMask = dstAccessMask;
-		currLayout = newLayout;
 	}
 
 	const VkDescriptorImageInfo VulkanTexture::getWriteImageInfo() const

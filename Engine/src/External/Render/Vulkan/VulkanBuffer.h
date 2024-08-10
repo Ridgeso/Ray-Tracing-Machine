@@ -40,9 +40,6 @@ namespace RT::Vulkan
 		void setData(const uint32_t size, const void* data) const final;
 		const int32_t getCount() const final { return 0; }
 
-		void bind() const final;
-		void unbind() const final;
-
 		void bind(const VkCommandBuffer commandBuffer) const;
 		void draw(const VkCommandBuffer commandBuffer) const;
 

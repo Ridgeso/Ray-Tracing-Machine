@@ -5,13 +5,14 @@ namespace RT
 	
 	struct Frame
 	{
-		virtual ~Frame() = 0 {}
+		Frame() {}
+		virtual ~Frame() {}
 
 		virtual void onInit() {}
 		virtual void onShutdown() {}
 
-		virtual void layout() = 0;
-		virtual void update() = 0;
+		virtual void layout() {}
+		virtual void update(const float ts) {}
 	};
 
 }

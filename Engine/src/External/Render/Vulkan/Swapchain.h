@@ -27,7 +27,7 @@ namespace RT::Vulkan
         void shutdown();
 
         VkResult acquireNextImage(uint32_t& imageIndex);
-        VkResult submitCommandBuffers(const VkCommandBuffer& buffers, uint32_t& imageIndex);
+        VkResult submitCommandBuffers(const VkCommandBuffer& frameBuffer, const VkCommandBuffer& guiBuffer, uint32_t& imageIndex);
         bool compareFormats(const Swapchain& other) const;
         static VkFormat findDepthFormat();
 

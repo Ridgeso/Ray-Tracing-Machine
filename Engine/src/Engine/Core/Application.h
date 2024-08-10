@@ -11,7 +11,7 @@ namespace RT
 	struct ApplicationSpecs
 	{
 		std::string name;
-		std::function<Local<Frame>()> startupFrameMaker = []() { return nullptr; };
+		std::function<Local<Frame>()> startupFrameMaker;
 	};
 
 	class Application final
@@ -44,7 +44,7 @@ namespace RT
 	};
 	
 	#define RegisterStartupFrame(AppName, StartupFrame)											  \
-		RT::ApplicationSpecs CreateApplicationSpec()										  \
+		RT::ApplicationSpecs CreateApplicationSpec()											  \
 		{																						  \
 			return RT::ApplicationSpecs{ AppName, [] { return RT::makeLocal<StartupFrame>(); } }; \
 		}																						  \

@@ -3,6 +3,8 @@
 
 #include "Engine/Render/RenderApi.h"
 
+#include "utils/Constants.h"
+
 #include <vulkan/vulkan.h>
 
 namespace RT::Vulkan
@@ -27,15 +29,18 @@ namespace RT::Vulkan
 		void endFrame() final;
 
 	private:
-		void recordCommandbuffer(const uint32_t imIdx);
+		void recordGuiCommandbuffer(const uint32_t imIdx);
 		void recreateSwapchain();
 
 		void initImGui();
+		void allocateCmdBuffers(std::vector<VkCommandBuffer>& cmdBuff);
+		void freeCmdBuffers(std::vector<VkCommandBuffer>& cmdBuff);
 
 		static void flushUniforms();
 
 	private:
-		std::vector<VkCommandBuffer> commandBuffers = {};
+		std::vector<VkCommandBuffer> cmdBuffers = {};
+		std::vector<VkCommandBuffer> imGuiCmdBuffers = {};
 		
 		VkExtent2D extent = {};
 

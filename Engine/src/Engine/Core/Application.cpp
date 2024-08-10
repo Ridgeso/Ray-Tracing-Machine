@@ -41,11 +41,11 @@ namespace RT
 		{
 			auto appTimer = Timer{};
 
-			frame->update();
-
 			window->beginUI();
 			frame->layout();
 			window->endUI();
+
+			frame->update(appFrameDuration);
 
 			isRunning &= window->update();
 			isRunning &= window->pullEvents();

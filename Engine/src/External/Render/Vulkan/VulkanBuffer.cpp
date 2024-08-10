@@ -49,14 +49,6 @@ namespace RT::Vulkan
 		vkUnmapMemory(device, vertexMemory);
 	}
 
-	void VulkanVertexBuffer::bind() const
-	{
-	}
-
-	void VulkanVertexBuffer::unbind() const
-	{
-	}
-
 	void VulkanVertexBuffer::bind(const VkCommandBuffer commandBuffer) const
 	{
 		auto buffers = std::array<VkBuffer, 1>{vertexBuffer};
