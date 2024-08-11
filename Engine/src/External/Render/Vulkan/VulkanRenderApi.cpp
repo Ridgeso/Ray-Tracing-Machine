@@ -38,8 +38,8 @@ namespace RT::Vulkan
 		auto& deviceInstance = DeviceInstance;
 		vkDeviceWaitIdle(deviceInstance.getDevice());
 
-		vkDestroyDescriptorPool(deviceInstance.getDevice(), descriptorPool, nullptr);
 		ImGui_ImplVulkan_Shutdown();
+		vkDestroyDescriptorPool(deviceInstance.getDevice(), descriptorPool, nullptr);
 
 		freeCmdBuffers(cmdBuffers);
 		freeCmdBuffers(imGuiCmdBuffers);
@@ -217,22 +217,15 @@ namespace RT::Vulkan
 		vkInfo.Queue = device.getGraphicsQueue();
 		vkInfo.PipelineCache = pipelineCache;
 		vkInfo.DescriptorPool = descriptorPool;
+		vkInfo.RenderPass = SwapchainInstance->getRenderPass();
 		vkInfo.Subpass = 0;
 		vkInfo.MinImageCount = Swapchain::minImageCount();
 		vkInfo.ImageCount = SwapchainInstance->getSwapChainImages().size();
 		vkInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 		vkInfo.Allocator = nullptr;
 		vkInfo.CheckVkResultFn = checkVkResultCallback;
-		result = ImGui_ImplVulkan_Init(&vkInfo, SwapchainInstance->getRenderPass());
+		result = ImGui_ImplVulkan_Init(&vkInfo);
 		RT_ASSERT(result, "ImGui not initialized");
-
-		// upload fonst
-		device.execSingleCmdPass([](const auto cmdBuff)
-		{
-			ImGui_ImplVulkan_CreateFontsTexture(cmdBuff);
-		});
-		vkDeviceWaitIdle(device.getDevice());
-		ImGui_ImplVulkan_DestroyFontUploadObjects();	
 	}
 
 	void VulkanRenderApi::allocateCmdBuffers(std::vector<VkCommandBuffer>& cmdBuff)

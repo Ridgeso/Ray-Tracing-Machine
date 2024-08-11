@@ -80,8 +80,14 @@
     <None Include="imgui.ini" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Dependencies\ImGui\ImGui.vcxproj">
+    <ProjectReference Include="..\Dependencies\GLFW.vcxproj">
+      <Project>{154B857C-0182-860D-AA6E-6C109684020F}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Dependencies\ImGui.vcxproj">
       <Project>{4988c892-af06-4b15-bf14-eeac31e96fdb}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Dependencies\spdlog.vcxproj">
+      <Project>{8ead431c-7a4f-6ef2-630a-82464f4bf542}</Project>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -119,21 +125,21 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <PublicIncludeDirectories>$(ProjectDir)src;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\glfw\include;$(SolutionDir)Dependencies\ImGui;$(SolutionDir)Dependencies\spdlog\include;$(PublicIncludeDirectories)</PublicIncludeDirectories>
+    <PublicIncludeDirectories>$(ProjectDir)src;$(SolutionDir)Dependencies\GLFW\include;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\ImGui;$(SolutionDir)Dependencies\spdlog\include;$(PublicIncludeDirectories)</PublicIncludeDirectories>
     <AllProjectIncludesArePublic>false</AllProjectIncludesArePublic>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <PublicIncludeDirectories>$(ProjectDir)src;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\glfw\include;$(SolutionDir)Dependencies\ImGui;$(SolutionDir)Dependencies\spdlog\include;$(PublicIncludeDirectories)</PublicIncludeDirectories>
+    <PublicIncludeDirectories>$(ProjectDir)src;$(SolutionDir)Dependencies\GLFW\include;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\ImGui;$(SolutionDir)Dependencies\spdlog\include;$(PublicIncludeDirectories)</PublicIncludeDirectories>
     <AllProjectIncludesArePublic>false</AllProjectIncludesArePublic>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS;GLFW_INCLUDE_NONE;RT_ROOT_PATH=R"($(ProjectDir)src\)";VK_DEBUG;RT_DEBUG;_DEBUG</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS;GLM_ENABLE_EXPERIMENTAL;GLFW_INCLUDE_NONE;RT_ROOT_PATH=R"($(ProjectDir)src\)";VK_DEBUG;RT_DEBUG;_DEBUG</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Engine\src;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\glfw\include;$(SolutionDir)Dependencies\glad\include;$(SolutionDir)Dependencies\spdlog\include;$(VULKAN_SDK)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Engine\src;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\glad\include;$(VULKAN_SDK)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -144,7 +150,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
-      <AdditionalDependencies>gdi32.lib;user32.lib;kernel32.lib;$(SolutionDir)Dependencies\glfw\lib-vc2022\glfw3.lib;$(VULKAN_SDK)\Lib\vulkan-1.lib;$(VULKAN_SDK)\Lib\shaderc_sharedd.lib;$(VULKAN_SDK)\Lib\spirv-cross-cored.lib</AdditionalDependencies>
+      <AdditionalDependencies>gdi32.lib;user32.lib;kernel32.lib;$(VULKAN_SDK)\Lib\vulkan-1.lib;$(VULKAN_SDK)\Lib\shaderc_sharedd.lib;$(VULKAN_SDK)\Lib\spirv-cross-cored.lib</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -153,10 +159,10 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS;GLFW_INCLUDE_NONE;RT_ROOT_PATH=R"($(ProjectDir)src\)";NDEBUG</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS;GLM_ENABLE_EXPERIMENTAL;GLFW_INCLUDE_NONE;RT_ROOT_PATH=R"($(ProjectDir)src\)";NDEBUG</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Engine\src;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\glfw\include;$(SolutionDir)Dependencies\glad\include;$(SolutionDir)Dependencies\spdlog\include;$(VULKAN_SDK)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Engine\src;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\glad\include;$(VULKAN_SDK)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <DebugInformationFormat>None</DebugInformationFormat>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -169,7 +175,7 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
     </Link>
     <Lib>
-      <AdditionalDependencies>gdi32.lib;user32.lib;kernel32.lib;$(SolutionDir)Dependencies\glfw\lib-vc2022\glfw3.lib;$(VULKAN_SDK)\Lib\vulkan-1.lib;$(VULKAN_SDK)\Lib\shaderc_shared.lib;$(VULKAN_SDK)\Lib\spirv-cross-core.lib</AdditionalDependencies>
+      <AdditionalDependencies>gdi32.lib;user32.lib;kernel32.lib;$(VULKAN_SDK)\Lib\vulkan-1.lib;$(VULKAN_SDK)\Lib\shaderc_shared.lib;$(VULKAN_SDK)\Lib\spirv-cross-core.lib</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

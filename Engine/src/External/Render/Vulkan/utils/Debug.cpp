@@ -177,7 +177,7 @@ namespace RT::Vulkan
 
 	void checkVkResultCallback(const VkResult result)
 	{
-		RT_ASSERT(VK_SUCCESS == result, "[Vulkan] Required immediate abort VkResult = {}", result);
+		RT_ASSERT(VK_SUCCESS == result, "[Vulkan] Required immediate abort VkResult = {}", (uint32_t)result);
 	}
 
 	std::vector<const char*> getRequiredExtensions()

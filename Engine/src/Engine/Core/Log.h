@@ -2,6 +2,7 @@
 #include "Engine/Core/Base.h"
 #include "Engine/Core/Utils.h"
 
+#define SPDLOG_COMPILED_LIB
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
 
@@ -21,9 +22,9 @@ namespace RT::Core
 			fmt::format_string<Args...> msg,
 			Args&&... args)
 		{
-			auto prefix = fmt::format("{}:{}", fileInfo.file, fileInfo.line);
-			const auto logBuf = fmt::vformat(msg, fmt::make_format_args(std::forward<Args>(args)...));
-			logger->log(Level, "{} {}", prefix, logBuf);
+			const auto prefix = fmt::format("{}:{} :: ", fileInfo.file, fileInfo.line);
+			const auto logBuf = fmt::vformat(msg, fmt::make_format_args(args...));
+			logger->log(Level, "{}{}", prefix, logBuf);
 		}
 
 		static void setLevel(const spdlog::level::level_enum level);
