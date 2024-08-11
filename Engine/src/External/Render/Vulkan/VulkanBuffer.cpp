@@ -2,9 +2,7 @@
 
 #include "VulkanBuffer.h"
 
-#include "Engine/Core/Log.h"
-#include "Engine/Core/Assert.h"
-
+#include "utils/Debug.h"
 #include "Swapchain.h"
 #include "VulkanTexture.h"
 
@@ -106,13 +104,13 @@ namespace RT::Vulkan
 		: uniformType{uniformType}
 	{
 		const auto vkLimits = DeviceInstance.getLimits();
-		const auto minalignment = std::lcm(
+		const auto minAlignment = std::lcm(
 			vkLimits.nonCoherentAtomSize,
 			UniformType::Uniform == uniformType ?
 				vkLimits.minUniformBufferOffsetAlignment :
 				vkLimits.minStorageBufferOffsetAlignment);
 
-		alignedSize = calculateAlignedSize(instanceSize, minalignment);
+		alignedSize = calculateAlignedSize(instanceSize, minAlignment);
 
 		masterBuffer.resize(alignedSize);
 		std::fill(masterBuffer.begin(), masterBuffer.end(), 0);
@@ -123,7 +121,7 @@ namespace RT::Vulkan
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
 			uniBuffer,
 			uniMemory);
-		vkMapMemory(DeviceInstance.getDevice(), uniMemory, 0, wholeSize(), 0, &mapped);
+		CHECK_VK(vkMapMemory(DeviceInstance.getDevice(), uniMemory, 0, wholeSize(), 0, &mapped), "faile to map Uniform memory!");
 
 		descriptorInfo = std::array<VkDescriptorBufferInfo, Constants::MAX_FRAMES_IN_FLIGHT>{};
 		for (uint32_t offsetIdx = 0u; offsetIdx < descriptorInfo.size(); offsetIdx++)
@@ -170,8 +168,8 @@ namespace RT::Vulkan
 		memRange.memory = uniMemory;
 		memRange.offset = alignedSize * currFrame;
 		memRange.size = alignedSize;
-		RT_CORE_ASSERT(
-			vkFlushMappedMemoryRanges(DeviceInstance.getDevice(), 1, &memRange) == VK_SUCCESS,
+		CHECK_VK(
+			vkFlushMappedMemoryRanges(DeviceInstance.getDevice(), 1, &memRange),
 			"Failed to flush uniform buffer!");
 		
 		flashInThisFrame[currFrame] = false;

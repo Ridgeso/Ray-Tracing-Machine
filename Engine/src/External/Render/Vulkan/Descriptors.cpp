@@ -1,7 +1,7 @@
 #include "Descriptors.h"
 #include "Context.h"
 
-#include "Engine/Core/Assert.h"
+#include "utils/Debug.h"
 
 #include "Swapchain.h"
 
@@ -123,12 +123,12 @@ namespace RT::Vulkan
 
 			auto& descriptorLayout = descriptorLayouts.emplace_back();
 
-			RT_CORE_ASSERT(
+			CHECK_VK(
 				vkCreateDescriptorSetLayout(
 					DeviceInstance.getDevice(),
 					&descriptorSetLayoutInfo,
 					nullptr,
-					&descriptorLayout) == VK_SUCCESS,
+					&descriptorLayout),
 				"failed to create descriptor set layout!");
 		}
 	}
@@ -162,12 +162,12 @@ namespace RT::Vulkan
 		descriptorPoolInfo.poolSizeCount = pools.size();
 		descriptorPoolInfo.pPoolSizes = pools.data();
 
-		RT_CORE_ASSERT(
+		CHECK_VK(
 			vkCreateDescriptorPool(
 				DeviceInstance.getDevice(),
 				&descriptorPoolInfo,
 				nullptr,
-				&descriptorPool) == VK_SUCCESS,
+				&descriptorPool),
 			"failed to create descriptor pool!");
 	}
 
@@ -192,11 +192,11 @@ namespace RT::Vulkan
 
 			sets.resize(setsLayouts.size());
 
-			RT_CORE_ASSERT(
+			CHECK_VK(
 				vkAllocateDescriptorSets(
 					DeviceInstance.getDevice(),
 					&allocInfo,
-					(VkDescriptorSet*)sets.data()) == VK_SUCCESS,
+					(VkDescriptorSet*)sets.data()),
 				"failed to create descriptor set!");
 		}
 	}

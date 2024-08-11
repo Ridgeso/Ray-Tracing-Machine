@@ -1,5 +1,5 @@
 #include "Swapchain.h"
-#include "Engine/Core/Assert.h"
+#include "utils/Debug.h"
 
 namespace RT::Vulkan
 {
@@ -95,8 +95,8 @@ namespace RT::Vulkan
         submitInfo.signalSemaphoreCount = signalSemaphores.size();
         submitInfo.pSignalSemaphores = signalSemaphores.data();
 
-        RT_CORE_ASSERT(
-            vkQueueSubmit(deviceInstance.getGraphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame]) == VK_SUCCESS,
+        CHECK_VK(
+            vkQueueSubmit(deviceInstance.getGraphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame]),
             "failed to submit draw command buffer!");
 
         auto presentInfo = VkPresentInfoKHR{};
@@ -181,8 +181,8 @@ namespace RT::Vulkan
 
         createInfo.oldSwapchain = oldSwapchain == nullptr ? VK_NULL_HANDLE : oldSwapchain->swapChain;
 
-        RT_CORE_ASSERT(
-            vkCreateSwapchainKHR(deviceInstance.getDevice(), &createInfo, nullptr, &swapChain) == VK_SUCCESS,
+        CHECK_VK(
+            vkCreateSwapchainKHR(deviceInstance.getDevice(), &createInfo, nullptr, &swapChain),
             "failed to create swap chain!");
 
         vkGetSwapchainImagesKHR(deviceInstance.getDevice(), swapChain, &imageCount, nullptr);
@@ -213,8 +213,8 @@ namespace RT::Vulkan
             viewInfo.subresourceRange.baseArrayLayer = 0;
             viewInfo.subresourceRange.layerCount = 1;
 
-            RT_CORE_ASSERT(
-                vkCreateImageView(DeviceInstance.getDevice(), &viewInfo, nullptr, &swapChainImageViews[i]) == VK_SUCCESS,
+            CHECK_VK(
+                vkCreateImageView(DeviceInstance.getDevice(), &viewInfo, nullptr, &swapChainImageViews[i]),
                 "failed to create texture image view!");
         }
     }
@@ -274,8 +274,8 @@ namespace RT::Vulkan
         renderPassInfo.dependencyCount = 1;
         renderPassInfo.pDependencies = &dependency;
 
-        RT_CORE_ASSERT(
-            vkCreateRenderPass(DeviceInstance.getDevice(), &renderPassInfo, nullptr, &renderPass) == VK_SUCCESS,
+        CHECK_VK(
+            vkCreateRenderPass(DeviceInstance.getDevice(), &renderPassInfo, nullptr, &renderPass),
             "failed to create render pass!");
     }
 
@@ -295,12 +295,12 @@ namespace RT::Vulkan
             framebufferInfo.height = swapChainExtent.height;
             framebufferInfo.layers = 1;
 
-            RT_CORE_ASSERT(
+            CHECK_VK(
                 vkCreateFramebuffer(
                     DeviceInstance.getDevice(),
                     &framebufferInfo,
                     nullptr,
-                    &swapChainFramebuffers[i]) == VK_SUCCESS,
+                    &swapChainFramebuffers[i]),
                 "failed to create framebuffer!");
         }
     }
@@ -318,11 +318,15 @@ namespace RT::Vulkan
 
         for (size_t i = 0; i < Constants::MAX_FRAMES_IN_FLIGHT; i++)
         {
-            RT_CORE_ASSERT(
-                vkCreateSemaphore(DeviceInstance.getDevice(), &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-                vkCreateSemaphore(DeviceInstance.getDevice(), &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
-                vkCreateFence(DeviceInstance.getDevice(), &fenceInfo, nullptr, &inFlightFences[i]) == VK_SUCCESS,
-                "failed to create synchronization objects for a frame!");
+            CHECK_VK(
+                vkCreateSemaphore(DeviceInstance.getDevice(), &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]),
+                "failed to create render available synchronization objects for a frame!");
+            CHECK_VK(
+                vkCreateSemaphore(DeviceInstance.getDevice(), &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]),
+                "failed to create render finish synchronization objects for a frame!");
+            CHECK_VK(
+                vkCreateFence(DeviceInstance.getDevice(), &fenceInfo, nullptr, &inFlightFences[i]),
+                "failed to create render fence synchronization objects for a frame!");
         }
     }
 

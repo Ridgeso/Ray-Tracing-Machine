@@ -1,8 +1,6 @@
 #include "Device.h"
 #include <unordered_set>
 
-#include "Engine/Core/Log.h"
-#include "Engine/Core/Assert.h"
 #include "utils/Debug.h"
 
 #include "Engine/Core/Application.h"
@@ -28,7 +26,7 @@ namespace RT::Vulkan
         vkDestroyCommandPool(device, commandPool, nullptr);
         vkDestroyDevice(device, nullptr);
          
-        destroyDebugUtilsMessengerEXT(instance, nullptr);
+        closeDebugMessenger(instance);
        
         vkDestroySurfaceKHR(instance, surface, nullptr);
         vkDestroyInstance(instance, nullptr);
@@ -40,7 +38,7 @@ namespace RT::Vulkan
         VkImage& image,
         VkDeviceMemory& imageMemory) const
     {
-        RT_CORE_ASSERT(vkCreateImage(device, &imageInfo, nullptr, &image) == VK_SUCCESS, "failed to create image!");
+        CHECK_VK(vkCreateImage(device, &imageInfo, nullptr, &image), "failed to create image!");
 
         auto memRequirements = VkMemoryRequirements{};
         vkGetImageMemoryRequirements(device, image, &memRequirements);
@@ -50,8 +48,8 @@ namespace RT::Vulkan
         allocInfo.allocationSize = memRequirements.size;
         allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
 
-        RT_CORE_ASSERT(vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory) == VK_SUCCESS, "failed to allocate image memory!");
-        RT_CORE_ASSERT(vkBindImageMemory(device, image, imageMemory, 0) == VK_SUCCESS, "failed to bind image memory!");
+        CHECK_VK(vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory), "failed to allocate image memory!");
+        CHECK_VK(vkBindImageMemory(device, image, imageMemory, 0), "failed to bind image memory!");
     }
 
     VkFormat Device::findSupportedFormat(
@@ -70,7 +68,7 @@ namespace RT::Vulkan
                 return format;
             }
         }
-        RT_CORE_ASSERT(false, "failed to find supported format!");
+        RT_ASSERT(false, "failed to find supported format!");
     }
 
     void Device::createBuffer(
@@ -86,8 +84,8 @@ namespace RT::Vulkan
         bufferInfo.usage = usage;
         bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-        RT_CORE_ASSERT(
-            vkCreateBuffer(device, &bufferInfo, nullptr, &buffer) == VK_SUCCESS,
+        CHECK_VK(
+            vkCreateBuffer(device, &bufferInfo, nullptr, &buffer),
             "failed to create vertex buffer");
 
         auto memRequirements = VkMemoryRequirements{};
@@ -98,8 +96,8 @@ namespace RT::Vulkan
         allocInfo.allocationSize = memRequirements.size;
         allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
 
-        RT_CORE_ASSERT(
-            vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) == VK_SUCCESS,
+        CHECK_VK(
+            vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory),
             "failed to allocate vertex buffer");
 
         vkBindBufferMemory(device, buffer, bufferMemory, 0);
@@ -116,7 +114,7 @@ namespace RT::Vulkan
                 return memType;
             }
         }
-        RT_CORE_ASSERT(false, "failed to find suitable memory type!");
+        RT_ASSERT(false, "failed to find suitable memory type!");
     }
 
     void Device::createInstance()
@@ -140,20 +138,19 @@ namespace RT::Vulkan
         auto debugCreateInfo = populateDebugMessengerCreateInfo();
         enableDebugingForCreateInfo(createInfo, &debugCreateInfo);
 
-        RT_ASSERT(vkCreateInstance(&createInfo, nullptr, &instance) == VK_SUCCESS);
+        CHECK_VK(vkCreateInstance(&createInfo, nullptr, &instance), "failed to create Vulkan Instance");
 
-        validateRequiredInstanceExtensions();
         setupDebugMessenger(instance);
     }
 
     void Device::createSurface()
     {
-        RT_CORE_ASSERT(
+        CHECK_VK(
             glfwCreateWindowSurface(
                 instance,
                 (GLFWwindow*)Application::getWindow()->getNativWindow(),
                 nullptr,
-                &surface) == VK_SUCCESS,
+                &surface),
             "failed to craete window surface");
     }
 
@@ -168,15 +165,12 @@ namespace RT::Vulkan
         vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
         auto phiDev = std::find_if(devices.begin(), devices.end(), [this](auto dev) { return isDeviceSuitable(dev); });
-        RT_CORE_ASSERT(phiDev != devices.end(), "Failed to find any suitable GPU");
+        RT_ASSERT(phiDev != devices.end(), "Failed to find any suitable GPU");
         physicalDevice = *phiDev;
 
-        if (EnableValidationLayers)
-        {
-            vkGetPhysicalDeviceProperties(physicalDevice, &properties);
-            RT_LOG_INFO(
-                "physical device: {}", properties.deviceName);
-        }
+        vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
+        RT_LOG_DEBUG(
+            "physical device: {}", deviceProperties.deviceName);
     }
 
     void Device::createLogicalDevice()
@@ -212,7 +206,7 @@ namespace RT::Vulkan
         createInfo.ppEnabledExtensionNames = deviceExtensions.data();
         enableDebugingForCreateInfo(createInfo);
         
-        RT_CORE_ASSERT(vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) == VK_SUCCESS, "failed to create logical device");
+        CHECK_VK(vkCreateDevice(physicalDevice, &createInfo, nullptr, &device), "failed to create logical device");
 
         vkGetDeviceQueue(device, queueFamilyIndices.graphicsFamily, 0, &graphicsQueue);
         vkGetDeviceQueue(device, queueFamilyIndices.presentFamily, 0, &presentQueue);
@@ -226,27 +220,7 @@ namespace RT::Vulkan
         poolInfo.flags =
             VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
-        RT_CORE_ASSERT(vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) == VK_SUCCESS, "failed to create command pool!");
-    }
-
-    void Device::validateRequiredInstanceExtensions() const
-    {
-        uint32_t extensionCount = 0;
-        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-        auto extensions = std::vector<VkExtensionProperties>(extensionCount);
-        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
-
-        auto available = std::unordered_set<std::string>{};
-        for (const auto& extension : extensions)
-        {
-            available.insert(extension.extensionName);
-        }
-
-        auto requiredExtensions = getRequiredExtensions();
-        for (const auto& required : requiredExtensions)
-        {
-            RT_CORE_ASSERT(available.find(required) != available.end(), "Missing required extention: {}", required);
-        }
+        CHECK_VK(vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool), "failed to create command pool!");
     }
 
     bool Device::isDeviceSuitable(VkPhysicalDevice phyDev)
@@ -344,25 +318,19 @@ namespace RT::Vulkan
         allocInfo.commandBufferCount = 1;
 
         auto cmdBuffer = VkCommandBuffer{};
-        RT_CORE_ASSERT(
-            vkAllocateCommandBuffers(device, &allocInfo, &cmdBuffer) == VK_SUCCESS,
-            "failed to allocate command buffers!");
+        CHECK_VK(vkAllocateCommandBuffers(device, &allocInfo, &cmdBuffer), "failed to allocate command buffers!");
 
         auto beginInfo = VkCommandBufferBeginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        RT_CORE_ASSERT(
-            vkBeginCommandBuffer(cmdBuffer, &beginInfo) == VK_SUCCESS,
-            "failed to begin command buffer");
+        CHECK_VK(vkBeginCommandBuffer(cmdBuffer, &beginInfo), "failed to begin command buffer");
 
         return cmdBuffer;
     }
 
     void Device::flushSingleCmdBuff(const VkCommandBuffer cmdBuffer) const
     {
-        RT_CORE_ASSERT(
-            vkEndCommandBuffer(cmdBuffer) == VK_SUCCESS,
-            "failed to end command buffer");
+        CHECK_VK(vkEndCommandBuffer(cmdBuffer), "failed to end command buffer");
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

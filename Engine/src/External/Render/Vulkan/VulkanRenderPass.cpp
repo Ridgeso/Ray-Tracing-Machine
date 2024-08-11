@@ -1,7 +1,7 @@
 #include <tuple>
 
+#include "utils/Debug.h"
 #include "VulkanRenderPass.h"
-#include "Engine/Core/Assert.h"
 #include "Device.h"
 #include "Swapchain.h"
 
@@ -117,8 +117,8 @@ namespace RT::Vulkan
         renderPassInfo.dependencyCount = 1;
         renderPassInfo.pDependencies = &dependency;
 
-        RT_CORE_ASSERT(
-            vkCreateRenderPass(DeviceInstance.getDevice(), &renderPassInfo, nullptr, &renderPass) == VK_SUCCESS,
+        CHECK_VK(
+            vkCreateRenderPass(DeviceInstance.getDevice(), &renderPassInfo, nullptr, &renderPass),
             "failed to create render pass!");
     }
 
@@ -142,12 +142,12 @@ namespace RT::Vulkan
             framebufferInfo.height = size.y;
             framebufferInfo.layers = 1;
 
-            RT_CORE_ASSERT(
+            CHECK_VK(
                 vkCreateFramebuffer(
                     DeviceInstance.getDevice(),
                     &framebufferInfo,
                     nullptr,
-                    &frameBuffers[i]) == VK_SUCCESS,
+                    &frameBuffers[i]),
                 "failed to create framebuffer!");
         }
     }

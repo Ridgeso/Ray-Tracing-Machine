@@ -7,9 +7,6 @@
 #include "Device.h"
 #include "utils/Constants.h"
 
-#define GLM_FORCE_RADAINS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
 
 namespace RT::Vulkan

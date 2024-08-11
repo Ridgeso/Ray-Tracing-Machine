@@ -7,8 +7,8 @@
 namespace RT::Core
 {
 
-	Share<spdlog::logger> Log::engineLogger{};
-	Share<spdlog::logger> Log::clientLogger{};
+	Share<spdlog::logger> Log::engineLogger = nullptr;
+	Share<spdlog::logger> Log::clientLogger = nullptr;
 
 	void Log::init()
 	{
@@ -44,6 +44,15 @@ namespace RT::Core
 	{
         spdlog::shutdown();
 	}
+
+    void Log::setLevel(const spdlog::level::level_enum level)
+    {
+        engineLogger->set_level(level);
+        engineLogger->flush_on(level);
+
+        clientLogger->set_level(level);
+        clientLogger->flush_on(level);
+    }
 
     const Share<spdlog::logger>& Log::getEngineLogger()
     {

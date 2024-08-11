@@ -18,6 +18,9 @@ namespace RT
 	static void preInitCore(CommandLineArgs args)
 	{
 		RT::Core::Log::init();
+		#ifndef RT_DEBUG
+		RT::Core::Log::setLevel(spdlog::level::err);
+		#endif // RT_DEBUG
 	}
 	
 

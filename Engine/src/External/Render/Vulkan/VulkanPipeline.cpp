@@ -1,7 +1,7 @@
 #include "VulkanPipeline.h"
 #include "Context.h"
 
-#include "Engine/Core/Assert.h"
+#include "utils/Debug.h"
 
 #include "VulkanBuffer.h"
 #include "VulkanRenderPass.h"
@@ -182,17 +182,13 @@ namespace RT::Vulkan
         pipelineLayoutInfo.pushConstantRangeCount = 0;
         pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
-        RT_CORE_ASSERT(
-            vkCreatePipelineLayout(DeviceInstance.getDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) == VK_SUCCESS,
+        CHECK_VK(
+            vkCreatePipelineLayout(DeviceInstance.getDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout),
             "Could not create pipeline Layout");
     }
 
     void VulkanPipeline::createComputePipeline(ConfigInfo& configInfo, const Shader& shader)
     {
-        RT_CORE_ASSERT(
-            configInfo.pipelineLayout != VK_NULL_HANDLE,
-            "Cannot create compute pipeline: no pipelineLayout provided in configInfo");
-
         auto shaderStages = shader.getStages();
 
         auto pipelineInfo = VkComputePipelineCreateInfo{};
@@ -204,13 +200,14 @@ namespace RT::Vulkan
         pipelineInfo.basePipelineIndex = -1;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-        RT_CORE_ASSERT(vkCreateComputePipelines(
-            DeviceInstance.getDevice(),
-            VK_NULL_HANDLE,
-            1,
-            &pipelineInfo,
-            nullptr,
-            &pipeline) == VK_SUCCESS,
+        CHECK_VK(
+            vkCreateComputePipelines(
+                DeviceInstance.getDevice(),
+                VK_NULL_HANDLE,
+                1,
+                &pipelineInfo,
+                nullptr,
+                &pipeline),
             "failed to create graphics pipeline");
     }
 
@@ -254,13 +251,14 @@ namespace RT::Vulkan
         pipelineInfo.basePipelineIndex = -1;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-        RT_CORE_ASSERT(vkCreateGraphicsPipelines(
-            DeviceInstance.getDevice(),
-            VK_NULL_HANDLE,
-            1,
-            &pipelineInfo,
-            nullptr,
-            &pipeline) == VK_SUCCESS,
+        CHECK_VK(
+            vkCreateGraphicsPipelines(
+                DeviceInstance.getDevice(),
+                VK_NULL_HANDLE,
+                1,
+                &pipelineInfo,
+                nullptr,
+                &pipeline),
             "failed to create graphics pipeline");
     }
 

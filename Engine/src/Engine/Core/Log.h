@@ -26,6 +26,8 @@ namespace RT::Core
 			logger->log(Level, "{} {}", prefix, logBuf);
 		}
 
+		static void setLevel(const spdlog::level::level_enum level);
+
 		static const Share<spdlog::logger>& getEngineLogger();
 		static const Share<spdlog::logger>& getClientLogger();
 

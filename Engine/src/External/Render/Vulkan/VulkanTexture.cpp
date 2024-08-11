@@ -1,8 +1,7 @@
 #include "VulkanTexture.h"
 #include "Context.h"
 
-#include "Engine/Core/Assert.h"
-
+#include "utils/Debug.h"
 #include "Device.h"
 #include "Swapchain.h"
 #include "utils/Utils.h"
@@ -194,8 +193,8 @@ namespace RT::Vulkan
 				//VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 		}
 
-		RT_CORE_ASSERT(
-			vkCreateImage(DeviceInstance.getDevice(), &imageCreateInfo, nullptr, &image) == VK_SUCCESS,
+		CHECK_VK(
+			vkCreateImage(DeviceInstance.getDevice(), &imageCreateInfo, nullptr, &image),
 			"failed to create texture image!");
 	}
 
@@ -213,11 +212,11 @@ namespace RT::Vulkan
 			memReq.memoryTypeBits,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-		RT_CORE_ASSERT(
-			vkAllocateMemory(device, &allocInfo, nullptr, &memory) == VK_SUCCESS,
+		CHECK_VK(
+			vkAllocateMemory(device, &allocInfo, nullptr, &memory),
 			"failed to allocate image memory!");
-		RT_CORE_ASSERT(
-			vkBindImageMemory(device, image, memory, 0) == VK_SUCCESS,
+		CHECK_VK(
+			vkBindImageMemory(device, image, memory, 0),
 			"failed to bind image memory!");
 
 		imSize = memReq.size;
@@ -232,8 +231,8 @@ namespace RT::Vulkan
 		bufferInfo.size = imSize;
 		bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		RT_CORE_ASSERT(
-			vkCreateBuffer(device, &bufferInfo, nullptr, &stagingBuffer) == VK_SUCCESS,
+		CHECK_VK(
+			vkCreateBuffer(device, &bufferInfo, nullptr, &stagingBuffer),
 			"failed to create staging buffer!");
 
 		auto memReq = VkMemoryRequirements{};
@@ -246,11 +245,11 @@ namespace RT::Vulkan
 			memReq.memoryTypeBits,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
-		RT_CORE_ASSERT(
-			vkAllocateMemory(device, &allocInfo, nullptr, &stagingBufferMemory) == VK_SUCCESS,
+		CHECK_VK(
+			vkAllocateMemory(device, &allocInfo, nullptr, &stagingBufferMemory),
 			"failed to allocate image memory!");
-		RT_CORE_ASSERT(
-			vkBindBufferMemory(device, stagingBuffer, stagingBufferMemory, 0) == VK_SUCCESS,
+		CHECK_VK(
+			vkBindBufferMemory(device, stagingBuffer, stagingBufferMemory, 0),
 			"failed to bind image memory!");
 	}
 
@@ -280,8 +279,8 @@ namespace RT::Vulkan
 			viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		}
 
-		RT_CORE_ASSERT(
-			vkCreateImageView(DeviceInstance.getDevice(), &viewInfo, nullptr, &imageView) == VK_SUCCESS,
+		CHECK_VK(
+			vkCreateImageView(DeviceInstance.getDevice(), &viewInfo, nullptr, &imageView),
 			"failed to create texture image view!");
 	}
 
@@ -301,8 +300,8 @@ namespace RT::Vulkan
 		info.minLod = -1000;
 		info.maxLod = 1000;
 		info.maxAnisotropy = 1.0f;
-		RT_CORE_ASSERT(
-			vkCreateSampler(DeviceInstance.getDevice(), &info, nullptr, &sampler) == VK_SUCCESS,
+		CHECK_VK(
+			vkCreateSampler(DeviceInstance.getDevice(), &info, nullptr, &sampler),
 			"failed to create texture image sampler!");
 	}
 

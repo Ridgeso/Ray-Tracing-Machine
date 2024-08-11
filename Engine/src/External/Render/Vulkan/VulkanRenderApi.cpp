@@ -5,25 +5,18 @@
 #include "Swapchain.h"
 #include "VulkanBuffer.h"
 
-#include "Engine/Core/Assert.h"
 #include "Engine/Core/Application.h"
 
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
-
 #include <GLFW/glfw3.h>
-
-#include "GLFW/glfw3.h"
 
 namespace RT::Vulkan
 {
 
 	VulkanRenderApi::VulkanRenderApi()
 	{
-		if (EnableValidationLayers)
-		{
-			RT_CORE_ASSERT(checkValidationLayerSupport(), "validation layers requested, but not available!");
-		}
+		RT_ASSERT(checkValidationLayerSupport(), "validation layers requested, but not available!");
 	}
 
 	void VulkanRenderApi::init()
@@ -80,12 +73,12 @@ namespace RT::Vulkan
 		auto beginInfo = VkCommandBufferBeginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		vkResetCommandBuffer(Context::frameCmd, 0);
-		RT_CORE_ASSERT(vkBeginCommandBuffer(Context::frameCmd, &beginInfo) == VK_SUCCESS, "failed to begin command buffer!");
+		CHECK_VK(vkBeginCommandBuffer(Context::frameCmd, &beginInfo), "failed to begin command buffer!");
 	}
 
 	void VulkanRenderApi::endFrame()
 	{
-		RT_CORE_ASSERT(vkEndCommandBuffer(Context::frameCmd) == VK_SUCCESS, "failed to record command buffer");
+		CHECK_VK(vkEndCommandBuffer(Context::frameCmd), "failed to record command buffer");
 
 		recordGuiCommandbuffer(Context::imgIdx);
 
@@ -111,7 +104,7 @@ namespace RT::Vulkan
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 		vkResetCommandBuffer(currCmdBuff, 0);
-		RT_CORE_ASSERT(vkBeginCommandBuffer(currCmdBuff, &beginInfo) == VK_SUCCESS, "failed to begin command buffer!");
+		CHECK_VK(vkBeginCommandBuffer(currCmdBuff, &beginInfo), "failed to begin command buffer!");
 
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -148,7 +141,7 @@ namespace RT::Vulkan
 
 		vkCmdEndRenderPass(currCmdBuff);
 
-		RT_CORE_ASSERT(vkEndCommandBuffer(currCmdBuff) == VK_SUCCESS, "failed to record command buffer");
+		CHECK_VK(vkEndCommandBuffer(currCmdBuff), "failed to record command buffer");
 	}
 
 	void VulkanRenderApi::recreateSwapchain()
@@ -178,7 +171,7 @@ namespace RT::Vulkan
 
 		if (oldSwapchain)
 		{
-			RT_CORE_ASSERT(SwapchainInstance->compareFormats(*oldSwapchain), "swapchain image/depth formats has changed");
+			RT_ASSERT(SwapchainInstance->compareFormats(*oldSwapchain), "swapchain image/depth formats has changed");
 			oldSwapchain->shutdown();
 		}
 	}
@@ -208,13 +201,12 @@ namespace RT::Vulkan
 		poolInfo.poolSizeCount = poolSizes.size();
 		poolInfo.pPoolSizes = poolSizes.data();
 
-		RT_CORE_ASSERT(
-			vkCreateDescriptorPool(device.getDevice(), &poolInfo, nullptr, &descriptorPool) == VK_SUCCESS,
+		CHECK_VK(
+			vkCreateDescriptorPool(device.getDevice(), &poolInfo, nullptr, &descriptorPool),
 			"failed to create descriptor pool!");
 
-		RT_ASSERT(
-			ImGui_ImplGlfw_InitForVulkan((GLFWwindow*)Application::getWindow()->getNativWindow(), true),
-			"ImGui not implemented");
+		auto result = ImGui_ImplGlfw_InitForVulkan((GLFWwindow*)Application::getWindow()->getNativWindow(), true);
+		RT_ASSERT(result, "ImGui not implemented");
 
 		// init ImGui for vulkan
 		auto vkInfo = ImGui_ImplVulkan_InitInfo{};
@@ -231,9 +223,8 @@ namespace RT::Vulkan
 		vkInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 		vkInfo.Allocator = nullptr;
 		vkInfo.CheckVkResultFn = checkVkResultCallback;
-		RT_ASSERT(
-			ImGui_ImplVulkan_Init(&vkInfo, SwapchainInstance->getRenderPass()),
-			"ImGui not initialized");
+		result = ImGui_ImplVulkan_Init(&vkInfo, SwapchainInstance->getRenderPass());
+		RT_ASSERT(result, "ImGui not initialized");
 
 		// upload fonst
 		device.execSingleCmdPass([](const auto cmdBuff)
@@ -254,8 +245,8 @@ namespace RT::Vulkan
 		allocInfo.commandPool = DeviceInstance.getCommandPool();
 		allocInfo.commandBufferCount = static_cast<uint32_t>(cmdBuff.size());
 
-		RT_CORE_ASSERT(
-			vkAllocateCommandBuffers(DeviceInstance.getDevice(), &allocInfo, cmdBuff.data()) == VK_SUCCESS,
+		CHECK_VK(
+			vkAllocateCommandBuffers(DeviceInstance.getDevice(), &allocInfo, cmdBuff.data()),
 			"failed to allocate command buffers!");
 	}
 

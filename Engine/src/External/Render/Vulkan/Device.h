@@ -57,7 +57,7 @@ namespace RT::Vulkan
         VkQueue getPresentQueue() const { return presentQueue; }
         VkCommandPool getCommandPool() const { return commandPool; }
 
-        const VkPhysicalDeviceLimits& getLimits() const { return properties.limits; }
+        const VkPhysicalDeviceLimits& getLimits() const { return deviceProperties.limits; }
         
         const Utils::SwapChainSupportDetails& getSwapChainSupportDetails() const { return swapChainSupportDetails; }
         Utils::QueueFamilyIndices getQueueFamilyIndices() const { return queueFamilyIndices; }
@@ -72,7 +72,6 @@ namespace RT::Vulkan
         void createLogicalDevice();
         void createCommandPool();
 
-        void validateRequiredInstanceExtensions() const;
         bool isDeviceSuitable(VkPhysicalDevice phyDev);
         Utils::QueueFamilyIndices findQueueFamilies(VkPhysicalDevice phyDev) const;
         Utils::SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice phyDev);
@@ -91,7 +90,7 @@ namespace RT::Vulkan
         VkQueue graphicsQueue = {};
         VkQueue presentQueue = {};
         VkCommandPool commandPool = {};
-        VkPhysicalDeviceProperties properties = {};
+        VkPhysicalDeviceProperties deviceProperties = {};
 
         Utils::SwapChainSupportDetails swapChainSupportDetails = {};
         Utils::QueueFamilyIndices queueFamilyIndices = {};

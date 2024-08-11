@@ -6,7 +6,7 @@
 
 #include <spirv_cross/spirv_cross.hpp>
 
-#include "Engine/Core/Assert.h"
+#include "utils/Debug.h"
 
 namespace RT::Vulkan
 {
@@ -30,7 +30,7 @@ namespace RT::Vulkan
         shaderPath = shaderName;
 
 		auto shadersSources = readSources();
-        RT_CORE_ASSERT(shadersSources.size() != 0, "Failed to find source code!");
+        RT_ASSERT(shadersSources.size() != 0, "Failed to find source code!");
         auto compiledSources = compileSources(shadersSources);
 
         shaderModules.reserve(compiledSources.size());
@@ -44,8 +44,8 @@ namespace RT::Vulkan
 
             auto& shaderModule = shaderModules.emplace_back();
 
-            RT_CORE_ASSERT(
-                vkCreateShaderModule(DeviceInstance.getDevice(), &createInfo, nullptr, &shaderModule) == VK_SUCCESS,
+            CHECK_VK(
+                vkCreateShaderModule(DeviceInstance.getDevice(), &createInfo, nullptr, &shaderModule),
                 "failed to create shader module");
         
             auto& stage = stages.emplace_back();
@@ -111,7 +111,7 @@ namespace RT::Vulkan
     {
         auto file = std::ifstream(shaderPath, std::ios::ate | std::ios::binary);
 
-        RT_CORE_ASSERT(file.is_open(), "failed to open shader binary: {}", shaderPath);
+        RT_ASSERT(file.is_open(), "failed to open shader binary: {}", shaderPath);
 
         auto fileSize = static_cast<size_t>(file.tellg());
         auto buffer = std::vector<char>(fileSize);
@@ -148,7 +148,7 @@ namespace RT::Vulkan
                 "main",
                 options);
             
-            RT_CORE_ASSERT(
+            RT_ASSERT(
                 shaderModule.GetCompilationStatus() == shaderc_compilation_status_success,
                 "Compilation Errors:\n{}",
                 shaderModule.GetErrorMessage().c_str());
