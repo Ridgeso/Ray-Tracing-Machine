@@ -1,13 +1,14 @@
 #include "Application.h"
 #include "Time.h"
 
+#include "Engine/Event/Event.h"
+#include "Engine/Event/AppEvents.h"
+
 #include "Engine/Render/Renderer.h"
 #include "Engine/Window/Window.h"
 
 namespace RT
 {
-
-	Application* Application::MainApp = nullptr;
 
 	Application::Application(const ApplicationSpecs& specs)
 		: specs(specs)
@@ -21,6 +22,8 @@ namespace RT
 		window->init(winSpecs);
 
 		Renderer::init();
+
+		registerAppCallbacks();
 
 		frame = specs.startupFrameMaker();
 		frame->onInit();
@@ -47,13 +50,20 @@ namespace RT
 
 			frame->update(appFrameDuration);
 
-			isRunning &= window->update();
-			isRunning &= window->pullEvents();
+			window->update();
 
 			appFrameDuration = appTimer.Ellapsed();
 		}
 
 		Renderer::stop();
+	}
+
+	void Application::registerAppCallbacks()
+	{
+		Event::Event<Event::AppClose>::registerCallback([&isRunning = isRunning](const auto& /*unused*/)
+		{
+			isRunning = false;
+		});
 	}
 
 }

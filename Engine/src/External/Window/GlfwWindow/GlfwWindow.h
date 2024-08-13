@@ -2,16 +2,24 @@
 #include <cstdint>
 #include <string>
 
+#include "Engine/Window/Window.h"
+
 #include <glm/glm.hpp>
 #include <GLFW/glfw3.h>
-
-#include "Engine/Window/Window.h"
 
 namespace RT
 {
 
 	class GlfwWindow : public Window
 	{
+	public:
+		struct Context
+		{
+			std::string title = "";
+			glm::ivec2 size = {};
+			bool isMinimized = false;
+		};
+
 	public:
 		GlfwWindow() = default;
 		~GlfwWindow() = default;
@@ -21,8 +29,7 @@ namespace RT
 
 		void setTitleBar(const std::string& title) final;
 
-		bool update() final;
-		bool pullEvents() final;
+		void update() final;
 
 		void beginUI() final;
 		void endUI() final;
@@ -37,13 +44,11 @@ namespace RT
 		void* getNativWindow() override { return window; }
 
 	private:
+		void setCallbacks();
 		void initImGui();
 
 	private:
-		std::string title = "";
-		int32_t width = 0, height = 0;
-
-		bool isMinimized = false;
+		Context context;
 
 		GLFWwindow* window = nullptr;
 	};

@@ -111,7 +111,7 @@ namespace RT::Vulkan
     {
         auto file = std::ifstream(shaderPath, std::ios::ate | std::ios::binary);
 
-        RT_ASSERT(file.is_open(), "failed to open shader binary: {}", shaderPath.string());
+        RT_ASSERT(file.is_open(), "failed to open shader binary: {}", shaderPath);
 
         auto fileSize = static_cast<size_t>(file.tellg());
         auto buffer = std::vector<char>(fileSize);
@@ -164,7 +164,7 @@ namespace RT::Vulkan
         auto compiler = spirv_cross::Compiler(shaderData);
         auto resources = compiler.get_shader_resources();
 
-        RT_LOG_TRACE("Shader Reflect [{}]: {}", shaderType2String(type), shaderPath.string());
+        RT_LOG_TRACE("Shader Reflect [{}]: {}", shaderType2String(type), shaderPath);
         RT_LOG_TRACE("-   {} - uniform buffers", resources.uniform_buffers.size());
         RT_LOG_TRACE("-   {} - resources", resources.sampled_images.size());
 

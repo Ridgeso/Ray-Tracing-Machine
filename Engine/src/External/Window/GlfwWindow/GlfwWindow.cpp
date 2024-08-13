@@ -1,14 +1,61 @@
 #include "GlfwWindow.h"
-#include <vector>
-#include "Engine/Core/Assert.h"
-
-#include <imgui.h>
-#include <glad/glad.h>
 
 #include "Engine/Render/RenderApi.h"
+#include "Engine/Event/Event.h"
+#include "Engine/Event/AppEvents.h"
 
+#include <imgui.h>
 #include "External/window/ImGuiImpl.h"
 
+namespace
+{
+    
+    const char* glfwError2String(const int32_t error)
+    {
+        switch (error)
+        {
+            case GLFW_NO_ERROR:            return "GLFW_NO_ERROR";
+            case GLFW_NOT_INITIALIZED:     return "GLFW_NOT_INITIALIZED";
+            case GLFW_NO_CURRENT_CONTEXT:  return "GLFW_NO_CURRENT_CONTEXT";
+            case GLFW_INVALID_ENUM:        return "GLFW_INVALID_ENUM";
+            case GLFW_INVALID_VALUE:       return "GLFW_INVALID_VALUE";
+            case GLFW_OUT_OF_MEMORY:       return "GLFW_OUT_OF_MEMORY";
+            case GLFW_API_UNAVAILABLE:     return "GLFW_API_UNAVAILABLE";
+            case GLFW_VERSION_UNAVAILABLE: return "GLFW_VERSION_UNAVAILABLE";
+            case GLFW_PLATFORM_ERROR:      return "GLFW_PLATFORM_ERROR";
+            case GLFW_FORMAT_UNAVAILABLE:  return "GLFW_FORMAT_UNAVAILABLE";
+            case GLFW_NO_WINDOW_CONTEXT:   return "GLFW_NO_WINDOW_CONTEXT";
+        }
+        return "not found";
+    }
+
+    void GLFWErrorCallback(int32_t error, const char* description)
+    {
+        RT_LOG_ERROR("GLFW Callback {}: {}", glfwError2String(error), description);
+    }
+
+    void closeWindow(GLFWwindow* /*window*/)
+    {
+        auto event = RT::Event::Event<RT::Event::AppClose>{};
+        event.process();
+    }
+    
+    void windowResize(GLFWwindow* window, int32_t width, int32_t height)
+    {
+        auto& data = *(RT::GlfwWindow::Context*)glfwGetWindowUserPointer(window);
+        data.size = { width, height };
+        data.isMinimized = 0 == width && 0 == height;
+
+        auto event = RT::Event::Event<RT::Event::WindowResize>{};
+        event.fill([width, height](auto& e)
+        {
+            e.width = width;
+            e.height = height;
+        });
+        event.process();
+    }
+
+}
 
 namespace RT
 {
@@ -25,20 +72,23 @@ namespace RT
             glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
         }
 
-        title = specs.titel;
-        width = specs.width;
-        height = specs.height;
-        isMinimized = specs.isMinimized;
+        context.title = specs.titel;
+        context.size.x = specs.width;
+        context.size.y = specs.height;
+        context.isMinimized = specs.isMinimized;
 
-        window = glfwCreateWindow(width, height, title.c_str(), NULL, NULL);
+        window = glfwCreateWindow(context.size.x, context.size.y, context.title.c_str(), NULL, NULL);
         if (!window)
         {
             glfwTerminate();
             return;
         }
+        glfwSetWindowUserPointer(window, &context);
 
         glfwMakeContextCurrent(window);
         glfwSwapInterval(0);
+
+        setCallbacks();
 
         initImGui();
     }
@@ -57,17 +107,10 @@ namespace RT
         glfwSetWindowTitle(window, title.c_str());
     }
 
-    bool GlfwWindow::update()
+    void GlfwWindow::update()
     {
         glfwPollEvents();
-        glfwSwapBuffers(window);
-
-        return !glfwWindowShouldClose(window);
-    }
-
-    bool GlfwWindow::pullEvents()
-    {
-        return true;
+        //glfwSwapBuffers(window);
     }
 
     void GlfwWindow::beginUI()
@@ -121,6 +164,18 @@ namespace RT
     void GlfwWindow::cursorMode(int32_t state) const
     {
         glfwSetInputMode(window, GLFW_CURSOR, state);
+    }
+
+    void GlfwWindow::setCallbacks()
+    {
+        glfwSetErrorCallback(GLFWErrorCallback);
+        glfwSetWindowCloseCallback(window, closeWindow);
+        glfwSetWindowSizeCallback(window, windowResize);
+        //glfwSetKeyCallback(window, keyCallback);
+        //glfwSetCharCallback(window, charCallback);
+        //glfwSetMouseButtonCallback(window, mouseButton);
+        //glfwSetScrollCallback(window, scroll);
+        //glfwSetCursorPosCallback(window, cursorPos);
     }
 
     void GlfwWindow::initImGui()

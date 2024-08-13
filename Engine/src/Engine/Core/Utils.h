@@ -28,4 +28,18 @@ namespace RT::Utils
 		const uint32_t line;
 	};
 
+	template <typename Derive>
+	struct Trait
+	{
+		const Derive& getImpl() const
+		{
+			return static_cast<const Derive&>(*this);
+		}
+
+		Derive& getImpl()
+		{
+			return static_cast<Derive&>(*this);
+		}
+	};
+
 }

@@ -5,6 +5,7 @@
 #define SPDLOG_COMPILED_LIB
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
+#include <spdlog/fmt/std.h>
 
 namespace RT::Core
 {
@@ -22,7 +23,7 @@ namespace RT::Core
 			fmt::format_string<Args...> msg,
 			Args&&... args)
 		{
-			const auto prefix = fmt::format("{}:{} :: ", fileInfo.file, fileInfo.line);
+			const auto prefix = fmt::format("{}:{} ::: ", fileInfo.file, fileInfo.line);
 			const auto logBuf = fmt::vformat(msg, fmt::make_format_args(args...));
 			logger->log(Level, "{}{}", prefix, logBuf);
 		}

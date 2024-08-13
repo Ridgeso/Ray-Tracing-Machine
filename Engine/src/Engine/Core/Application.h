@@ -30,17 +30,18 @@ namespace RT
 		Application(const ApplicationSpecs& specs);
 		~Application();
 
+		void registerAppCallbacks();
+
 	private:
-		ApplicationSpecs specs;
+		ApplicationSpecs specs = {};
 		
-		bool isRunning;
-		float appFrameDuration;
+		bool isRunning = true;
+		float appFrameDuration = 0.0f;
 
 		Local<Window> window = nullptr;
-
 		Local<Frame> frame = nullptr;
 
-		static Application* MainApp;
+		inline static Application* MainApp = nullptr;
 	};
 	
 	#define RegisterStartupFrame(AppName, StartupFrame)											  \

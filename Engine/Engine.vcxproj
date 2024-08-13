@@ -21,7 +21,6 @@
     <ClCompile Include="src\Engine\Render\RenderApi.cpp" />
     <ClCompile Include="src\Engine\Window\Window.cpp" />
     <ClCompile Include="src\Engine\Render\Camera.cpp" />
-    <ClCompile Include="src\External\Render\impl\gladImpl.cpp" />
     <ClCompile Include="src\Engine\Render\Scene.cpp" />
     <ClCompile Include="src\External\Render\Vulkan\Descriptors.cpp" />
     <ClCompile Include="src\External\Render\Vulkan\Device.cpp" />
@@ -42,6 +41,9 @@
     <ClInclude Include="src\Engine\Core\Assert.h" />
     <ClInclude Include="src\Engine\Core\Log.h" />
     <ClInclude Include="src\Engine\Core\Utils.h" />
+    <ClInclude Include="src\Engine\Event\AppEvents.h" />
+    <ClInclude Include="src\Engine\Event\Dispatcher.h" />
+    <ClInclude Include="src\Engine\Event\Event.h" />
     <ClInclude Include="src\Engine\Frame\Frame.h" />
     <ClInclude Include="src\Engine\Render\Buffer.h" />
     <ClInclude Include="src\Engine\Render\Pipeline.h" />

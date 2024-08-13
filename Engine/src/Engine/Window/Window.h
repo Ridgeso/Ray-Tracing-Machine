@@ -38,8 +38,7 @@ namespace RT
 		static Local<Window> createWindow();
 
 	private:
-		virtual bool update() = 0;
-		virtual bool pullEvents() = 0;
+		virtual void update() = 0;
 
 		virtual void beginUI() = 0;
 		virtual void endUI() = 0;

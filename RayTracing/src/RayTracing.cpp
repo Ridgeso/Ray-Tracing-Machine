@@ -1,6 +1,8 @@
 #include <Engine/Engine.h>
 #include <Engine/Startup/EntryPoint.h>
 
+#include <Engine/Event/AppEvents.h>
+
 #include <Engine/Render/Camera.h>
 #include <Engine/Render/Scene.h>
 #include <Engine/Render/Pipeline.h>
@@ -108,6 +110,8 @@ public:
 		pipeline->updateSet(0, 0, 3, *cameraUniform);
 		pipeline->updateSet(1, 0, 0, *materialsStorage);
 		pipeline->updateSet(1, 0, 1, *spheresStorage);
+
+		registerEvents();
 	}
 
 	~RayTracingClient()
@@ -266,16 +270,7 @@ public:
 
 	void update(const float ts) final
 	{
-		const auto winSize = RT::Application::getWindow()->getSize();
-
 		updateView(RT::Application::Get().appDuration() / 1000.0f);
-
-		if (lastWinSize != winSize)
-		{
-			infoUniform.resolution = winSize;
-			ammountsUniform->setData(&infoUniform.resolution, sizeof(glm::vec2), offsetof(InfoUniform, resolution));
-			lastWinSize = winSize;
-		}
 
 		auto timeit = RT::Timer{};
 		RT::Renderer::beginFrame();
@@ -293,6 +288,7 @@ public:
 		lastFrameDuration = timeit.Ellapsed();
 	}
 
+private:
 	void updateView(float ts)
 	{
 		const float speed = 5.0f;
@@ -374,6 +370,25 @@ public:
 			infoUniform.frameIndex = 0;
 			cameraUniform->setData(&camera.GetSpec(), sizeof(RT::Camera::Spec));
 		}
+	}
+
+	void registerEvents()
+	{
+		RT::Event::Event<RT::Event::WindowResize>::registerCallback([this](const auto& event)
+		{
+			lastWinSize = { event.width, event.height };
+
+			infoUniform.resolution = lastWinSize;
+			ammountsUniform->setData(&infoUniform.resolution, sizeof(glm::vec2), offsetof(InfoUniform, resolution));
+
+			accumulationTexture = RT::Texture::create(lastWinSize, RT::ImageFormat::RGBA32F);
+			accumulationTexture->transition(RT::ImageAccess::Write, RT::ImageLayout::General);
+
+			outTexture = RT::Texture::create(lastWinSize, RT::ImageFormat::RGBA8);
+
+			pipeline->updateSet(0, 0, 0, *accumulationTexture);
+			pipeline->updateSet(0, 0, 1, *outTexture);
+		});
 	}
 
 private:
