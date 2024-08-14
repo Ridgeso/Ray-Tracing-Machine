@@ -30,10 +30,10 @@ namespace RT::Vulkan
 
 		const VkDescriptorImageInfo getWriteImageInfo() const;
 
-		static constexpr VkFormat imageFormat2VulkanFormat(const ImageFormat imageFormat);
-		static constexpr uint32_t format2Size(const ImageFormat imageFormat);
-		static constexpr VkImageLayout imageLayout2VulkanLayout(const ImageLayout imageLayout);
-		static constexpr VkAccessFlags imageAccess2VulkanAccess(const ImageAccess imageAccess);
+		static const VkFormat imageFormat2VulkanFormat(const ImageFormat imageFormat);
+		static const uint32_t format2Size(const ImageFormat imageFormat);
+		static const VkImageLayout imageLayout2VulkanLayout(const ImageLayout imageLayout);
+		static const VkAccessFlags imageAccess2VulkanAccess(const ImageAccess imageAccess);
 
 	private:
 		void createImage();

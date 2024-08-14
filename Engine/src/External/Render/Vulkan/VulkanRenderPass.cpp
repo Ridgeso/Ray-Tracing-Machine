@@ -11,9 +11,11 @@ namespace RT::Vulkan
     VulkanRenderPass::VulkanRenderPass(const RenderPassSpec& spec)
         : size{spec.size}
     {
+        RT_LOG_INFO("Creating RenderPass: {{ size = [{}, {}], nrOfAttachments = {} }}", size.x, size.y, spec.attachmentsFormats.size());
         createAttachments(spec.attachmentsFormats);
         createRenderPass(spec.attachmentsFormats);
         createFrameBuffers();
+        RT_LOG_INFO("RenderPass created");
     }
 
     VulkanRenderPass::~VulkanRenderPass()

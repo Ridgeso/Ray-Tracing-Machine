@@ -1,6 +1,9 @@
 #pragma once
-#include <Engine/Core/Base.h>
+#include <string_view>
 #include <glm/glm.hpp>
+
+#include "Engine/Core/Base.h"
+
 #include <imgui.h>
 
 namespace RT
@@ -35,5 +38,12 @@ namespace RT
 
 		static Local<Texture> create(const glm::uvec2 size, const ImageFormat imageFormat);
 	};
+
+	namespace Utils
+	{
+
+		const std::string_view imageFormat2Str(const ImageFormat imageFormat);
+
+	}
 
 }

@@ -13,6 +13,7 @@ namespace RT::Vulkan
 
     void Swapchain::init()
     {
+        RT_LOG_DEBUG("Initializing Swapchain");
         createSwapChain();
         createImageViews();
         createRenderPass();
@@ -191,6 +192,11 @@ namespace RT::Vulkan
 
         swapChainImageFormat = surfaceFormat.format;
         swapChainExtent = extent;
+
+        RT_LOG_DEBUG("Swapchain created: {{ buffering = {}, extent = [{}, {}], V-Sync = {} }}",
+            imageCount,
+            extent.width, extent.height,
+            VK_PRESENT_MODE_FIFO_KHR == presentMode);
     }
 
     void Swapchain::createImageViews()

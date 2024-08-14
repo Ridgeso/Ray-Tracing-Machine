@@ -1,6 +1,8 @@
 #include "VulkanTexture.h"
 #include "Context.h"
 
+#include "Engine/Utils/LogDefinitions.h"
+
 #include "utils/Debug.h"
 #include "Device.h"
 #include "Swapchain.h"
@@ -16,6 +18,7 @@ namespace RT::Vulkan
 		, format{imageFormat}
 		, imSize{size.x * size.y * format2Size(format)}
 	{
+		RT_LOG_INFO("Creating Texture: {{ size = {}, imageFormat = {} }}", size, RT::Utils::imageFormat2Str(format));
 		createImage();
 
 		allocateMemory();
@@ -30,6 +33,7 @@ namespace RT::Vulkan
 				imageView,
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		}
+		RT_LOG_INFO("Texture Created");
 	}
 
 	VulkanTexture::~VulkanTexture()
@@ -115,7 +119,7 @@ namespace RT::Vulkan
 		return info;
 	}
 
-	constexpr VkFormat VulkanTexture::imageFormat2VulkanFormat(const ImageFormat imageFormat)
+	const VkFormat VulkanTexture::imageFormat2VulkanFormat(const ImageFormat imageFormat)
 	{
 		switch (imageFormat)
 		{
@@ -127,7 +131,7 @@ namespace RT::Vulkan
 		return VK_FORMAT_UNDEFINED;
 	}
 
-	constexpr uint32_t VulkanTexture::format2Size(const ImageFormat imageFormat)
+	const uint32_t VulkanTexture::format2Size(const ImageFormat imageFormat)
 	{
 		switch (imageFormat)
 		{
@@ -140,7 +144,7 @@ namespace RT::Vulkan
 		return 0;
 	}
 
-	constexpr VkImageLayout VulkanTexture::imageLayout2VulkanLayout(const ImageLayout imageLayout)
+	const VkImageLayout VulkanTexture::imageLayout2VulkanLayout(const ImageLayout imageLayout)
 	{
 		switch (imageLayout)
 		{
@@ -151,7 +155,7 @@ namespace RT::Vulkan
 		return VK_IMAGE_LAYOUT_UNDEFINED;
 	}
 
-	constexpr VkAccessFlags VulkanTexture::imageAccess2VulkanAccess(const ImageAccess imageAccess)
+	const VkAccessFlags VulkanTexture::imageAccess2VulkanAccess(const ImageAccess imageAccess)
 	{
 		switch (imageAccess)
 		{

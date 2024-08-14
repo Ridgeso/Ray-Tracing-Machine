@@ -49,4 +49,11 @@ namespace RT
 		static Local<Uniform> create(const UniformType uniformType, const uint32_t size);
 	};
 
+	namespace Utils
+	{
+		
+		const std::string_view uniformType2Str(const UniformType uniformType);
+
+	}
+
 }

@@ -14,8 +14,10 @@ namespace RT::Vulkan
 
 	VulkanVertexBuffer::VulkanVertexBuffer(const uint32_t size)
 	{
+		RT_LOG_INFO("Creating VertexBuffer: {{ size = {} }}", size);
 		auto vertices = std::vector<Vertex>(size);
 		createVertexBuffers(vertices);
+		RT_LOG_INFO("VertexBuffer created");
 	}
 
 	VulkanVertexBuffer::VulkanVertexBuffer(const uint32_t size, const void* data)
@@ -104,6 +106,8 @@ namespace RT::Vulkan
 	VulkanUniform::VulkanUniform(const UniformType uniformType, const uint32_t instanceSize)
 		: uniformType{uniformType}
 	{
+		RT_LOG_INFO("Creating Uniform: {{ type = {}, size = {} }}", RT::Utils::uniformType2Str(uniformType), instanceSize);
+
 		const auto vkLimits = DeviceInstance.getLimits();
 		const auto minAlignment = std::lcm(
 			vkLimits.nonCoherentAtomSize,
@@ -132,6 +136,7 @@ namespace RT::Vulkan
 			bufferInfo.range = alignedSize;
 			bufferInfo.buffer = uniBuffer;
 		}
+		RT_LOG_INFO("Uniform created");
 	}
 
 	VulkanUniform::~VulkanUniform()

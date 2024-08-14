@@ -26,6 +26,7 @@ namespace RT::Vulkan
 
 	void Shader::load(const Path& shaderName)
 	{
+        RT_LOG_INFO("Loading Shader: {{ path = {} }}", shaderName);
         //shaderPath = Path{""} / shaderDir / shaderName;
         shaderPath = shaderName;
 
@@ -63,7 +64,8 @@ namespace RT::Vulkan
         //{
         //    reflect(stage, data);
         //}
-	}
+        RT_LOG_INFO("Shader loaded");
+    }
 
     Shader::SourceMap<std::stringstream> Shader::readSources() const
     {

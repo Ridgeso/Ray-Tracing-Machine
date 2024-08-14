@@ -21,6 +21,8 @@ namespace RT
 		#ifndef RT_DEBUG
 		RT::Core::Log::setLevel(spdlog::level::err);
 		#endif // RT_DEBUG
+
+		RT_LOG_DEBUG("APP CORE CREATED");
 	}
 	
 
@@ -35,6 +37,8 @@ namespace RT
 
 	static void postShutdownCore()
 	{
+		RT_LOG_DEBUG("APP CORE DESTROYED");
+
 		RT::Core::Log::shutdown();
 	}
 

@@ -38,6 +38,17 @@ namespace RT::Core
 		static Share<spdlog::logger> clientLogger;
 	};
 
+	#define REGISTER_FMT_FORMAT(TYPE, BASE_TYPE, ...) \
+		template <> \
+		struct fmt::formatter<TYPE> : formatter<BASE_TYPE> \
+		{ \
+			template <typename FormatContext> \
+			auto format(const TYPE& type, FormatContext& ctx) \
+			{ \
+				return formatter<BASE_TYPE>::format(fmt::format(__VA_ARGS__), ctx); \
+			} \
+		};
+
 }
 
 // Engine Logs Macros

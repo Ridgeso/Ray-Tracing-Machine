@@ -27,9 +27,11 @@ namespace RT::Vulkan
 
 	Descriptors::Descriptors(const UniformLayouts& uniformLayouts)
 	{
+		RT_LOG_INFO("Creating Descriptor: {{ nrOfLayouts = {} }}", uniformLayouts.size());
 		createLayout(uniformLayouts);
 		createPool(uniformLayouts);
 		allocateSets(uniformLayouts);
+		RT_LOG_INFO("Descriptor created");
 	}
 
 	Descriptors::~Descriptors()

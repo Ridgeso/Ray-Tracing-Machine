@@ -37,4 +37,21 @@ namespace RT
 		return nullptr;
 	}
 
+	namespace Utils
+	{
+
+		const std::string_view uniformType2Str(const UniformType uniformType)
+		{
+			switch (uniformType)
+			{
+				case UniformType::Uniform: return "Uniform";
+				case UniformType::Storage: return "Storage";
+				case UniformType::Sampler: return "Sampler";
+				case UniformType::Image:   return "Image";
+			}
+			return "";
+		}
+
+	}
+
 }

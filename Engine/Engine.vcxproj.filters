@@ -1,214 +1,220 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Pliki źródłowe">
+    <Filter Include="Source Files">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="Pliki nagłówkowe">
+    <Filter Include="Header Files">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="Pliki zasobów">
+    <Filter Include="Resource Files">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Engine\Core\Application.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Engine\Render\Camera.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Engine\Render\Scene.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\External\Window\GlfwWindow\GlfwWindow.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Engine\Window\Window.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Engine\Render\RenderApi.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Engine\Render\Buffer.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Engine\Render\RenderPass.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Engine\Render\Texture.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\External\Render\Vulkan\VulkanRenderApi.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\External\Render\Vulkan\Shader.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\External\Render\Vulkan\VulkanTexture.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\External\Render\Vulkan\VulkanBuffer.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\External\Render\Vulkan\utils\Debug.cpp">
-      <Filter>Pliki źródłowe</Filter>
+    <ClCompile Include="src\External\Render\Vulkan\Utils\Debug.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\External\Window\GlfwWindow\Utils.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\External\Render\Vulkan\Device.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Engine\Core\Log.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\External\Render\Vulkan\Swapchain.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\External\Render\Vulkan\VulkanPipeline.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\External\Window\ImGuiImpl.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\External\Window\ImGuiBackend.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\External\Render\Vulkan\VulkanRenderPass.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\External\Render\Vulkan\Descriptors.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Engine\Render\Pipeline.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Engine\Startup\Startup.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Engine\Core\Application.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Engine\Startup\EntryPoint.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Engine\Core\Time.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Engine\Engine.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Engine\Render\Camera.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Engine\Render\Scene.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\External\Window\GlfwWindow\GlfwWindow.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Engine\Window\Window.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Engine\Core\Base.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Engine\Render\RenderApi.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Engine\Render\Buffer.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Engine\Render\RenderPass.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Engine\Render\Texture.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\External\Render\Vulkan\VulkanRenderApi.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\External\Render\Vulkan\Shader.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\External\Render\Vulkan\VulkanTexture.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\External\Render\Vulkan\VulkanBuffer.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\External\Render\Vulkan\Device.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\External\Render\Vulkan\utils\Debug.h">
-      <Filter>Pliki nagłówkowe</Filter>
+    <ClInclude Include="src\External\Render\Vulkan\Utils\Debug.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\External\Window\GlfwWindow\Utils.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Engine\Core\Log.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Engine\Core\Assert.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Engine\Core\Utils.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\External\Render\Vulkan\Swapchain.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\External\Render\Vulkan\VulkanPipeline.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\External\Render\Vulkan\utils\Utils.h">
-      <Filter>Pliki nagłówkowe</Filter>
+    <ClInclude Include="src\External\Render\Vulkan\Utils\Utils.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\External\Window\ImGuiImpl.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\External\Render\Vulkan\VulkanRenderPass.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\External\Render\Vulkan\Descriptors.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Engine\Render\Pipeline.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\External\Render\Vulkan\Context.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Engine\Startup\Startup.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Engine\Render\Renderer.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\External\Render\Vulkan\utils\Constants.h">
-      <Filter>Pliki nagłówkowe</Filter>
+    <ClInclude Include="src\External\Render\Vulkan\Utils\Constants.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Engine\Frame\Frame.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Engine\Event\AppEvents.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Engine\Event\Dispatcher.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Engine\Event\Event.h">
-      <Filter>Pliki nagłówkowe</Filter>
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Engine\Version.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Engine\Utils\LogDefinitions.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="imgui.ini" />
     <None Include="assets\shaders\RayTracing.shader" />
+    <None Include="imgui.ini" />
   </ItemGroup>
 </Project>

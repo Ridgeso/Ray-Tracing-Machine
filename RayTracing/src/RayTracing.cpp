@@ -96,7 +96,7 @@ public:
 		spheresStorage->setData(scene.spheres.data(), sizeof(RT::Sphere) * scene.spheres.size());
 
 		auto pipelineSpec = RT::PipelineSpec{};
-		pipelineSpec.shaderPath = std::filesystem::path("..") / "Engine" / "assets" / "shaders" / "RayTracing.shader";
+		pipelineSpec.shaderPath = std::filesystem::path("assets") / "shaders" / "RayTracing.shader";
 		pipelineSpec.uniformLayouts = RT::UniformLayouts{
 			{.nrOfSets = 1, .layout = { RT::UniformType::Image, RT::UniformType::Image, RT::UniformType::Uniform, RT::UniformType::Uniform } },
 			{.nrOfSets = 1, .layout = { RT::UniformType::Storage, RT::UniformType::Storage } }

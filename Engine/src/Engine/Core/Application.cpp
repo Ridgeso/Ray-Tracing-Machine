@@ -1,3 +1,5 @@
+#include "Engine/Version.h"
+
 #include "Application.h"
 #include "Time.h"
 
@@ -16,6 +18,7 @@ namespace RT
 		, appFrameDuration(0)
 		, window(Window::createWindow())
 	{
+		RT_LOG_INFO("APP ** {} ** running [app version __{}__]", specs.name, __RT_VERSION__);
 		MainApp = this;
 
 		auto winSpecs = WindowSpecs{ specs.name, 1280, 720, false };
@@ -63,6 +66,7 @@ namespace RT
 		Event::Event<Event::AppClose>::registerCallback([&isRunning = isRunning](const auto& /*unused*/)
 		{
 			isRunning = false;
+			RT_LOG_INFO("Application closing...");
 		});
 	}
 

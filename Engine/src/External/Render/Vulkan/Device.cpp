@@ -14,6 +14,7 @@ namespace RT::Vulkan
 
     void Device::init()
     {
+        RT_LOG_DEBUG("Device Instantiation");
         createInstance();
         createSurface();
         pickPhysicalDevice();
@@ -119,13 +120,15 @@ namespace RT::Vulkan
 
     void Device::createInstance()
     {
+        constexpr uint32_t apiVersion = VK_HEADER_VERSION_COMPLETE;
+
         auto appInfo = VkApplicationInfo{};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
         appInfo.pApplicationName = "RT App";
-        appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+        appInfo.applicationVersion = apiVersion;
         appInfo.pEngineName = "No Engine";
-        appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-        appInfo.apiVersion = VK_API_VERSION_1_0;
+        appInfo.engineVersion = apiVersion;
+        appInfo.apiVersion = apiVersion;
 
         auto createInfo = VkInstanceCreateInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -139,6 +142,11 @@ namespace RT::Vulkan
         enableDebugingForCreateInfo(createInfo, &debugCreateInfo);
 
         CHECK_VK(vkCreateInstance(&createInfo, nullptr, &instance), "failed to create Vulkan Instance");
+        RT_LOG_DEBUG("Vulkan Instance created: {{ apiVersion = {}.{}.{}.{} }}",
+            apiVersion >> 29,
+            (apiVersion >> 22) & 0b1111111,
+            (apiVersion >> 12) & 0b1111111111,
+            apiVersion & 0b111111111111);
 
         setupDebugMessenger(instance);
     }
@@ -170,7 +178,7 @@ namespace RT::Vulkan
 
         vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
         RT_LOG_DEBUG(
-            "physical device: {}", deviceProperties.deviceName);
+            "Found device: {}", deviceProperties.deviceName);
     }
 
     void Device::createLogicalDevice()

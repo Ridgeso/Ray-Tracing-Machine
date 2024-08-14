@@ -19,4 +19,8 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="imgui.ini" />
+    <None Include="assets\shaders\RayTracing.shader" />
+  </ItemGroup>
 </Project>
