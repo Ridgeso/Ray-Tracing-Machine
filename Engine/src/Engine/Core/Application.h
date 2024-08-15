@@ -1,82 +1,53 @@
 #pragma once
-#include <memory>
-#include <glm/glm.hpp>
-#include <imgui.h>
-#include <Engine/Core/Base.h>
+#include <string>
+#include <functional>
 
 #include "Engine/Window/Window.h"
-#include "Engine/Render/Renderer.h"
-#include "Engine/Render/Shader.h"
-#include "Engine/Render/Buffer.h"
-#include "Engine/Render/FrameBuffer.h"
+#include "Engine/Frame/Frame.h"
 
 namespace RT
 {
 
-	struct ApplicationCommandLineArgs
-	{
-		int32_t argc;
-		char** argv;
-	};
-
 	struct ApplicationSpecs
 	{
 		std::string name;
-		bool isRunning;
-		ApplicationCommandLineArgs args;
+		std::function<Local<Frame>()> startupFrameMaker;
 	};
 
-	class Application
+	class Application final
 	{
+		friend void runCore();
 	public:
-		Application(ApplicationSpecs specs);
-		virtual ~Application();
 
 		void run();
-		void layout();
-		void update();
-		void updateView(float ts);
 
 		static Application& Get() { return *MainApp; }
+		static Local<Window>& getWindow() { return Get().window; }
+
+		float appDuration() { return appFrameDuration; }
 
 	private:
-		ApplicationSpecs specs;
-		float lastFrameDuration;
-		float appFrameDuration;
-		ImVec2 viewportSize;
-		Local<Window> mainWindow;
-		Local<Renderer> renderer;
-		Local<Shader> rtShader;
-		Local<VertexBuffer> screenBuff;
-		Share<FrameBuffer> frameBuffer;
-		Camera camera;
-		Scene scene;
+		Application(const ApplicationSpecs& specs);
+		~Application();
 
-		glm::ivec2 lastWinSize;
-		glm::vec2 lastMousePos;
-		static Application* MainApp;
+		void registerAppCallbacks();
 
-		bool accumulation = false;
-		uint32_t framesCount = 1;
-		uint32_t maxBounces = 5;
-		uint32_t maxFrames = 1;
-		bool drawEnvironment = false;
+	private:
+		ApplicationSpecs specs = {};
+		
+		bool isRunning = true;
+		float appFrameDuration = 0.0f;
 
-		struct Vertices
-		{
-			float Coords[2];
-			float TexCoords[2];
-		} static constexpr screenVertices[] = {
-			{ { -1.0f, -1.0f }, { 0.0f, 0.0f } },
-			{ {  1.0f, -1.0f }, { 1.0f, 0.0f } },
-			{ {  1.0f,  1.0f }, { 1.0f, 1.0f } },
-			{ {  1.0f,  1.0f }, { 1.0f, 1.0f } },
-			{ { -1.0f,  1.0f }, { 0.0f, 1.0f } },
-			{ { -1.0f, -1.0f }, { 0.0f, 0.0f } }
-		};
-		static constexpr int32_t screenVerticesCount = sizeof(screenVertices) / sizeof(float);
+		Local<Window> window = nullptr;
+		Local<Frame> frame = nullptr;
+
+		inline static Application* MainApp = nullptr;
 	};
-
-	Application* CreateApplication(ApplicationCommandLineArgs args);
+	
+	#define RegisterStartupFrame(AppName, StartupFrame)											  \
+		RT::ApplicationSpecs CreateApplicationSpec()											  \
+		{																						  \
+			return RT::ApplicationSpecs{ AppName, [] { return RT::makeLocal<StartupFrame>(); } }; \
+		}																						  \
 
 }

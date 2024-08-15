@@ -1,8 +1,9 @@
 #pragma once
 
 #include "Engine/Core/Application.h"
-#include "Engine/window/Window.h"
-
-#ifdef ENTRY_POINT
-#include <Engine/Core/EntryPoint.h>
-#endif // ENTRY_POINT
+#include "Engine/Core/Log.h"
+#include "Engine/Core/Time.h"
+#include "Engine/Event/Event.h"
+#include "Engine/Frame/Frame.h"
+#include "Engine/Render/Renderer.h"
+#include "Engine/Window/Window.h"

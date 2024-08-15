@@ -1,28 +1,49 @@
 #pragma once
-#include <Engine/Core/Base.h>
+#include <string_view>
 #include <glm/glm.hpp>
+
+#include "Engine/Core/Base.h"
+
+#include <imgui.h>
 
 namespace RT
 {
 
 	enum class ImageFormat
 	{
-		R8, RGB8, RGBA8, RGBA32F
+		R8, RGB8, RGBA8, RGBA32F, Depth
+	};
+
+	enum class ImageLayout
+	{
+		Undefined, General, ShaderRead
+	};
+
+	enum class ImageAccess
+	{
+		None, Write, Read
 	};
 
 	struct Texture
 	{
-		virtual ~Texture() = 0;
+		virtual ~Texture() = 0 {}
 
 		virtual void setBuff(const void* data) = 0;
 
-		virtual void bind(const uint32_t slot = 0) const = 0;
+		virtual const ImTextureID getTexId() const = 0;
+		virtual const glm::uvec2 getSize() const = 0;
+		
+		virtual void transition(const ImageAccess imageAccess, const ImageLayout imageLayout) const = 0;
+		virtual void barrier(const ImageAccess imageAccess, const ImageLayout imageLayout) const = 0;
 
-		virtual const uint32_t getTexId() const = 0;
-		virtual const int32_t getWidth() const = 0;
-		virtual const int32_t getHeight() const = 0;
-
-		static Local<Texture> create(const glm::ivec2 size, const ImageFormat imageFormat);
+		static Local<Texture> create(const glm::uvec2 size, const ImageFormat imageFormat);
 	};
+
+	namespace Utils
+	{
+
+		const std::string_view imageFormat2Str(const ImageFormat imageFormat);
+
+	}
 
 }

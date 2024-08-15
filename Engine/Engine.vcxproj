@@ -1,14 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Debug|Win32">
-      <Configuration>Debug</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|Win32">
-      <Configuration>Release</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
@@ -19,53 +11,87 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Engine\Core\Log.cpp" />
     <ClCompile Include="src\Engine\Render\Buffer.cpp" />
-    <ClCompile Include="src\Engine\Render\FrameBuffer.cpp" />
+    <ClCompile Include="src\Engine\Render\Pipeline.cpp" />
+    <ClCompile Include="src\Engine\Render\RenderPass.cpp" />
     <ClCompile Include="src\Engine\Render\Texture.cpp" />
-    <ClCompile Include="src\External\render\OpenGl\OpenGlFrameBuffer.cpp" />
-    <ClCompile Include="src\External\render\OpenGl\OpenGlTexture.cpp" />
-    <ClCompile Include="src\Engine\Render\Shader.cpp" />
-    <ClCompile Include="src\External\Render\OpenGl\OpenGlShader.cpp" />
+    <ClCompile Include="src\Engine\Startup\Startup.cpp" />
     <ClCompile Include="src\Engine\Core\Application.cpp" />
-    <ClCompile Include="src\Engine\Render\Renderer.cpp" />
+    <ClCompile Include="src\Engine\Render\RenderApi.cpp" />
     <ClCompile Include="src\Engine\Window\Window.cpp" />
     <ClCompile Include="src\Engine\Render\Camera.cpp" />
-    <ClCompile Include="src\External\Render\impl\gladImpl.cpp" />
-    <ClCompile Include="src\External\Render\OpenGl\OpenGlRenderer.cpp" />
     <ClCompile Include="src\Engine\Render\Scene.cpp" />
-    <ClCompile Include="src\External\render\OpenGl\OpenGlBuffer.cpp" />
-    <ClCompile Include="src\External\Window\ImGuiBuild.cpp" />
+    <ClCompile Include="src\External\Render\Vulkan\Descriptors.cpp" />
+    <ClCompile Include="src\External\Render\Vulkan\Device.cpp" />
+    <ClCompile Include="src\External\Render\Vulkan\VulkanPipeline.cpp" />
+    <ClCompile Include="src\External\Render\Vulkan\VulkanRenderPass.cpp" />
+    <ClCompile Include="src\External\Render\Vulkan\Swapchain.cpp" />
+    <ClCompile Include="src\External\Render\Vulkan\Utils\Debug.cpp" />
+    <ClCompile Include="src\External\Render\Vulkan\VulkanBuffer.cpp" />
+    <ClCompile Include="src\External\Render\Vulkan\VulkanRenderApi.cpp" />
+    <ClCompile Include="src\External\Render\Vulkan\Shader.cpp" />
+    <ClCompile Include="src\External\Render\Vulkan\VulkanTexture.cpp" />
+    <ClCompile Include="src\External\Window\GlfwWindow\Utils.cpp" />
     <ClCompile Include="src\External\Window\GlfwWindow\GlfwWindow.cpp" />
+    <ClCompile Include="src\External\Window\ImGuiBackend.cpp" />
+    <ClCompile Include="src\External\Window\ImGuiImpl.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Engine\Core\Assert.h" />
+    <ClInclude Include="src\Engine\Core\Log.h" />
+    <ClInclude Include="src\Engine\Core\Utils.h" />
+    <ClInclude Include="src\Engine\Event\AppEvents.h" />
+    <ClInclude Include="src\Engine\Event\Dispatcher.h" />
+    <ClInclude Include="src\Engine\Event\Event.h" />
+    <ClInclude Include="src\Engine\Frame\Frame.h" />
     <ClInclude Include="src\Engine\Render\Buffer.h" />
-    <ClInclude Include="src\Engine\Render\FrameBuffer.h" />
+    <ClInclude Include="src\Engine\Render\Pipeline.h" />
+    <ClInclude Include="src\Engine\Render\Renderer.h" />
+    <ClInclude Include="src\Engine\Render\RenderPass.h" />
     <ClInclude Include="src\Engine\Render\Texture.h" />
-    <ClInclude Include="src\External\render\OpenGl\OpenGlFrameBuffer.h" />
-    <ClInclude Include="src\External\render\OpenGl\OpenGlTexture.h" />
-    <ClInclude Include="src\Engine\Render\Shader.h" />
-    <ClInclude Include="src\External\Render\OpenGl\OpenGlShader.h" />
+    <ClInclude Include="src\Engine\Startup\Startup.h" />
     <ClInclude Include="src\Engine\Core\Application.h" />
     <ClInclude Include="src\Engine\Core\Base.h" />
-    <ClInclude Include="src\Engine\Core\EntryPoint.h" />
+    <ClInclude Include="src\Engine\Startup\EntryPoint.h" />
     <ClInclude Include="src\Engine\Core\Time.h" />
     <ClInclude Include="src\Engine\Engine.h" />
-    <ClInclude Include="src\Engine\Render\Renderer.h" />
+    <ClInclude Include="src\Engine\Render\RenderApi.h" />
+    <ClInclude Include="src\Engine\Utils\LogDefinitions.h" />
+    <ClInclude Include="src\Engine\Version.h" />
     <ClInclude Include="src\Engine\Window\Window.h" />
     <ClInclude Include="src\Engine\Render\Camera.h" />
-    <ClInclude Include="src\External\Render\OpenGl\OpenGlRenderer.h" />
     <ClInclude Include="src\Engine\Render\Scene.h" />
-    <ClInclude Include="src\External\render\OpenGl\OpenGlBuffer.h" />
-    <ClInclude Include="src\External\Window\GlfwWindow\GlfwWindow.fwd.h" />
+    <ClInclude Include="src\External\Render\Vulkan\Context.h" />
+    <ClInclude Include="src\External\Render\Vulkan\Descriptors.h" />
+    <ClInclude Include="src\External\Render\Vulkan\Utils\Constants.h" />
+    <ClInclude Include="src\External\Render\Vulkan\VulkanPipeline.h" />
+    <ClInclude Include="src\External\Render\Vulkan\VulkanRenderPass.h" />
+    <ClInclude Include="src\External\Render\Vulkan\Swapchain.h" />
+    <ClInclude Include="src\External\Render\Vulkan\Device.h" />
+    <ClInclude Include="src\External\Render\Vulkan\Utils\Debug.h" />
+    <ClInclude Include="src\External\Render\Vulkan\Utils\Utils.h" />
+    <ClInclude Include="src\External\Render\Vulkan\VulkanBuffer.h" />
+    <ClInclude Include="src\External\Render\Vulkan\VulkanRenderApi.h" />
+    <ClInclude Include="src\External\Render\Vulkan\Shader.h" />
+    <ClInclude Include="src\External\Render\Vulkan\VulkanTexture.h" />
     <ClInclude Include="src\External\Window\GlfwWindow\GlfwWindow.h" />
+    <ClInclude Include="src\External\Window\GlfwWindow\Utils.h" />
+    <ClInclude Include="src\External\Window\ImGuiImpl.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\RayTracing.shader" />
     <None Include="imgui.ini" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Dependencies\ImGui\ImGui.vcxproj">
+    <ProjectReference Include="..\Dependencies\GLFW.vcxproj">
+      <Project>{154B857C-0182-860D-AA6E-6C109684020F}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Dependencies\ImGui.vcxproj">
       <Project>{4988c892-af06-4b15-bf14-eeac31e96fdb}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Dependencies\spdlog.vcxproj">
+      <Project>{8ead431c-7a4f-6ef2-630a-82464f4bf542}</Project>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -77,19 +103,6 @@
     <ProjectName>Engine</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
@@ -108,12 +121,6 @@
   </ImportGroup>
   <ImportGroup Label="Shared">
   </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
@@ -121,74 +128,25 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <PublicIncludeDirectories>$(ProjectDir)src;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\glfw\include;$(SolutionDir)Dependencies\ImGui;$(PublicIncludeDirectories)</PublicIncludeDirectories>
-    <AllProjectIncludesArePublic>false</AllProjectIncludesArePublic>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <PublicIncludeDirectories>$(ProjectDir)src;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\glfw\include;$(SolutionDir)Dependencies\ImGui;$(PublicIncludeDirectories)</PublicIncludeDirectories>
-    <AllProjectIncludesArePublic>false</AllProjectIncludesArePublic>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <PublicIncludeDirectories>$(ProjectDir)src;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\glfw\include;$(SolutionDir)Dependencies\ImGui;$(PublicIncludeDirectories)</PublicIncludeDirectories>
+    <PublicIncludeDirectories>$(ProjectDir)src;$(SolutionDir)Dependencies\GLFW\include;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\ImGui;$(SolutionDir)Dependencies\spdlog\include;$(PublicIncludeDirectories)</PublicIncludeDirectories>
     <AllProjectIncludesArePublic>false</AllProjectIncludesArePublic>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <PublicIncludeDirectories>$(ProjectDir)src;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\glfw\include;$(SolutionDir)Dependencies\ImGui;$(PublicIncludeDirectories)</PublicIncludeDirectories>
+    <PublicIncludeDirectories>$(ProjectDir)src;$(SolutionDir)Dependencies\GLFW\include;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\ImGui;$(SolutionDir)Dependencies\spdlog\include;$(PublicIncludeDirectories)</PublicIncludeDirectories>
     <AllProjectIncludesArePublic>false</AllProjectIncludesArePublic>
   </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>GLFW_INCLUDE_NONE;_DEBUG</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Engine\src;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\glfw\include;$(SolutionDir)Dependencies\glad\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <DebugInformationFormat>OldStyle</DebugInformationFormat>
-    </ClCompile>
-    <Link>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </Link>
-    <Lib>
-      <AdditionalDependencies>gdi32.lib;user32.lib;kernel32.lib;opengl32.lib;$(SolutionDir)Dependencies\glfw\lib-vc2022x86\glfw3.lib</AdditionalDependencies>
-    </Lib>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>GLFW_INCLUDE_NONE;NDEBUG</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Engine\src;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\glfw\include;$(SolutionDir)Dependencies\glad\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <DebugInformationFormat>None</DebugInformationFormat>
-    </ClCompile>
-    <Link>
-      <SubSystem>
-      </SubSystem>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-      <GenerateDebugInformation>false</GenerateDebugInformation>
-    </Link>
-    <Lib>
-      <AdditionalDependencies>gdi32.lib;user32.lib;kernel32.lib;opengl32.lib;$(SolutionDir)Dependencies\glfw\lib-vc2022x86\glfw3.lib</AdditionalDependencies>
-    </Lib>
-  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>GLFW_INCLUDE_NONE;_DEBUG</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS;GLM_ENABLE_EXPERIMENTAL;GLFW_INCLUDE_NONE;RT_ROOT_PATH=R"($(ProjectDir)src\)";VK_DEBUG;RT_DEBUG;_DEBUG</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Engine\src;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\glfw\include;$(SolutionDir)Dependencies\glad\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Engine\src;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\glad\include;$(VULKAN_SDK)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -196,7 +154,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
-      <AdditionalDependencies>gdi32.lib;user32.lib;kernel32.lib;opengl32.lib;$(SolutionDir)Dependencies\glfw\lib-vc2022\glfw3.lib</AdditionalDependencies>
+      <AdditionalDependencies>gdi32.lib;user32.lib;kernel32.lib;$(VULKAN_SDK)\Lib\vulkan-1.lib;$(VULKAN_SDK)\Lib\shaderc_sharedd.lib;$(VULKAN_SDK)\Lib\spirv-cross-cored.lib</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -205,12 +163,13 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>GLFW_INCLUDE_NONE;NDEBUG</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS;GLM_ENABLE_EXPERIMENTAL;GLFW_INCLUDE_NONE;RT_ROOT_PATH=R"($(ProjectDir)src\)";NDEBUG</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Engine\src;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\glfw\include;$(SolutionDir)Dependencies\glad\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Engine\src;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\glad\include;$(VULKAN_SDK)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <DebugInformationFormat>None</DebugInformationFormat>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -220,7 +179,7 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
     </Link>
     <Lib>
-      <AdditionalDependencies>gdi32.lib;user32.lib;kernel32.lib;opengl32.lib;$(SolutionDir)Dependencies\glfw\lib-vc2022\glfw3.lib</AdditionalDependencies>
+      <AdditionalDependencies>gdi32.lib;user32.lib;kernel32.lib;$(VULKAN_SDK)\Lib\vulkan-1.lib;$(VULKAN_SDK)\Lib\shaderc_shared.lib;$(VULKAN_SDK)\Lib\spirv-cross-core.lib</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

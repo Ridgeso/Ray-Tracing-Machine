@@ -1,6 +1,8 @@
 #pragma once
 #include <memory>
 
+#define EXPEND_MACRO(MACRO) MACRO
+
 namespace RT
 {
 

@@ -1,0 +1,356 @@
+#include "VulkanTexture.h"
+#include "Context.h"
+
+#include "Engine/Utils/LogDefinitions.h"
+
+#include "utils/Debug.h"
+#include "Device.h"
+#include "Swapchain.h"
+#include "utils/Utils.h"
+
+#include <backends/imgui_impl_vulkan.h>
+
+namespace RT::Vulkan
+{
+
+	VulkanTexture::VulkanTexture(const glm::uvec2 size, const ImageFormat imageFormat)
+		: size{size}
+		, format{imageFormat}
+		, imSize{size.x * size.y * format2Size(format)}
+	{
+		RT_LOG_INFO("Creating Texture: {{ size = {}, imageFormat = {} }}", size, RT::Utils::imageFormat2Str(format));
+		createImage();
+
+		allocateMemory();
+		allocateStaginBuffer();
+		createImageView();
+		createSampler();
+
+		if (ImageFormat::Depth != imageFormat)
+		{
+			descriptorSet = ImGui_ImplVulkan_AddTexture(
+				sampler,
+				imageView,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		}
+		RT_LOG_INFO("Texture Created");
+	}
+
+	VulkanTexture::~VulkanTexture()
+	{
+		auto device = DeviceInstance.getDevice();
+		vkDeviceWaitIdle(device);
+
+		ImGui_ImplVulkan_RemoveTexture(descriptorSet);
+		vkDestroySampler(device, sampler, nullptr);
+		vkDestroyImageView(device, imageView, nullptr);
+		vkDestroyImage(device, image, nullptr);
+		vkFreeMemory(device, memory, nullptr);
+		vkDestroyBuffer(device, stagingBuffer, nullptr);
+		vkFreeMemory(device, stagingBufferMemory, nullptr);
+	}
+
+	void VulkanTexture::setBuff(const void* data)
+	{
+		uploadToBuffer();
+		copyToImage();
+	}
+
+	void VulkanTexture::transition(const ImageAccess imageAccess, const ImageLayout imageLayout) const
+	{
+		DeviceInstance.execSingleCmdPass([&](const auto cmdBuffer) -> void
+		{
+			auto dstAccessMask = imageAccess2VulkanAccess(imageAccess);
+			auto newLayout = imageLayout2VulkanLayout(imageLayout);
+			
+			vulkanBarrier(cmdBuffer, dstAccessMask, newLayout);
+
+			currAccessMask = dstAccessMask;
+			currLayout = newLayout;
+		});
+	}
+
+	void VulkanTexture::barrier(
+		const ImageAccess imageAccess,
+		const ImageLayout imageLayout) const
+	{
+		auto dstAccessMask = imageAccess2VulkanAccess(imageAccess);
+		auto newLayout = imageLayout2VulkanLayout(imageLayout);
+
+		vulkanBarrier(Context::frameCmd, dstAccessMask, newLayout);
+
+		currAccessMask = dstAccessMask;
+		currLayout = newLayout;
+	}
+
+	void VulkanTexture::vulkanBarrier(
+		const VkCommandBuffer cmdBuff,
+		const VkAccessFlags dstAccessMask,
+		const VkImageLayout newLayout) const
+	{
+		auto barrier = VkImageMemoryBarrier{};
+		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		barrier.pNext = nullptr;
+		barrier.srcAccessMask = currAccessMask;
+		barrier.dstAccessMask = dstAccessMask;
+		barrier.oldLayout = currLayout;
+		barrier.newLayout = newLayout;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.image = image;
+		barrier.subresourceRange = subresourceRange;
+
+		vkCmdPipelineBarrier(
+			cmdBuff,
+			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+			0,
+			0, nullptr,
+			0, nullptr,
+			1, &barrier);
+	}
+
+	const VkDescriptorImageInfo VulkanTexture::getWriteImageInfo() const
+	{
+		auto info = VkDescriptorImageInfo();
+		info.sampler = sampler;
+		info.imageView = imageView;
+		info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+		return info;
+	}
+
+	const VkFormat VulkanTexture::imageFormat2VulkanFormat(const ImageFormat imageFormat)
+	{
+		switch (imageFormat)
+		{
+			case ImageFormat::R8:		return VK_FORMAT_R8_UNORM;
+			case ImageFormat::RGB8:		return VK_FORMAT_R8G8B8_UNORM;
+			case ImageFormat::RGBA8:	return VK_FORMAT_R8G8B8A8_UNORM;
+			case ImageFormat::RGBA32F:	return VK_FORMAT_R32G32B32A32_SFLOAT;
+		}
+		return VK_FORMAT_UNDEFINED;
+	}
+
+	const uint32_t VulkanTexture::format2Size(const ImageFormat imageFormat)
+	{
+		switch (imageFormat)
+		{
+			case ImageFormat::R8:		return 1;
+			case ImageFormat::RGB8:		return 3;
+			case ImageFormat::RGBA8:	return 4;
+			case ImageFormat::RGBA32F:	return 4 * 4;
+			case ImageFormat::Depth:	return 0;
+		}
+		return 0;
+	}
+
+	const VkImageLayout VulkanTexture::imageLayout2VulkanLayout(const ImageLayout imageLayout)
+	{
+		switch (imageLayout)
+		{
+			case ImageLayout::Undefined:  return VK_IMAGE_LAYOUT_UNDEFINED;
+			case ImageLayout::General:    return VK_IMAGE_LAYOUT_GENERAL;
+			case ImageLayout::ShaderRead: return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		}
+		return VK_IMAGE_LAYOUT_UNDEFINED;
+	}
+
+	const VkAccessFlags VulkanTexture::imageAccess2VulkanAccess(const ImageAccess imageAccess)
+	{
+		switch (imageAccess)
+		{
+			case ImageAccess::None:  return VK_ACCESS_NONE;
+			case ImageAccess::Write: return VK_ACCESS_SHADER_WRITE_BIT;
+			case ImageAccess::Read:  return VK_ACCESS_SHADER_READ_BIT;
+		}
+		return VK_ACCESS_NONE;
+	}
+
+	void VulkanTexture::createImage()
+	{
+		auto imageCreateInfo = VkImageCreateInfo{};
+		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageCreateInfo.extent.width = size.x;
+		imageCreateInfo.extent.height = size.y;
+		imageCreateInfo.extent.depth = 1;
+		imageCreateInfo.mipLevels = 1;
+		imageCreateInfo.arrayLayers = 1;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateInfo.flags = 0;
+
+		if (ImageFormat::Depth == format)
+		{
+			imageCreateInfo.format = Swapchain::findDepthFormat();
+			imageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		}
+		else
+		{
+			imageCreateInfo.format = imageFormat2VulkanFormat(format);
+			imageCreateInfo.usage = VK_IMAGE_USAGE_STORAGE_BIT |
+				VK_IMAGE_USAGE_SAMPLED_BIT;
+				//VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+				//VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+				//VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		}
+
+		CHECK_VK(
+			vkCreateImage(DeviceInstance.getDevice(), &imageCreateInfo, nullptr, &image),
+			"failed to create texture image!");
+	}
+
+	void VulkanTexture::allocateMemory()
+	{
+		auto device = DeviceInstance.getDevice();
+
+		auto memReq = VkMemoryRequirements{};
+		vkGetImageMemoryRequirements(device, image, &memReq);
+
+		auto allocInfo = VkMemoryAllocateInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.allocationSize = memReq.size;
+		allocInfo.memoryTypeIndex = DeviceInstance.findMemoryType(
+			memReq.memoryTypeBits,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+		CHECK_VK(
+			vkAllocateMemory(device, &allocInfo, nullptr, &memory),
+			"failed to allocate image memory!");
+		CHECK_VK(
+			vkBindImageMemory(device, image, memory, 0),
+			"failed to bind image memory!");
+
+		imSize = memReq.size;
+	}
+
+	void VulkanTexture::allocateStaginBuffer()
+	{
+		auto device = DeviceInstance.getDevice();
+
+		auto bufferInfo = VkBufferCreateInfo{};
+		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferInfo.size = imSize;
+		bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		CHECK_VK(
+			vkCreateBuffer(device, &bufferInfo, nullptr, &stagingBuffer),
+			"failed to create staging buffer!");
+
+		auto memReq = VkMemoryRequirements{};
+		vkGetBufferMemoryRequirements(device, stagingBuffer, &memReq);
+
+		auto allocInfo = VkMemoryAllocateInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.allocationSize = memReq.size;
+		allocInfo.memoryTypeIndex = DeviceInstance.findMemoryType(
+			memReq.memoryTypeBits,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+
+		CHECK_VK(
+			vkAllocateMemory(device, &allocInfo, nullptr, &stagingBufferMemory),
+			"failed to allocate image memory!");
+		CHECK_VK(
+			vkBindBufferMemory(device, stagingBuffer, stagingBufferMemory, 0),
+			"failed to bind image memory!");
+	}
+
+	void VulkanTexture::createImageView()
+	{
+		auto viewInfo = VkImageViewCreateInfo{};
+		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		viewInfo.image = image;
+		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewInfo.subresourceRange.baseMipLevel = 0;
+		viewInfo.subresourceRange.levelCount = 1;
+		viewInfo.subresourceRange.baseArrayLayer = 0;
+		viewInfo.subresourceRange.layerCount = 1;
+		viewInfo.components.r = VK_COMPONENT_SWIZZLE_R;
+		viewInfo.components.g = VK_COMPONENT_SWIZZLE_G;
+		viewInfo.components.b = VK_COMPONENT_SWIZZLE_B;
+		viewInfo.components.a = VK_COMPONENT_SWIZZLE_A;
+
+		if (ImageFormat::Depth == format)
+		{
+			viewInfo.format = Swapchain::findDepthFormat();
+			viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+		}
+		else
+		{
+			viewInfo.format = imageFormat2VulkanFormat(format);
+			viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		}
+
+		CHECK_VK(
+			vkCreateImageView(DeviceInstance.getDevice(), &viewInfo, nullptr, &imageView),
+			"failed to create texture image view!");
+	}
+
+	void VulkanTexture::createSampler()
+	{
+		auto info = VkSamplerCreateInfo{};
+		info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+		//info.magFilter = VK_FILTER_LINEAR;
+		//info.minFilter = VK_FILTER_LINEAR;
+		//info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		info.magFilter = VK_FILTER_NEAREST;
+		info.minFilter = VK_FILTER_NEAREST;
+		info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+		info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		info.minLod = -1000;
+		info.maxLod = 1000;
+		info.maxAnisotropy = 1.0f;
+		CHECK_VK(
+			vkCreateSampler(DeviceInstance.getDevice(), &info, nullptr, &sampler),
+			"failed to create texture image sampler!");
+	}
+
+	void VulkanTexture::uploadToBuffer()
+	{
+		auto device = DeviceInstance.getDevice();
+
+		void* dstData = nullptr;
+		vkMapMemory(device, stagingBufferMemory, 0, imSize, 0, &dstData);
+
+		// just for testing RGBA32F format
+		for (uint32_t i = 0; i < imSize / sizeof(float); i += 4)
+		{
+			((float*)dstData)[i + 0] = 0.0f;
+			((float*)dstData)[i + 1] = 0.2f;
+			((float*)dstData)[i + 2] = 1.0f;
+			((float*)dstData)[i + 3] = 1.0f;
+		}
+		//std::memset(dstData, 255, imSize);
+
+		auto range = VkMappedMemoryRange{};
+		range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+		range.memory = stagingBufferMemory;
+		range.size = imSize;
+		vkFlushMappedMemoryRanges(device, 1, &range);
+
+		vkUnmapMemory(device, stagingBufferMemory);
+	}
+
+	void VulkanTexture::copyToImage()
+	{
+		DeviceInstance.execSingleCmdPass([this](const auto cmdBuffer) -> void
+		{
+			vulkanBarrier(cmdBuffer, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+			auto region = VkBufferImageCopy{};
+			region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			region.imageSubresource.layerCount = 1;
+			region.imageExtent.width = size.x;
+			region.imageExtent.height = size.y;
+			region.imageExtent.depth = 1;
+			vkCmdCopyBufferToImage(cmdBuffer, stagingBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+			vulkanBarrier(cmdBuffer, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		});
+	}
+
+}

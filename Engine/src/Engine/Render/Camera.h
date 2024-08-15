@@ -38,13 +38,13 @@ namespace RT
 		void RecalculateInvProjection();
 		void RecalculateInvView();
 
-		void ResizeCamera(int32_t width, int32_t height);
+		bool ResizeCamera(int32_t width, int32_t height);
 
 	private:
 		Spec spec;
 		glm::vec3 direction;
 
-		float fov, near, far;
+		float fov, nearPlane, farPlane;
 		glm::ivec2 viewSize;
 
 		static const glm::vec3 Up;
