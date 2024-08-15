@@ -9,6 +9,7 @@ namespace RT::Event
 	{
 		int32_t width = 0;
 		int32_t height = 0;
+		bool isMinimized = true;
 	};
 
 }

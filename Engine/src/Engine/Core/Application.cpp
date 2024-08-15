@@ -45,6 +45,12 @@ namespace RT
 	{
 		while (isRunning)
 		{
+			if (window->isMinimize())
+			{
+				window->update();
+				continue;
+			}
+
 			auto appTimer = Timer{};
 
 			window->beginUI();

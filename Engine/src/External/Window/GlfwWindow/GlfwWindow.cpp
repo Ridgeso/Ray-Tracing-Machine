@@ -47,10 +47,11 @@ namespace
         data.isMinimized = 0 == width && 0 == height;
 
         auto event = RT::Event::Event<RT::Event::WindowResize>{};
-        event.fill([width, height](auto& e)
+        event.fill([&data](auto& e)
         {
-            e.width = width;
-            e.height = height;
+            e.width = data.size.x;
+            e.height = data.size.y;
+            e.isMinimized = data.isMinimized;
         });
         event.process();
     }

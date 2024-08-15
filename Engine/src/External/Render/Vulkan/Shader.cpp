@@ -229,18 +229,16 @@ namespace RT::Vulkan
 
     constexpr const char* Shader::shaderType2String(const Type type)
     {
-        #define TypeAsString(ShaderType) case Type:: ShaderType: return #ShaderType
         switch (type)
         {
-            TypeAsString(Vertex);
-            TypeAsString(TessControl);
-            TypeAsString(TessEvaulation);
-            TypeAsString(Geometry);
-            TypeAsString(Fragment);
-            TypeAsString(Compute);
+            case Type::Vertex:         return "Vertex";
+            case Type::TessControl:    return "TessControl";
+            case Type::TessEvaulation: return "TessEvaulation";
+            case Type::Geometry:       return "Geometry";
+            case Type::Fragment:       return "Fragment";
+            case Type::Compute:        return "Compute";
         }
         return "";
-        #undef TypeAsString
     }
 
 }

@@ -38,6 +38,7 @@ namespace RT
 		bool isKeyPressed(int32_t key) const final;
 		bool isMousePressed(int32_t key) const final;
 		glm::ivec2 getSize() const final;
+		bool isMinimize() const final { return context.isMinimized; }
 
 		void cursorMode(int32_t state) const final;
 

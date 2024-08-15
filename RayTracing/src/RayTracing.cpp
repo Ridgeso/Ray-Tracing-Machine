@@ -376,6 +376,11 @@ private:
 	{
 		RT::Event::Event<RT::Event::WindowResize>::registerCallback([this](const auto& event)
 		{
+			if (event.isMinimized)
+			{
+				return;
+			}
+
 			lastWinSize = { event.width, event.height };
 
 			infoUniform.resolution = lastWinSize;

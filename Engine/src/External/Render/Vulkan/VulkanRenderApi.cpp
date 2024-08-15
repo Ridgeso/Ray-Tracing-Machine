@@ -7,6 +7,9 @@
 
 #include "Engine/Core/Application.h"
 
+#include "Engine/Event/Event.h"
+#include "Engine/Event/AppEvents.h"
+
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
 #include <GLFW/glfw3.h>
@@ -31,6 +34,16 @@ namespace RT::Vulkan
 
 		allocateCmdBuffers(cmdBuffers);
 		allocateCmdBuffers(imGuiCmdBuffers);
+
+		Event::Event<Event::WindowResize>::registerCallback([this](const auto& event)
+		{
+			if (event.isMinimized)
+			{
+				return;
+			}
+
+			this->recreateSwapchain();
+		});
 	}
 
 	void VulkanRenderApi::shutdown()
@@ -60,9 +73,11 @@ namespace RT::Vulkan
 
 		flushUniforms();
 
+		// Probably not needed as it is handled by WindowResize event callback, but keept for safty
 		if (VK_ERROR_OUT_OF_DATE_KHR == result)
 		{
 			recreateSwapchain();
+			result = SwapchainInstance->acquireNextImage(imgIdx);
 		}
 
 		RT_ASSERT(VK_SUCCESS == result || VK_SUBOPTIMAL_KHR == result, "failte to acquire swap chain image!");
@@ -84,6 +99,7 @@ namespace RT::Vulkan
 
 		auto result = SwapchainInstance->submitCommandBuffers(cmdBuffers[Context::imgIdx], imGuiCmdBuffers[Context::imgIdx], Context::imgIdx);
 
+		// Probably not needed as it is handled by WindowResize event callback, but keept for safty
 		if (VK_ERROR_OUT_OF_DATE_KHR == result || VK_SUBOPTIMAL_KHR == result)
 		{
 			recreateSwapchain();
@@ -94,6 +110,38 @@ namespace RT::Vulkan
 
 		Context::imgIdx = invalidImgIdx;
 		Context::frameCmd = VK_NULL_HANDLE;
+	}
+
+	void VulkanRenderApi::recreateSwapchain()
+	{
+		auto size = Application::getWindow()->getSize();
+		if (glm::ivec2{ 0, 0 } == size)
+		{
+			return;
+		}
+
+		vkDeviceWaitIdle(DeviceInstance.getDevice());
+		extent = VkExtent2D{ (uint32_t)size.x, (uint32_t)size.y };
+
+		auto oldSwapchain = Share<Swapchain>(nullptr);
+		if (SwapchainInstance == nullptr)
+		{
+			SwapchainInstance = makeLocal<Swapchain>(extent);
+		}
+		else
+		{
+			// TODO: check rendepass compatibility
+			oldSwapchain = Share<Swapchain>(SwapchainInstance.release());
+			SwapchainInstance = makeLocal<Swapchain>(extent, oldSwapchain);
+		}
+
+		SwapchainInstance->init();
+
+		if (oldSwapchain)
+		{
+			RT_ASSERT(SwapchainInstance->compareFormats(*oldSwapchain), "swapchain image/depth formats has changed");
+			oldSwapchain->shutdown();
+		}
 	}
 
 	void VulkanRenderApi::recordGuiCommandbuffer(const uint32_t imIdx)
@@ -142,38 +190,6 @@ namespace RT::Vulkan
 		vkCmdEndRenderPass(currCmdBuff);
 
 		CHECK_VK(vkEndCommandBuffer(currCmdBuff), "failed to record command buffer");
-	}
-
-	void VulkanRenderApi::recreateSwapchain()
-	{
-		auto size = Application::getWindow()->getSize();
-		while (size.x == 0 || size.y == 0)
-		{
-			size = Application::getWindow()->getSize();
-			glfwWaitEvents();
-		}
-		vkDeviceWaitIdle(DeviceInstance.getDevice());
-		extent = VkExtent2D{ (uint32_t)size.x, (uint32_t)size.y };
-
-		auto oldSwapchain = Share<Swapchain>(nullptr);
-		if (SwapchainInstance == nullptr)
-		{
-			SwapchainInstance = makeLocal<Swapchain>(extent);
-		}
-		else
-		{
-			// TODO: check rendepass compatibility
-			oldSwapchain = Share<Swapchain>(SwapchainInstance.release());
-			SwapchainInstance = makeLocal<Swapchain>(extent, oldSwapchain);
-		}
-		
-		SwapchainInstance->init();
-
-		if (oldSwapchain)
-		{
-			RT_ASSERT(SwapchainInstance->compareFormats(*oldSwapchain), "swapchain image/depth formats has changed");
-			oldSwapchain->shutdown();
-		}
 	}
 
 	void VulkanRenderApi::initImGui()

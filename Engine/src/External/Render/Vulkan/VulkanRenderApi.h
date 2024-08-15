@@ -28,9 +28,10 @@ namespace RT::Vulkan
 		void beginFrame() final;
 		void endFrame() final;
 
+		void recreateSwapchain();
+
 	private:
 		void recordGuiCommandbuffer(const uint32_t imIdx);
-		void recreateSwapchain();
 
 		void initImGui();
 		void allocateCmdBuffers(std::vector<VkCommandBuffer>& cmdBuff);
