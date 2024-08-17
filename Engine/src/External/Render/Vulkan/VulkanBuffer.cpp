@@ -108,14 +108,7 @@ namespace RT::Vulkan
 	{
 		RT_LOG_INFO("Creating Uniform: {{ type = {}, size = {} }}", RT::Utils::uniformType2Str(uniformType), instanceSize);
 
-		const auto vkLimits = DeviceInstance.getLimits();
-		const auto minAlignment = std::lcm(
-			vkLimits.nonCoherentAtomSize,
-			UniformType::Uniform == uniformType ?
-				vkLimits.minUniformBufferOffsetAlignment :
-				vkLimits.minStorageBufferOffsetAlignment);
-
-		alignedSize = calculateAlignedSize(instanceSize, minAlignment);
+		alignedSize = calculateAlignedSize(instanceSize, getMinOffsetAlignment());
 
 		masterBuffer.resize(alignedSize);
 		std::fill(masterBuffer.begin(), masterBuffer.end(), 0);
@@ -141,6 +134,7 @@ namespace RT::Vulkan
 
 	VulkanUniform::~VulkanUniform()
 	{
+		DeviceInstance.waitForIdle();
 		const auto device = DeviceInstance.getDevice();
 		vkUnmapMemory(device, uniMemory);
 		vkDestroyBuffer(device, uniBuffer, nullptr);
@@ -149,6 +143,17 @@ namespace RT::Vulkan
 
 	void VulkanUniform::setData(const void* data, const uint32_t size, const uint32_t offset)
 	{
+		if (size > alignedSize - offset)
+		{
+			RT_LOG_ERROR("Trying to set {} buffer region by offset = {} with requested size = {} [buffer size = {}]",
+				uniformType2Str(uniformType),
+				offset,
+				size,
+				alignedSize);
+
+			return;
+		}
+
 		auto* dst = masterBuffer.data() + offset;
 		std::memcpy(dst, data, size);
 
@@ -193,6 +198,17 @@ namespace RT::Vulkan
 		std::memcpy(dst, masterBuffer.data(), alignedSize);
 	}
 
+	uint64_t VulkanUniform::getMinOffsetAlignment() const
+	{
+		const auto vkLimits = DeviceInstance.getLimits();
+		const auto minAlignment = std::lcm(
+			vkLimits.nonCoherentAtomSize,
+			UniformType::Uniform == uniformType ?
+				vkLimits.minUniformBufferOffsetAlignment :
+				vkLimits.minStorageBufferOffsetAlignment);
+		return minAlignment;
+	}
+
 	constexpr VkBufferUsageFlagBits VulkanUniform::uniformType2VkBuffBit(const UniformType uniformType)
 	{
 		switch (uniformType)
@@ -201,6 +217,18 @@ namespace RT::Vulkan
 			case UniformType::Storage: return VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 		}
 		return VkBufferUsageFlagBits{};
+	}
+
+	constexpr const char* VulkanUniform::uniformType2Str(const UniformType uniformType)
+	{
+		switch (uniformType)
+		{
+			case UniformType::Uniform: return "Uniform";
+			case UniformType::Storage: return "Storage";
+			case UniformType::Sampler: return "Sampler";
+			case UniformType::Image:   return "Image";
+		}
+		return "";
 	}
 
 	constexpr uint32_t VulkanUniform::calculateAlignedSize(const uint32_t initialSize, const uint32_t minAlignment)

@@ -77,9 +77,11 @@ namespace RT::Vulkan
 
 		bool stillNeedFlush() const;
 		void copyToRegionBuff(const uint8_t buffIdx) const;
+		uint64_t getMinOffsetAlignment() const;
 
 		static constexpr VkBufferUsageFlagBits uniformType2VkBuffBit(const UniformType uniformType);
 		static constexpr uint32_t calculateAlignedSize(const uint32_t initialSize, const uint32_t minAlignment);
+		static constexpr const char* uniformType2Str(const UniformType uniformType);
 
 	private:
 		UniformType uniformType = UniformType::None;

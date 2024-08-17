@@ -24,6 +24,8 @@ namespace RT::Vulkan
         void init();
         void shutdown();
 
+        void waitForIdle() const;
+
         void createImageWithInfo(
             const VkImageCreateInfo& imageInfo,
             const VkMemoryPropertyFlags properties,

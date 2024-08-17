@@ -38,8 +38,8 @@ namespace RT::Vulkan
 
 	VulkanTexture::~VulkanTexture()
 	{
+		DeviceInstance.waitForIdle();
 		auto device = DeviceInstance.getDevice();
-		vkDeviceWaitIdle(device);
 
 		ImGui_ImplVulkan_RemoveTexture(descriptorSet);
 		vkDestroySampler(device, sampler, nullptr);

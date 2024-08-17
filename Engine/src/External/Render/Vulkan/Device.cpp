@@ -33,6 +33,11 @@ namespace RT::Vulkan
         vkDestroyInstance(instance, nullptr);
     }
 
+    void Device::waitForIdle() const
+    {
+        vkDeviceWaitIdle(device);
+    }
+
     void Device::createImageWithInfo(
         const VkImageCreateInfo& imageInfo,
         const VkMemoryPropertyFlags properties,

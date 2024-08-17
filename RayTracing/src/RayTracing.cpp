@@ -215,33 +215,31 @@ public:
 		ImGui::End();
 		if (shouldUpdateMaterials)
 		{
-			if (scene.materials.size() == infoUniform.materialsCount)
-			{
-				materialsStorage->setData(scene.materials.data(), sizeof(RT::Material) * scene.materials.size());
-			}
-			else
+			if (scene.materials.size() != infoUniform.materialsCount)
 			{
 				infoUniform.materialsCount = scene.materials.size();
 				ammountsUniform->setData(&infoUniform.materialsCount, sizeof(float), offsetof(InfoUniform, materialsCount));
 
 				materialsStorage = RT::Uniform::create(RT::UniformType::Storage, sizeof(RT::Material) * scene.materials.size());
-				materialsStorage->setData(scene.materials.data(), sizeof(RT::Material) * scene.materials.size());
+
+				pipeline->updateSet(1, 0, 0, *materialsStorage);
 			}
+
+			materialsStorage->setData(scene.materials.data(), sizeof(RT::Material) * scene.materials.size());
 		}
 		if (shouldUpdateSpehere)
 		{
-			if (scene.spheres.size() == infoUniform.spheresCount)
-			{
-				spheresStorage->setData(scene.spheres.data(), sizeof(RT::Sphere) * scene.spheres.size());
-			}
-			else
+			if (scene.spheres.size() != infoUniform.spheresCount)
 			{
 				infoUniform.spheresCount = scene.spheres.size();
 				ammountsUniform->setData(&infoUniform.spheresCount, sizeof(float), offsetof(InfoUniform, spheresCount));
 
 				spheresStorage = RT::Uniform::create(RT::UniformType::Storage, sizeof(RT::Sphere) * scene.spheres.size());
-				spheresStorage->setData(scene.spheres.data(), sizeof(RT::Sphere) * scene.spheres.size());
+				
+				pipeline->updateSet(1, 0, 1, *spheresStorage);
 			}
+
+			spheresStorage->setData(scene.spheres.data(), sizeof(RT::Sphere) * scene.spheres.size());
 		}
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));

@@ -48,8 +48,8 @@ namespace RT::Vulkan
 
 	void VulkanRenderApi::shutdown()
 	{
+		DeviceInstance.waitForIdle();
 		auto& deviceInstance = DeviceInstance;
-		vkDeviceWaitIdle(deviceInstance.getDevice());
 
 		ImGui_ImplVulkan_Shutdown();
 		vkDestroyDescriptorPool(deviceInstance.getDevice(), descriptorPool, nullptr);
@@ -63,7 +63,7 @@ namespace RT::Vulkan
 
 	void VulkanRenderApi::stop()
 	{
-		vkDeviceWaitIdle(DeviceInstance.getDevice());
+		DeviceInstance.waitForIdle();
 	}
 
 	void VulkanRenderApi::beginFrame()
@@ -120,7 +120,7 @@ namespace RT::Vulkan
 			return;
 		}
 
-		vkDeviceWaitIdle(DeviceInstance.getDevice());
+		DeviceInstance.waitForIdle();
 		extent = VkExtent2D{ (uint32_t)size.x, (uint32_t)size.y };
 
 		auto oldSwapchain = Share<Swapchain>(nullptr);
