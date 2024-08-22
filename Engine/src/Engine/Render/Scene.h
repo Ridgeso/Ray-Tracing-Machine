@@ -13,9 +13,9 @@ namespace RT
 		glm::vec3 emissionColor;
 		float roughness;
 		float metalic;
+		float specularProbability;
 		float emissionPower;
 		float refractionRatio;
-		float padding2[1];
 	};
 	#pragma pack(pop)
 

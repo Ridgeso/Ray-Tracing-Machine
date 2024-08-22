@@ -36,35 +36,52 @@ public:
 		, camera(45.0f, 0.01f, 100.0f)
 		, scene{}
 	{
+		scene.materials.emplace_back(RT::Material{ { 0.0f, 0.0f, 0.0f }, 0.0, { 0.0f, 0.0f, 0.0f }, 0.0f,  0.0f, 0.0f, 0.0f, 1.0f });
+		scene.materials.emplace_back(RT::Material{ { 1.0f, 1.0f, 1.0f }, 0.0, { 1.0f, 1.0f, 1.0f }, 0.0f,  0.0f, 0.0f, 0.0f, 1.0f });
+		scene.materials.emplace_back(RT::Material{ { 0.0f, 0.0f, 1.0f }, 0.0, { 1.0f, 1.0f, 1.0f }, 0.0f,  0.0f, 0.0f, 0.0f, 1.0f });
+		scene.materials.emplace_back(RT::Material{ { 1.0f, 0.0f, 0.0f }, 0.0, { 1.0f, 1.0f, 1.0f }, 0.0f,  0.0f, 0.0f, 0.0f, 1.0f});
+
+		scene.spheres.emplace_back(RT::Sphere{ { 0.0f, 0.0f, -10007.0f }, 10000.0f, 1 });
+		scene.spheres.emplace_back(RT::Sphere{ { 0.0f, 0.0f, 10003.0f }, 10000.0f, 1 });
+		scene.spheres.emplace_back(RT::Sphere{ { 0.0f, -10001.0f, -2.0f }, 10000.0f, 1 });
+		scene.spheres.emplace_back(RT::Sphere{ { 0.0f, 10009.0f, -2.0f }, 10000.0f, 1 });
+		scene.spheres.emplace_back(RT::Sphere{ { -10005.0f, 0.0f, -2.0f }, 10000.0f, 2 });
+		scene.spheres.emplace_back(RT::Sphere{ { 10005.0f, 0.0f, -2.0f }, 10000.0f, 3 });
+
+		scene.materials.emplace_back(RT::Material{ { 1.0f, 1.0f, 1.0f }, 0.0, { 1.0f, 1.0f, 1.0f }, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f});
+		scene.spheres.emplace_back(RT::Sphere{ { 0.0f, 18.8f, -2.0f }, 10.0f, 4 });
+
 		uint32_t seed = 93262352u;
 
-		scene.materials.emplace_back(RT::Material{ { 0.0f, 0.0f, 0.0f }, 0.0, { 0.0f, 0.0f, 0.0f }, 0.0f,  0.0f, 0.0f, 1.0f });
-		scene.materials.emplace_back(RT::Material{ { 1.0f, 1.0f, 1.0f }, 0.0, { 1.0f, 1.0f, 1.0f }, 0.7f,  0.8f, 0.0f, 1.5f });
-		scene.materials.emplace_back(RT::Material{ { 0.2f, 0.5f, 0.7f }, 0.0, { 0.2f, 0.5f, 0.7f }, 0.05f, 0.3f, 0.0f, 1.0f });
-		scene.materials.emplace_back(RT::Material{ { 0.8f, 0.6f, 0.5f }, 0.0, { 0.8f, 0.6f, 0.5f }, 0.0f,  0.3f, 1.0f, 1.0f });
-		scene.materials.emplace_back(RT::Material{ { 0.4f, 0.3f, 0.8f }, 0.0, { 0.8f, 0.6f, 0.5f }, 0.0f,  0.3f, 0.0f, 1.0f });
+		//scene.materials.emplace_back(RT::Material{ { 0.0f, 0.0f, 0.0f }, 0.0, { 0.0f, 0.0f, 0.0f }, 0.0f,  0.0f, 0.0f, 0.0f, 1.0f });
+		//scene.materials.emplace_back(RT::Material{ { 1.0f, 1.0f, 1.0f }, 0.0, { 1.0f, 1.0f, 1.0f }, 0.7f,  0.0f, 0.8f, 0.0f, 1.5f });
+		//scene.materials.emplace_back(RT::Material{ { 0.2f, 0.5f, 0.7f }, 0.0, { 0.2f, 0.5f, 0.7f }, 0.05f, 0.0f, 0.3f, 0.0f, 1.0f });
+		//scene.materials.emplace_back(RT::Material{ { 0.8f, 0.6f, 0.5f }, 0.0, { 0.8f, 0.6f, 0.5f }, 0.0f,  0.0f, 0.3f, 1.0f, 1.0f });
+		//scene.materials.emplace_back(RT::Material{ { 0.4f, 0.3f, 0.8f }, 0.0, { 0.8f, 0.6f, 0.5f }, 0.0f,  0.0f, 0.3f, 0.0f, 1.0f });
 
-		scene.spheres.emplace_back(RT::Sphere{ { 0.0f, 0.0f, -2.0f }, 1.0f, 1 });
-		scene.spheres.emplace_back(RT::Sphere{ { 0.0f, -2001.0f, -2.0f }, 2000.0f, 2 });
-		scene.spheres.emplace_back(RT::Sphere{ { 2.5f, 0.0f, -2.0f }, 1.0f, 3 });
-		scene.spheres.emplace_back(RT::Sphere{ { -2.5f, 0.0f, -2.0f }, 1.0f, 4 });
+		//scene.spheres.emplace_back(RT::Sphere{ { 0.0f, 0.0f, -2.0f }, 1.0f, 1 });
+		//scene.spheres.emplace_back(RT::Sphere{ { 0.0f, -2001.0f, -2.0f }, 2000.0f, 2 });
+		//scene.spheres.emplace_back(RT::Sphere{ { 2.5f, 0.0f, -2.0f }, 1.0f, 3 });
+		//scene.spheres.emplace_back(RT::Sphere{ { -2.5f, 0.0f, -2.0f }, 1.0f, 4 });
 
-		auto getRandPos = [&seed](float rad) { return FastRandom(seed) * rad - rad / 2; };
+		//auto getRandPos = [&seed](float rad) { return FastRandom(seed) * rad - rad / 2; };
 
-		for (int i = 0; i < 70; i++)
-		{
-			scene.materials.emplace_back(RT::Material{ });
-			scene.materials[scene.materials.size() - 1].albedo = { FastRandom(seed), FastRandom(seed), FastRandom(seed) };
-			scene.materials[scene.materials.size() - 1].emissionColor = { FastRandom(seed), FastRandom(seed), FastRandom(seed) };
-			scene.materials[scene.materials.size() - 1].roughness = FastRandom(seed) > 0.9 ? 0.f : FastRandom(seed);
-			scene.materials[scene.materials.size() - 1].emissionPower = FastRandom(seed) > 0.9 ? FastRandom(seed) : 0.f;
-			scene.materials[scene.materials.size() - 1].refractionRatio = 1.0f;
+		//for (int i = 0; i < 70; i++)
+		//{
+		//	scene.materials.emplace_back(RT::Material{ });
+		//	scene.materials[scene.materials.size() - 1].albedo = { FastRandom(seed), FastRandom(seed), FastRandom(seed) };
+		//	scene.materials[scene.materials.size() - 1].emissionColor = { FastRandom(seed), FastRandom(seed), FastRandom(seed) };
+		//	scene.materials[scene.materials.size() - 1].roughness = FastRandom(seed) > 0.9 ? 0.f : FastRandom(seed);
+		//	scene.materials[scene.materials.size() - 1].metalic = FastRandom(seed) > 0.9 ? FastRandom(seed) : 0.f;
+		//	scene.materials[scene.materials.size() - 1].specularProbability= FastRandom(seed) > 0.9 ? FastRandom(seed) : 0.f;
+		//	scene.materials[scene.materials.size() - 1].emissionPower = FastRandom(seed) > 0.9 ? FastRandom(seed) : 0.f;
+		//	scene.materials[scene.materials.size() - 1].refractionRatio = 1.0f;
 
-			scene.spheres.emplace_back(RT::Sphere{ });
-			scene.spheres[scene.spheres.size() - 1].position = { getRandPos(10.0f), -0.75, getRandPos(10.0f) - 2 };
-			scene.spheres[scene.spheres.size() - 1].radius = 0.25;
-			scene.spheres[scene.spheres.size() - 1].materialId = scene.materials.size() - 1;
-		}
+		//	scene.spheres.emplace_back(RT::Sphere{ });
+		//	scene.spheres[scene.spheres.size() - 1].position = { getRandPos(10.0f), -0.75, getRandPos(10.0f) - 2 };
+		//	scene.spheres[scene.spheres.size() - 1].radius = 0.25;
+		//	scene.spheres[scene.spheres.size() - 1].materialId = scene.materials.size() - 1;
+		//}
 
 		//screenBuff = VertexBuffer::create(sizeof(screenVertices), screenVertices);
 		//screenBuff->registerAttributes({ VertexElement::Float2, VertexElement::Float2 });
@@ -87,7 +104,7 @@ public:
 		ammountsUniform->setData(&infoUniform, sizeof(InfoUniform));
 
 		cameraUniform = RT::Uniform::create(RT::UniformType::Uniform, sizeof(RT::Camera::Spec));
-		cameraUniform->setData(&camera.GetSpec(), sizeof(RT::Camera::Spec));
+		cameraUniform->setData(&camera.getSpec(), sizeof(RT::Camera::Spec));
 
 		materialsStorage = RT::Uniform::create(RT::UniformType::Storage, sizeof(RT::Material) * scene.materials.size());
 		materialsStorage->setData(scene.materials.data(), sizeof(RT::Material) * scene.materials.size());
@@ -96,7 +113,7 @@ public:
 		spheresStorage->setData(scene.spheres.data(), sizeof(RT::Sphere) * scene.spheres.size());
 
 		auto pipelineSpec = RT::PipelineSpec{};
-		pipelineSpec.shaderPath = std::filesystem::path("assets") / "shaders" / "RayTracing.shader";
+		pipelineSpec.shaderPath = assetDir / "shaders" / "RayTracing.shader";
 		pipelineSpec.uniformLayouts = RT::UniformLayouts{
 			{.nrOfSets = 1, .layout = { RT::UniformType::Image, RT::UniformType::Image, RT::UniformType::Uniform, RT::UniformType::Uniform } },
 			{.nrOfSets = 1, .layout = { RT::UniformType::Storage, RT::UniformType::Storage } }
@@ -132,138 +149,205 @@ public:
 	void layout() final
 	{
 		ImGui::Begin("Settings");
-		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-		ImGui::Text("App frame took: %.3fms", RT::Application::Get().appDuration());
-		ImGui::Text("CPU time: %.3fms", lastFrameDuration);
-		ImGui::Text("GPU time: %.3fms", RT::Application::Get().appDuration() - lastFrameDuration);
-		ImGui::Text("Frames: %d", infoUniform.frameIndex);
+		{
+			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+			ImGui::Text("App frame took: %.3fms", RT::Application::Get().appDuration());
+			ImGui::Text("GPU time: %.3fms", lastFrameDuration);
+			ImGui::Text("CPU time: %.3fms", RT::Application::Get().appDuration() - lastFrameDuration);
+			ImGui::Text("Frames: %d", infoUniform.frameIndex);
 
-		infoUniform.frameIndex++;
-		if (!accumulation)
-		{
-			infoUniform.frameIndex = 1;
-		}
+			infoUniform.frameIndex = accumulation ? infoUniform.frameIndex + 1 : 1;
 
-		if (ImGui::DragInt("Bounces Limit", (int32_t*)&infoUniform.maxBounces, 1, 1, 15))
-		{
-			ammountsUniform->setData(&infoUniform.maxBounces, sizeof(uint32_t), offsetof(InfoUniform, maxBounces));
+			if (ImGui::DragInt("Bounces Limit", (int32_t*)&infoUniform.maxBounces, 1, 1, 15))
+			{
+				ammountsUniform->setData(&infoUniform.maxBounces, sizeof(uint32_t), offsetof(InfoUniform, maxBounces));
+			}
+			if (ImGui::DragInt("Precalculated Frames Limit", (int32_t*)&infoUniform.maxFrames, 1, 1, 15))
+			{
+				ammountsUniform->setData(&infoUniform.maxFrames, sizeof(uint32_t), offsetof(InfoUniform, maxFrames));
+			}
+			if (ImGui::Button("Reset"))
+			{
+				infoUniform.frameIndex = 1;
+			}
+			ammountsUniform->setData(&infoUniform.frameIndex, sizeof(uint32_t), offsetof(InfoUniform, frameIndex));
+			ImGui::Checkbox("Accumulate", &accumulation);
+			if (ImGui::Checkbox("Draw Environment", &drawEnvironmentTranslator))
+			{
+				infoUniform.drawEnvironment = drawEnvironmentTranslator;
+				ammountsUniform->setData(&infoUniform.drawEnvironment, sizeof(float), offsetof(InfoUniform, drawEnvironment));
+			}
 		}
-		if (ImGui::DragInt("Precalculated Frames Limit", (int32_t*)&infoUniform.maxFrames, 1, 1, 15))
+		ImGui::End();
+
+		ImGui::Begin("Camera");
 		{
-			ammountsUniform->setData(&infoUniform.maxFrames, sizeof(uint32_t), offsetof(InfoUniform, maxFrames));
-		}
-		if (ImGui::Button("Reset"))
-		{
-			infoUniform.frameIndex = 1;
-		}
-		ammountsUniform->setData(&infoUniform.frameIndex, sizeof(uint32_t), offsetof(InfoUniform, frameIndex));
-		ImGui::Checkbox("Accumulate", &accumulation);
-		if (ImGui::Checkbox("Draw Environment", &drawEnvironmentTranslator))
-		{
-			infoUniform.drawEnvironment = drawEnvironmentTranslator;
-			ammountsUniform->setData(&infoUniform.drawEnvironment, sizeof(float), offsetof(InfoUniform, drawEnvironment));
-		}
-		bool shouldUpdateMaterials = false;
-		if (ImGui::Button("Add Material"))
-		{
-			scene.materials.emplace_back(RT::Material{ { 0.0f, 0.0f, 0.0f }, 0.0, { 0.0f, 0.0f, 0.0f }, 0.0f, 0.0f, 0.0f });
-			shouldUpdateMaterials = true;
-		}
-		bool shouldUpdateSpehere = false;
-		if (ImGui::Button("Add Sphere"))
-		{
-			scene.spheres.emplace_back(RT::Sphere{ { 0.0f, 0.0f, -2.0f }, 1.0f, 0 });
-			shouldUpdateSpehere = true;
+			ImGui::Text("Camera settings");
+
+			bool shouldUpdateCamera = false;
+			shouldUpdateCamera |= ImGui::DragFloat("Field of view", &camera.fov, 1.0f, 1.0f, 179.0f);
+			shouldUpdateCamera |= ImGui::DragFloat("Near plane", &camera.nearPlane);
+			shouldUpdateCamera |= ImGui::DragFloat("Far plane", &camera.farPlane);
+			shouldUpdateCamera |= ImGui::DragFloat("Blur", &camera.getSpec().blurStrength, 0.05f, 0.0f, std::numeric_limits<float>::max());
+			if (shouldUpdateCamera)
+			{
+				camera.recalculateInvProjection();
+				cameraUniform->setData(&camera.getSpec(), sizeof(RT::Camera::Spec));
+			}
 		}
 		ImGui::End();
 
 		ImGui::Begin("Scene");
-
-		ImGui::Text("Materials:");
-		for (size_t materialId = 1; materialId < scene.materials.size(); materialId++)
 		{
-			ImGui::PushID((int32_t)materialId);
-			RT::Material& material = scene.materials[materialId];
+			ImGui::Text("Scene");
 
-			shouldUpdateMaterials |= ImGui::ColorEdit3("Albedo", glm::value_ptr(material.albedo));
-			shouldUpdateMaterials |= ImGui::ColorEdit3("Emission Color", glm::value_ptr(material.emissionColor));
-			shouldUpdateMaterials |= ImGui::DragFloat("Roughness", &material.roughness, 0.005f, 0.0f, 1.0f);
-			shouldUpdateMaterials |= ImGui::DragFloat("Metalic", &material.metalic, 0.005f, 0.0f, 1.0f);
-			shouldUpdateMaterials |= ImGui::DragFloat("Emission Power", &material.emissionPower, 0.005f, 0.0f, std::numeric_limits<float>::max());
-			shouldUpdateMaterials |= ImGui::DragFloat("Refraction Index", &material.refractionRatio, 0.005f, 1.0f, 32.0f);
+			bool shouldUpdateMaterials = false;
+			bool shouldUpdateSpehere = false;
 
 			ImGui::Separator();
-			ImGui::PopID();
-		}
 
-		ImGui::Separator();
+			if (ImGui::CollapsingHeader("Materials"))
+			{
+				if (ImGui::Button("Add Material"))
+				{
+					scene.materials.emplace_back(RT::Material{ { 0.0f, 0.0f, 0.0f }, 0.0, { 0.0f, 0.0f, 0.0f }, 0.0f, 0.0f, 0.0f });
+					shouldUpdateMaterials = true;
+				}
 
-		ImGui::Text("Spheres:");
-		for (size_t sphereId = 0; sphereId < scene.spheres.size(); sphereId++)
-		{
-			ImGui::PushID((int32_t)sphereId);
-			RT::Sphere& sphere = scene.spheres[sphereId];
+				for (size_t materialId = 1; materialId < scene.materials.size(); materialId++)
+				{
+					if (!ImGui::TreeNode(fmt::format("Material: {}", materialId).c_str()))
+					{
+						continue;
+					}
 
-			shouldUpdateSpehere |= ImGui::DragFloat3("Position", glm::value_ptr(sphere.position), 0.1f);
-			shouldUpdateSpehere |= ImGui::DragFloat("Radius", &sphere.radius, 0.01f, 0.0f, std::numeric_limits<float>::max());
-			shouldUpdateSpehere |= ImGui::SliderInt("Material", &sphere.materialId, 1, scene.materials.size() - 1);
+					ImGui::PushID((int32_t)materialId);
+					auto& material = scene.materials[materialId];
+
+					shouldUpdateMaterials |= ImGui::ColorEdit3("Albedo", glm::value_ptr(material.albedo));
+					shouldUpdateMaterials |= ImGui::ColorEdit3("Emission Color", glm::value_ptr(material.emissionColor));
+					shouldUpdateMaterials |= ImGui::DragFloat("Roughness", &material.roughness, 0.005f, 0.0f, 1.0f);
+					shouldUpdateMaterials |= ImGui::DragFloat("Metalic", &material.metalic, 0.005f, 0.0f, 1.0f);
+					shouldUpdateMaterials |= ImGui::DragFloat("Specular Probability", &material.specularProbability, 0.005f, 0.0f, 1.0f);
+					shouldUpdateMaterials |= ImGui::DragFloat("Emission Power", &material.emissionPower, 0.005f, 0.0f, std::numeric_limits<float>::max());
+					shouldUpdateMaterials |= ImGui::DragFloat("Refraction Index", &material.refractionRatio, 0.005f, 1.0f, 32.0f);
+
+					if (ImGui::Button("Delete Sphere"))
+					{
+						scene.materials.erase(scene.materials.begin() + materialId);
+						for (auto& sphere : scene.spheres)
+						{
+							if (sphere.materialId == materialId)
+							{
+								sphere.materialId = 0;
+								shouldUpdateSpehere = true;
+							}
+							else if (sphere.materialId > materialId)
+							{
+								sphere.materialId--;
+								shouldUpdateSpehere = true;
+							}
+						}
+						shouldUpdateMaterials = true;
+					}
+
+					ImGui::Separator();
+					ImGui::PopID();
+					ImGui::TreePop();
+				}
+			}
 
 			ImGui::Separator();
-			ImGui::PopID();
-		}
 
-		ImGui::End();
-		if (shouldUpdateMaterials)
-		{
-			if (scene.materials.size() != infoUniform.materialsCount)
+			if (ImGui::CollapsingHeader("Spheres"))
 			{
-				infoUniform.materialsCount = scene.materials.size();
-				ammountsUniform->setData(&infoUniform.materialsCount, sizeof(float), offsetof(InfoUniform, materialsCount));
+				if (ImGui::Button("Add Sphere"))
+				{
+					scene.spheres.emplace_back(RT::Sphere{ { 0.0f, 0.0f, -2.0f }, 1.0f, 0 });
+					shouldUpdateSpehere = true;
+				}
 
-				materialsStorage = RT::Uniform::create(RT::UniformType::Storage, sizeof(RT::Material) * scene.materials.size());
+				for (size_t sphereId = 0u; sphereId < scene.spheres.size(); sphereId++)
+				{
+					if (!ImGui::TreeNode(fmt::format("Sphere: {}", sphereId).c_str()))
+					{
+						continue;
+					}
 
-				pipeline->updateSet(1, 0, 0, *materialsStorage);
+					ImGui::PushID((int32_t)sphereId);
+					auto& sphere = scene.spheres[sphereId];
+
+					shouldUpdateSpehere |= ImGui::DragFloat3("Position", glm::value_ptr(sphere.position), 0.1f);
+					shouldUpdateSpehere |= ImGui::DragFloat("Radius", &sphere.radius, 0.01f, 0.0f, std::numeric_limits<float>::max());
+					shouldUpdateSpehere |= ImGui::SliderInt("Material", &sphere.materialId, 1, scene.materials.size() - 1);
+
+					if (ImGui::Button("Delete Sphere"))
+					{
+						scene.spheres.erase(scene.spheres.begin() + sphereId);
+						shouldUpdateSpehere = true;
+					}
+
+					ImGui::Separator();
+					ImGui::PopID();
+					ImGui::TreePop();
+				}
 			}
 
-			materialsStorage->setData(scene.materials.data(), sizeof(RT::Material) * scene.materials.size());
-		}
-		if (shouldUpdateSpehere)
-		{
-			if (scene.spheres.size() != infoUniform.spheresCount)
+			ImGui::End();
+			
+			if (shouldUpdateMaterials)
 			{
-				infoUniform.spheresCount = scene.spheres.size();
-				ammountsUniform->setData(&infoUniform.spheresCount, sizeof(float), offsetof(InfoUniform, spheresCount));
+				if (scene.materials.size() != infoUniform.materialsCount)
+				{
+					infoUniform.materialsCount = scene.materials.size();
+					ammountsUniform->setData(&infoUniform.materialsCount, sizeof(float), offsetof(InfoUniform, materialsCount));
 
-				spheresStorage = RT::Uniform::create(RT::UniformType::Storage, sizeof(RT::Sphere) * scene.spheres.size());
-				
-				pipeline->updateSet(1, 0, 1, *spheresStorage);
+					uint32_t matStorSize = sizeof(RT::Material) * scene.materials.size();
+					materialsStorage = RT::Uniform::create(RT::UniformType::Storage, matStorSize > 0 ? matStorSize : 1);
+
+					pipeline->updateSet(1, 0, 0, *materialsStorage);
+				}
+
+				materialsStorage->setData(scene.materials.data(), sizeof(RT::Material) * scene.materials.size());
 			}
+			if (shouldUpdateSpehere)
+				{
+					if (scene.spheres.size() != infoUniform.spheresCount)
+					{
+						infoUniform.spheresCount = scene.spheres.size();
+						ammountsUniform->setData(&infoUniform.spheresCount, sizeof(float), offsetof(InfoUniform, spheresCount));
 
-			spheresStorage->setData(scene.spheres.data(), sizeof(RT::Sphere) * scene.spheres.size());
+						uint32_t sphStorSize = sizeof(RT::Sphere) * scene.spheres.size();
+						spheresStorage = RT::Uniform::create(RT::UniformType::Storage, sphStorSize > 0 ? sphStorSize : 1);
+
+						pipeline->updateSet(1, 0, 1, *spheresStorage);
+					}
+
+					spheresStorage->setData(scene.spheres.data(), sizeof(RT::Sphere) * scene.spheres.size());
+				}
 		}
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 		ImGui::Begin("Viewport");
-
-		ImVec2 viewPort = ImGui::GetContentRegionAvail();
-		if (viewPort.x != viewportSize.x || viewPort.y != viewportSize.y)
 		{
-			viewportSize = viewPort;
-			infoUniform.frameIndex = 1;
+			ImVec2 viewPort = ImGui::GetContentRegionAvail();
+			if (viewPort.x != viewportSize.x || viewPort.y != viewportSize.y)
+			{
+				viewportSize = viewPort;
+				infoUniform.frameIndex = 1;
+			}
+
+			ImGui::Image(
+				outTexture->getTexId(),
+				viewportSize,
+				ImVec2(0, 1),
+				ImVec2(1, 0));
 		}
-
-		ImGui::Image(
-			outTexture->getTexId(),
-			viewportSize,
-			ImVec2(0, 1),
-			ImVec2(1, 0)
-		);
-
 		ImGui::End();
 		ImGui::PopStyleVar();
 
-		//static bool demo = true;
-		//ImGui::ShowDemoWindow(&demo);
+		static bool demo = true;
+		ImGui::ShowDemoWindow(&demo);
 	}
 
 	void update(const float ts) final
@@ -293,51 +377,51 @@ private:
 		const float mouseSenisity = 0.003f;
 		const float rotationSpeed = 0.3f;
 		const glm::vec3 up = glm::vec3(0, 1, 0);
-		const glm::vec3& forward = camera.GetDirection();
+		const glm::vec3& forward = camera.getDirection();
 
-		glm::vec3 right = glm::cross(forward, up);
+		auto right = glm::cross(forward, up);
 		bool moved = false;
 
-		glm::vec2 newMousePos = RT::Application::getWindow()->getMousePos();
-		glm::vec2 mouseDelta = (newMousePos - lastMousePos) * mouseSenisity;
+		auto newMousePos = RT::Application::getWindow()->getMousePos();
+		auto mouseDelta = (newMousePos - lastMousePos) * mouseSenisity;
 		lastMousePos = newMousePos;
 
 		if (RT::Application::getWindow()->isKeyPressed(GLFW_KEY_W))
 		{
-			glm::vec3 step = camera.GetPosition() + forward * speed * ts;
-			camera.SetPosition(step);
+			auto step = camera.getPosition() + forward * speed * ts;
+			camera.getPosition() = step;
 			moved = true;
 		}
 		if (RT::Application::getWindow()->isKeyPressed(GLFW_KEY_S))
 		{
-			glm::vec3 step = camera.GetPosition() - forward * speed * ts;
-			camera.SetPosition(step);
+			auto step = camera.getPosition() - forward * speed * ts;
+			camera.getPosition() = step;
 			moved = true;
 		}
 
 		if (RT::Application::getWindow()->isKeyPressed(GLFW_KEY_D))
 		{
-			glm::vec3 step = camera.GetPosition() + right * speed * ts;
-			camera.SetPosition(step);
+			auto step = camera.getPosition() + right * speed * ts;
+			camera.getPosition() = step;
 			moved = true;
 		}
 		if (RT::Application::getWindow()->isKeyPressed(GLFW_KEY_A))
 		{
-			glm::vec3 step = camera.GetPosition() - right * speed * ts;
-			camera.SetPosition(step);
+			auto step = camera.getPosition() - right * speed * ts;
+			camera.getPosition() = step;
 			moved = true;
 		}
 
 		if (RT::Application::getWindow()->isKeyPressed(GLFW_KEY_Q))
 		{
-			glm::vec3 step = camera.GetPosition() + up * speed * ts;
-			camera.SetPosition(step);
+			auto step = camera.getPosition() + up * speed * ts;
+			camera.getPosition() = step;
 			moved = true;
 		}
 		if (RT::Application::getWindow()->isKeyPressed(GLFW_KEY_E))
 		{
-			glm::vec3 step = camera.GetPosition() - up * speed * ts;
-			camera.SetPosition(step);
+			auto step = camera.getPosition() - up * speed * ts;
+			camera.getPosition() = step;
 			moved = true;
 		}
 
@@ -347,11 +431,11 @@ private:
 			if (mouseDelta != glm::vec2(0.0f))
 			{
 				mouseDelta *= rotationSpeed;
-				glm::quat q = glm::normalize(glm::cross(
+				auto q = glm::normalize(glm::cross(
 					glm::angleAxis(-mouseDelta.y, right),
 					glm::angleAxis(-mouseDelta.x, up)
 				));
-				camera.SetDirection(glm::rotate(q, camera.GetDirection()));
+				camera.getDirection() = glm::rotate(q, camera.getDirection());
 				moved = true;
 			}
 		}
@@ -360,13 +444,13 @@ private:
 			RT::Application::getWindow()->cursorMode(GLFW_CURSOR_NORMAL);
 		}
 
-		moved |= camera.ResizeCamera((int32_t)viewportSize.x, (int32_t)viewportSize.y);
+		moved |= camera.resizeCamera((int32_t)viewportSize.x, (int32_t)viewportSize.y);
 
 		if (moved)
 		{
-			camera.RecalculateInvView();
+			camera.recalculateInvView();
 			infoUniform.frameIndex = 0;
-			cameraUniform->setData(&camera.GetSpec(), sizeof(RT::Camera::Spec));
+			cameraUniform->setData(&camera.getSpec(), sizeof(RT::Camera::Spec));
 		}
 	}
 
@@ -445,6 +529,8 @@ private:
 	//	{ { -1.0f, -1.0f }, { 0.0f, 0.0f } }
 	//};
 	//static constexpr int32_t screenVerticesCount = sizeof(screenVertices) / sizeof(float);
+
+	inline static const auto assetDir = std::filesystem::path("assets");
 };
 
 RegisterStartupFrame("Ray Tracing", RayTracingClient)

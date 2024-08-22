@@ -27,6 +27,7 @@ layout(std140, set = 0, binding = 3) uniform CameraBuffer
     mat4 projection;
     mat4 view;
     vec3 position;
+    float blurStrength;
 } Camera;
 
 struct Material
@@ -35,6 +36,7 @@ struct Material
     vec3 EmmisionColor;
     float Roughness;
     float Metalic;
+    float SpecularProbability;
     float EmmisionPower;
     float RefractionRatio;
 };
@@ -69,6 +71,13 @@ float fastRandom(inout uint seed)
     return float(seed) / UINT_MAX;
 }
 
+vec2 randomCirclePoint(inout uint seed)
+{
+    float angle = fastRandom(seed) * 2 * PI;
+    vec2 pointOnCircle = vec2(cos(angle), sin(angle));
+    return pointOnCircle * sqrt(fastRandom(seed));
+}
+
 vec3 randomUnitSpehere(inout uint seed)
 {
     return 2.0 * vec3(fastRandom(seed), fastRandom(seed), fastRandom(seed)) - 1.0;
@@ -87,7 +96,6 @@ struct Ray
 
 struct Payload
 {
-    vec3 Color;
     vec3 HitPosition;
     vec3 HitNormal;
     float HitDistance;
@@ -100,27 +108,38 @@ struct Pixel
     vec3 Contribution;
 };
 
-const vec3 LightDir = normalize(vec3(-1, -1, -1));
-const vec3 GroundColor = vec3(0.3);
-const vec3 SkyColorZenith = vec3(0.5, 0.7, 1.0);
-const vec3 SkyColorHorizon = vec3(0.6, 0.4, 0.4);
+bool isFaceFront(vec3 direction, vec3 surfaceNormal)
+{
+    return dot(direction, surfaceNormal) < 0.0;
+}
 
 vec3 getEmmision(in int matIndex)
 {
     return Materials[matIndex].EmmisionColor * Materials[matIndex].EmmisionPower;
 }
 
-Payload miss(in Ray ray)
+vec3 getSkyColor(in Ray ray)
 {
-    //vec3 skyColor = vec3((1.0 - ray.Direction.yy) / 4.0 + 0.6, 1.0);
+    // float a = 0.5 * (ray.Direction.y + 1.0);
+    // vec3 skyColor = (1.0 - a) * vec3(1.0, 1.0, 1.0) + a * vec3(0.5, 0.7, 1.0);
+
+    const vec3 LightDir = normalize(vec3(-1, -1, -1));
+    const vec3 GroundColor = vec3(0.3);
+    const vec3 SkyColorZenith = vec3(0.5, 0.7, 1.0);
+    const vec3 SkyColorHorizon = vec3(0.6, 0.4, 0.4);
+
     float skyLerp = pow(smoothstep(0.0, 0.4, ray.Direction.y), 0.35);
     float groundToSky = smoothstep(-0.01, 0.0, ray.Direction.y);
     vec3 skyGradient = mix(SkyColorHorizon, SkyColorZenith, skyLerp);
     float sun = pow(max(0.0, dot(ray.Direction, -LightDir)), 500.0) * 100.0;
     vec3 skyColor = mix(GroundColor, skyGradient, groundToSky) + sun * float(groundToSky >= 1.0);
-    
+
+    return skyColor;
+}
+
+Payload miss(in Ray ray)
+{
     Payload payload;
-    payload.Color = skyColor;
     payload.HitPosition = vec3(0);
     payload.HitNormal = vec3(0);
     payload.HitDistance = FLT_MAX;
@@ -130,9 +149,8 @@ Payload miss(in Ray ray)
 }
 
 Payload closestHit(in Ray ray, in float closestDistance, in int closestObject)
-{   
+{
     Payload payload;
-    payload.Color = Materials[Spheres[closestObject].MaterialId].Albedo;
     payload.HitPosition = ray.Origin + closestDistance * ray.Direction;
     payload.HitNormal = normalize(payload.HitPosition - Spheres[closestObject].Position);
     payload.HitDistance = closestDistance;
@@ -141,7 +159,7 @@ Payload closestHit(in Ray ray, in float closestDistance, in int closestObject)
     return payload;
 }
 
-Payload traceRay(in Ray ray)
+Payload bounceRay(in Ray ray)
 {
     float closestDistance = FLT_MAX;
     int closestObject = -1;
@@ -176,10 +194,10 @@ Payload traceRay(in Ray ray)
     return closestHit(ray, closestDistance, closestObject);
 }
 
-void accumulateColor(inout Pixel pixel, in int HitObject)
+void accumulateColor(inout Pixel pixel, in Payload payload, in float isBounceSpecular)
 {
-    pixel.Color += getEmmision(Spheres[HitObject].MaterialId) * pixel.Contribution;
-    pixel.Contribution *= Materials[Spheres[HitObject].MaterialId].Albedo;
+    pixel.Color += getEmmision(Spheres[payload.HitObject].MaterialId) * pixel.Contribution;
+    pixel.Contribution *= mix(Materials[Spheres[payload.HitObject].MaterialId].Albedo, vec3(1.0), isBounceSpecular);
 }
 
 bool reflectance(in vec3 direction, in vec3 surfaceNormal, in float refIdx)
@@ -200,90 +218,108 @@ bool reflectance(in vec3 direction, in vec3 surfaceNormal, in float refIdx)
 
 void refractRay(inout Ray ray, in Payload payload)
 {
-    float refractionRatio = dot(ray.Direction, payload.HitNormal) < 0.0 ?
-        1.0 / Materials[Spheres[payload.HitObject].MaterialId].RefractionRatio :
-        Materials[Spheres[payload.HitObject].MaterialId].RefractionRatio;
+    float refractionRatio = Materials[Spheres[payload.HitObject].MaterialId].RefractionRatio;
+    bool isFront = isFaceFront(ray.Direction, payload.HitNormal);
     
-    if (reflectance(ray.Direction, payload.HitNormal, refractionRatio))
+    float rt = isFront ? 1.0 / refractionRatio : refractionRatio;
+    vec3 hitNormal = isFront ? payload.HitNormal : -payload.HitNormal;
+
+    if (reflectance(ray.Direction, hitNormal, rt))
     {
-        ray.Origin = payload.HitPosition + payload.HitNormal * 0.0001;
-        ray.Direction = reflect(ray.Direction, payload.HitNormal);
+        ray.Origin = payload.HitPosition + hitNormal * 0.0001;
+        ray.Direction = reflect(ray.Direction, hitNormal);
     }
     else
     {
-        ray.Origin = payload.HitPosition - payload.HitNormal * 0.0001;
-        ray.Direction = refract(ray.Direction, payload.HitNormal, refractionRatio);
+        ray.Origin = payload.HitPosition - hitNormal * 0.0001;
+        ray.Direction = refract(ray.Direction, hitNormal, rt);
     }
 }
 
-void reflectRay(inout Ray ray, in Payload payload)
+float reflectRay(inout Ray ray, in Payload payload)
 {
     ray.Origin = payload.HitPosition + payload.HitNormal * 0.0001;
     
+    float isBounceSpecular = Materials[Spheres[payload.HitObject].MaterialId].SpecularProbability >= fastRandom(Global.seed) ? 1.0 : 0.0;
     vec3 diffuseDir = normalize(payload.HitNormal + randomUnitSpehere(Global.seed));
-    vec3 specularDir = reflect(ray.Direction, payload.HitNormal);
-    ray.Direction = mix(diffuseDir, specularDir, Materials[Spheres[payload.HitObject].MaterialId].Roughness);
+    vec3 specularDir = reflect(ray.Direction, payload.HitNormal) + randomUnitSpehere(Global.seed) * Materials[Spheres[payload.HitObject].MaterialId].Metalic;
+    ray.Direction = mix(diffuseDir, specularDir, Materials[Spheres[payload.HitObject].MaterialId].Roughness * isBounceSpecular);
+
+    return isBounceSpecular;
 }
 
-void scatter(inout Ray ray, in Payload payload)
-{   
+void scatter(inout Ray ray, in Payload payload, inout Pixel pixel)
+{
+    float isBounceSpecular = 0.0;
     if (Materials[Spheres[payload.HitObject].MaterialId].RefractionRatio > 1.0)
     {
         refractRay(ray, payload);
     }
     else
     {
-        reflectRay(ray, payload);
-    }        
+        isBounceSpecular = reflectRay(ray, payload);
+    }
+
+    accumulateColor(pixel, payload, isBounceSpecular);
+}
+
+vec3 traceRay(in Ray ray)
+{
+    Pixel pixel;
+    pixel.Color = vec3(0);
+    pixel.Contribution = vec3(1);
+
+    for (uint i = 0u; i < MaxBounces; i++)
+    {
+        Global.seed += i;
+    
+        Payload payload = bounceRay(ray);
+    
+        if (payload.HitObject == -1)
+        {
+            pixel.Color += getSkyColor(ray) * pixel.Contribution * DrawEnvironment;
+            break;
+        }
+        
+        scatter(ray, payload, pixel);
+    }
+
+    return pixel.Color;
 }
 
 void main()
 {
+    const vec3 rightVec = Camera.view[0].xyz;
+    const vec3 upVec = Camera.view[1].xyz;
+
     vec2 pixelCoord = gl_GlobalInvocationID.xy / Resolution;
     vec4 coord = Camera.projection * (2.0 * vec4(pixelCoord, 1.0, 1.0) - 1.0);
-    
-    Ray precalculatedRay;
-    precalculatedRay.Origin = Camera.position;
-    precalculatedRay.Direction = vec3(Camera.view * vec4(normalize(coord.xyz / coord.w), 0));
- 
-    Pixel pixel;
-    pixel.Color = vec3(0);
-    pixel.Contribution = vec3(1);
-    
+
+    Ray cameraRay;
+    cameraRay.Origin = Camera.position;
+    vec3 direction = vec3(Camera.view * vec4(normalize(coord.xyz / coord.w), 0));
+
+    vec3 incomingLight = vec3(0.0);
+
     for (uint frame = 1; frame <= MaxFrames; frame++)
     {
         Global.seed = uint(gl_GlobalInvocationID.y * Resolution.x + gl_GlobalInvocationID.x) + frame * FrameIndex * 735529;
         
-        Ray ray = precalculatedRay;
-        pixel.Contribution = vec3(1);
-    
-        for (uint i = 0u; i < MaxBounces; i++)
-        {
-            Global.seed += i;
-        
-            Payload payload = traceRay(ray);
-        
-            if (payload.HitObject == -1)
-            {
-                pixel.Color += payload.Color * pixel.Contribution * DrawEnvironment;
-                break;
-            }
-            
-            accumulateColor(pixel, payload.HitObject);
-            
-            scatter(ray, payload);
-        }
+        vec2 jitter = randomCirclePoint(Global.seed) / Resolution * Camera.blurStrength;
+        cameraRay.Direction = direction + jitter.x * rightVec + jitter.y * upVec;
+
+        incomingLight += traceRay(cameraRay);
     }
     
-    pixel.Color = pixel.Color / float(MaxFrames);
+    incomingLight = incomingLight / float(MaxFrames);
     if (FrameIndex != 1)
     {
-        pixel.Color += imageLoad(AccumulationTexture, ivec2(gl_GlobalInvocationID.xy)).rgb;
+        incomingLight += imageLoad(AccumulationTexture, ivec2(gl_GlobalInvocationID.xy)).rgb;
     }
     
-    vec3 outColor = pixel.Color / float(FrameIndex);
+    vec3 outColor = incomingLight / float(FrameIndex);
     outColor = sqrt(outColor);
     
-    imageStore(AccumulationTexture, ivec2(gl_GlobalInvocationID.xy), vec4(pixel.Color, 1.0));
+    imageStore(AccumulationTexture, ivec2(gl_GlobalInvocationID.xy), vec4(incomingLight, 1.0));
     imageStore(OutTexture, ivec2(gl_GlobalInvocationID.xy), vec4(outColor, 1.0));
 }
