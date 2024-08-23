@@ -10,7 +10,6 @@
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/quaternion.hpp>
-#include <GLFW/glfw3.h>
 
 uint32_t pcg_hash(uint32_t input)
 {
@@ -386,48 +385,48 @@ private:
 		auto mouseDelta = (newMousePos - lastMousePos) * mouseSenisity;
 		lastMousePos = newMousePos;
 
-		if (RT::Application::getWindow()->isKeyPressed(GLFW_KEY_W))
+		if (RT::Application::getWindow()->isKeyPressed(RT::Keys::Keyboard::W))
 		{
 			auto step = camera.getPosition() + forward * speed * ts;
 			camera.getPosition() = step;
 			moved = true;
 		}
-		if (RT::Application::getWindow()->isKeyPressed(GLFW_KEY_S))
+		if (RT::Application::getWindow()->isKeyPressed(RT::Keys::Keyboard::S))
 		{
 			auto step = camera.getPosition() - forward * speed * ts;
 			camera.getPosition() = step;
 			moved = true;
 		}
 
-		if (RT::Application::getWindow()->isKeyPressed(GLFW_KEY_D))
+		if (RT::Application::getWindow()->isKeyPressed(RT::Keys::Keyboard::D))
 		{
 			auto step = camera.getPosition() + right * speed * ts;
 			camera.getPosition() = step;
 			moved = true;
 		}
-		if (RT::Application::getWindow()->isKeyPressed(GLFW_KEY_A))
+		if (RT::Application::getWindow()->isKeyPressed(RT::Keys::Keyboard::A))
 		{
 			auto step = camera.getPosition() - right * speed * ts;
 			camera.getPosition() = step;
 			moved = true;
 		}
 
-		if (RT::Application::getWindow()->isKeyPressed(GLFW_KEY_Q))
+		if (RT::Application::getWindow()->isKeyPressed(RT::Keys::Keyboard::Q))
 		{
 			auto step = camera.getPosition() + up * speed * ts;
 			camera.getPosition() = step;
 			moved = true;
 		}
-		if (RT::Application::getWindow()->isKeyPressed(GLFW_KEY_E))
+		if (RT::Application::getWindow()->isKeyPressed(RT::Keys::Keyboard::E))
 		{
 			auto step = camera.getPosition() - up * speed * ts;
 			camera.getPosition() = step;
 			moved = true;
 		}
 
-		if (RT::Application::getWindow()->isMousePressed(GLFW_MOUSE_BUTTON_RIGHT))
+		if (RT::Application::getWindow()->isMousePressed(RT::Keys::Mouse::ButtonRight))
 		{
-			RT::Application::getWindow()->cursorMode(GLFW_CURSOR_DISABLED);
+			RT::Application::getWindow()->cursorMode(RT::Keys::MouseMod::Disabled);
 			if (mouseDelta != glm::vec2(0.0f))
 			{
 				mouseDelta *= rotationSpeed;
@@ -441,7 +440,7 @@ private:
 		}
 		else
 		{
-			RT::Application::getWindow()->cursorMode(GLFW_CURSOR_NORMAL);
+			RT::Application::getWindow()->cursorMode(RT::Keys::MouseMod::Normal);
 		}
 
 		moved |= camera.resizeCamera((int32_t)viewportSize.x, (int32_t)viewportSize.y);

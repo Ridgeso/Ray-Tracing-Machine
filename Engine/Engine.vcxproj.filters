@@ -212,6 +212,9 @@
     <ClInclude Include="src\Engine\Utils\LogDefinitions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\Engine\Utils\KeyCodes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\RayTracing.shader" />

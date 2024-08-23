@@ -35,12 +35,12 @@ namespace RT
 		void endUI() final;
 
 		glm::vec2 getMousePos() const final;
-		bool isKeyPressed(int32_t key) const final;
-		bool isMousePressed(int32_t key) const final;
+		bool isKeyPressed(const Keys::Keyboard key) const final;
+		bool isMousePressed(const Keys::Mouse button) const final;
 		glm::ivec2 getSize() const final;
 		bool isMinimize() const final { return context.isMinimized; }
 
-		void cursorMode(int32_t state) const final;
+		void cursorMode(const Keys::MouseMod mod) const final;
 
 		void* getNativWindow() override { return window; }
 

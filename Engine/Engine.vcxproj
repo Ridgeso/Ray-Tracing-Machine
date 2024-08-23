@@ -57,6 +57,7 @@
     <ClInclude Include="src\Engine\Core\Time.h" />
     <ClInclude Include="src\Engine\Engine.h" />
     <ClInclude Include="src\Engine\Render\RenderApi.h" />
+    <ClInclude Include="src\Engine\Utils\KeyCodes.h" />
     <ClInclude Include="src\Engine\Utils\LogDefinitions.h" />
     <ClInclude Include="src\Engine\Version.h" />
     <ClInclude Include="src\Engine\Window\Window.h" />
