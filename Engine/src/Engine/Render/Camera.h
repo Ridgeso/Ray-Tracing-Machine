@@ -14,6 +14,8 @@ namespace RT
 			glm::mat4 invProjection;
 			glm::mat4 invView;
 			glm::vec3 position;
+			float focusDistance;
+			float defocusStrength;
 			float blurStrength;
 		};
 		#pragma pack(pop)
@@ -39,12 +41,13 @@ namespace RT
 		bool resizeCamera(int32_t width, int32_t height);
 
 	public:
-		float fov, nearPlane, farPlane;
+		float fov;
 
 	private:
+		float nearPlane, farPlane;
+
 		Spec spec;
 		glm::vec3 direction;
-
 		glm::ivec2 viewSize;
 
 		inline static constexpr glm::vec3 Up = glm::vec3(0, 1, 0);

@@ -32,7 +32,7 @@ public:
 		, lastFrameDuration{0.0f}
 		, lastMousePos{0.0f}
 		, lastWinSize{RT::Application::getWindow()->getSize()}
-		, camera(45.0f, 0.01f, 100.0f)
+		, camera(45.0f, 0.1f, 1.0f)
 		, scene{}
 	{
 		scene.materials.emplace_back(RT::Material{ { 0.0f, 0.0f, 0.0f }, 0.0, { 0.0f, 0.0f, 0.0f }, 0.0f,  0.0f, 0.0f, 0.0f, 1.0f });
@@ -89,6 +89,10 @@ public:
 		//renderPassSpec.size = lastWinSize;
 		//renderPassSpec.attachmentsFormats = AttachmentFormats{ ImageFormat::RGBA32F, ImageFormat::RGBA32F, ImageFormat::Depth };
 		//renderPass = RenderPass::create(renderPassSpec);
+
+		camera.getSpec().focusDistance = 1.0f;
+		camera.getSpec().defocusStrength = 0.0f;
+		camera.getSpec().blurStrength = 0.0f;
 
 		accumulationTexture = RT::Texture::create(lastWinSize, RT::ImageFormat::RGBA32F);
 		accumulationTexture->transition(RT::ImageAccess::Write, RT::ImageLayout::General);
@@ -185,9 +189,9 @@ public:
 
 			bool shouldUpdateCamera = false;
 			shouldUpdateCamera |= ImGui::DragFloat("Field of view", &camera.fov, 1.0f, 1.0f, 179.0f);
-			shouldUpdateCamera |= ImGui::DragFloat("Near plane", &camera.nearPlane);
-			shouldUpdateCamera |= ImGui::DragFloat("Far plane", &camera.farPlane);
 			shouldUpdateCamera |= ImGui::DragFloat("Blur", &camera.getSpec().blurStrength, 0.05f, 0.0f, std::numeric_limits<float>::max());
+			shouldUpdateCamera |= ImGui::DragFloat("Defocus", &camera.getSpec().defocusStrength, 0.05f, 0.0f, std::numeric_limits<float>::max());
+			shouldUpdateCamera |= ImGui::DragFloat("Focus distance", &camera.getSpec().focusDistance, 0.05f, 1.0f, std::numeric_limits<float>::max());
 			if (shouldUpdateCamera)
 			{
 				camera.recalculateInvProjection();

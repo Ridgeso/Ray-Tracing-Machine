@@ -24,9 +24,11 @@ layout(std140, set = 0, binding = 2) uniform Amounts
 
 layout(std140, set = 0, binding = 3) uniform CameraBuffer
 {
-    mat4 projection;
-    mat4 view;
+    mat4 invProjection;
+    mat4 invView;
     vec3 position;
+    float focusDistance;
+    float defocusStrength;
     float blurStrength;
 } Camera;
 
@@ -184,7 +186,6 @@ Payload bounceRay(in Ray ray)
         {
             closestDistance = closestT;
             closestObject = sphereId;
-            continue;
         }
     }
     
@@ -289,15 +290,14 @@ vec3 traceRay(in Ray ray)
 
 void main()
 {
-    const vec3 rightVec = Camera.view[0].xyz;
-    const vec3 upVec = Camera.view[1].xyz;
+    const vec3 rightVec = Camera.invView[0].xyz;
+    const vec3 upVec = Camera.invView[1].xyz;
 
     vec2 pixelCoord = gl_GlobalInvocationID.xy / Resolution;
-    vec4 coord = Camera.projection * (2.0 * vec4(pixelCoord, 1.0, 1.0) - 1.0);
+    vec4 coord = Camera.invProjection * (2.0 * vec4(pixelCoord, 1.0, 1.0) - 1.0);
 
-    Ray cameraRay;
-    cameraRay.Origin = Camera.position;
-    vec3 direction = vec3(Camera.view * vec4(normalize(coord.xyz / coord.w), 0));
+    vec3 direction = vec3(Camera.invView * vec4(coord.xyz / coord.w, 0)) * Camera.focusDistance;
+    vec3 focusPoint = Camera.position + direction;
 
     vec3 incomingLight = vec3(0.0);
 
@@ -305,8 +305,14 @@ void main()
     {
         Global.seed = uint(gl_GlobalInvocationID.y * Resolution.x + gl_GlobalInvocationID.x) + frame * FrameIndex * 735529;
         
-        vec2 jitter = randomCirclePoint(Global.seed) / Resolution * Camera.blurStrength;
-        cameraRay.Direction = direction + jitter.x * rightVec + jitter.y * upVec;
+        vec2 focusJitter = randomCirclePoint(Global.seed) / Resolution * Camera.defocusStrength;
+        vec2 deviationJitter = randomCirclePoint(Global.seed) / Resolution * Camera.blurStrength;
+
+        vec3 deviationJitterFocusPoint = focusPoint + deviationJitter.x * rightVec + deviationJitter.y * upVec;
+
+        Ray cameraRay;
+        cameraRay.Origin = Camera.position + focusJitter.x * rightVec + focusJitter.y * upVec;
+        cameraRay.Direction = normalize(deviationJitterFocusPoint - cameraRay.Origin);
 
         incomingLight += traceRay(cameraRay);
     }
