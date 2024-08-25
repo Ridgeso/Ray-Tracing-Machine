@@ -9,7 +9,7 @@ namespace RT
 	struct Material
 	{
 		glm::vec3 albedo;
-		float padding1[1];
+		float padding_1;
 		glm::vec3 emissionColor;
 		float roughness;
 		float metalic;
@@ -25,7 +25,19 @@ namespace RT
 		glm::vec3 position;
 		float radius;
 		int32_t materialId;
-		float padding[3];
+		float padding_[3];
+	};
+	#pragma pack(pop)
+
+	#pragma pack(push, 1)
+	struct Triangle
+	{
+		glm::vec3 A;
+		float padding_1;
+		glm::vec3 B;
+		float padding_2;
+		glm::vec3 C;
+		int32_t materialId;
 	};
 	#pragma pack(pop)
 
@@ -33,6 +45,7 @@ namespace RT
 	{
 		std::vector<Material> materials;
 		std::vector<Sphere> spheres;
+		std::vector<Triangle> triangles;
 	};
 
 }

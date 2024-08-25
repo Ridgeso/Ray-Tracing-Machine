@@ -5,6 +5,7 @@
 #define FLT_MAX 3.402823466e+38F
 #define UINT_MAX 4294967295.0
 #define PI 3.141592653589793
+#define FLT_EPS 1.192092896e-07F
 
 layout (local_size_x = 8, local_size_y = 8, local_size_y = 1) in;
 
@@ -20,6 +21,7 @@ layout(std140, set = 0, binding = 2) uniform Amounts
     vec2 Resolution;
     int MaterialsCount;
     int SpheresCount;
+    int TrianglesCount;
 };
 
 layout(std140, set = 0, binding = 3) uniform CameraBuffer
@@ -50,6 +52,14 @@ struct Sphere
     int MaterialId;
 };
 
+struct Triangle
+{
+    vec3 A;
+    vec3 B;
+    vec3 C;
+    int MaterialId;
+};
+
 layout(std140, set = 1, binding = 0) readonly buffer MaterialsBuffer
 {
     Material Materials[];
@@ -58,6 +68,11 @@ layout(std140, set = 1, binding = 0) readonly buffer MaterialsBuffer
 layout(std140, set = 1, binding = 1) readonly buffer SpheresBuffer
 {
     Sphere Spheres[];
+};
+
+layout(std140, set = 1, binding = 2) readonly buffer TriangleBuffer
+{
+    Triangle Triangles[];
 };
 
 uint PCGhash(in uint random)
@@ -102,6 +117,13 @@ struct Payload
     vec3 HitNormal;
     float HitDistance;
     int HitObject;
+    int HitMaterial;
+};
+
+struct HitInfo
+{
+    float distance;
+    bool didHit;
 };
 
 struct Pixel
@@ -146,59 +168,127 @@ Payload miss(in Ray ray)
     payload.HitNormal = vec3(0);
     payload.HitDistance = FLT_MAX;
     payload.HitObject = -1;
+    payload.HitMaterial = -1;
     
     return payload;
 }
 
-Payload closestHit(in Ray ray, in float closestDistance, in int closestObject)
+Payload closestHit(in Ray ray, in float closestDistance, in int closestObject, in bool isSphere)
 {
     Payload payload;
     payload.HitPosition = ray.Origin + closestDistance * ray.Direction;
-    payload.HitNormal = normalize(payload.HitPosition - Spheres[closestObject].Position);
     payload.HitDistance = closestDistance;
     payload.HitObject = closestObject;
-        
+    
+    if (isSphere)
+    {
+        payload.HitNormal = normalize(payload.HitPosition - Spheres[closestObject].Position);
+        payload.HitMaterial = Spheres[closestObject].MaterialId;
+    }
+    else
+    {
+        vec3 edgeAB = Triangles[closestObject].B - Triangles[closestObject].A;
+        vec3 edgeAC = Triangles[closestObject].C - Triangles[closestObject].A;
+        vec3 normalVec = cross(edgeAB, edgeAC);
+        payload.HitNormal = normalize(normalVec);
+
+        payload.HitMaterial = Triangles[closestObject].MaterialId;
+    }
+
     return payload;
+}
+
+HitInfo triangleHit(in Ray ray, in Triangle triangle)
+{
+    vec3 edgeAB = triangle.B - triangle.A;
+    vec3 edgeAC = triangle.C - triangle.A;
+    vec3 normalVec = cross(edgeAB, edgeAC);
+    vec3 ao = ray.Origin - triangle.A;
+    vec3 dao = cross(ao, ray.Direction);
+
+    float determinant = -dot(ray.Direction, normalVec);
+    float invDet = 1 / determinant;
+    
+    float t = dot(ao, normalVec) * invDet;
+    float u = dot(edgeAC, dao) * invDet;
+    float v = -dot(edgeAB, dao) * invDet;
+    float w = 1 - u - v;
+    
+    HitInfo hitInfo;
+    hitInfo.didHit = determinant > FLT_EPS && t >= 0 && u >= 0 && v >= 0 && w >= 0;
+    // hitInfo.normal = normalize(triangle.normalA * w + triangle.normalB * u + triangle.normalC * v);
+    hitInfo.distance = t;
+    return hitInfo;
+}
+
+HitInfo sphereHit(in Ray ray, in Sphere sphere)
+{
+    HitInfo hitInfo;
+    
+    vec3 origin = ray.Origin - sphere.Position;
+
+    float a = dot(ray.Direction, ray.Direction);
+    float b = 2.0 * dot(origin, ray.Direction);
+    float c = dot(origin, origin) - pow(sphere.Radius, 2.0);
+    float delta = b * b - 4.0 * a * c;
+
+    if (delta < 0.0)
+    {
+        hitInfo.didHit = false;
+        return hitInfo;
+    }
+
+    float closestT = (-b - sqrt(delta)) / (2.0 * a);
+
+    if (closestT < 0.0)
+    {
+        hitInfo.didHit = false;
+        return hitInfo;
+    }
+
+    hitInfo.didHit = true;
+    hitInfo.distance = closestT;
+    return hitInfo;
 }
 
 Payload bounceRay(in Ray ray)
 {
     float closestDistance = FLT_MAX;
     int closestObject = -1;
+    bool isSphere = false;
     
     for (int sphereId = 0; sphereId < SpheresCount; sphereId++)
     {
-        vec3 origin = ray.Origin - Spheres[sphereId].Position;
-        
-        float a = dot(ray.Direction, ray.Direction);
-        float b = 2.0 * dot(origin, ray.Direction);
-        float c = dot(origin, origin) - pow(Spheres[sphereId].Radius, 2.0);
-    
-        float delta = b * b - 4.0 * a * c;
-    
-        if (delta < 0.0)
-            continue;
-        
-        float sqrtDelta = sqrt(delta);
-        
-        float closestT = (-b - sqrtDelta) / (2.0 * a);
-        if (closestT >= 0.0 && closestT < closestDistance)
+        HitInfo hitInfo = sphereHit(ray, Spheres[sphereId]);
+        if (hitInfo.didHit && hitInfo.distance < closestDistance)
         {
-            closestDistance = closestT;
+            closestDistance = hitInfo.distance;
             closestObject = sphereId;
+            isSphere = true;
+        }
+    }
+    
+    for (int triangleId = 0; triangleId < TrianglesCount; triangleId++)
+    {
+        HitInfo hitInfo = triangleHit(ray, Triangles[triangleId]);
+        if (hitInfo.didHit && hitInfo.distance < closestDistance)
+        {
+            closestDistance = hitInfo.distance;
+            closestObject = triangleId;
+            isSphere = false;
         }
     }
     
     if (closestObject == -1)
         return miss(ray);
     
-    return closestHit(ray, closestDistance, closestObject);
+    return closestHit(ray, closestDistance, closestObject, isSphere);
 }
 
 void accumulateColor(inout Pixel pixel, in Payload payload, in float isBounceSpecular)
 {
-    pixel.Color += getEmmision(Spheres[payload.HitObject].MaterialId) * pixel.Contribution;
-    pixel.Contribution *= mix(Materials[Spheres[payload.HitObject].MaterialId].Albedo, vec3(1.0), isBounceSpecular);
+    pixel.Color += getEmmision(payload.HitMaterial) * pixel.Contribution;
+    pixel.Contribution *= mix(Materials[payload.HitMaterial].Albedo, vec3(1.0), isBounceSpecular);
 }
 
 bool reflectance(in vec3 direction, in vec3 surfaceNormal, in float refIdx)
@@ -219,7 +309,7 @@ bool reflectance(in vec3 direction, in vec3 surfaceNormal, in float refIdx)
 
 void refractRay(inout Ray ray, in Payload payload)
 {
-    float refractionRatio = Materials[Spheres[payload.HitObject].MaterialId].RefractionRatio;
+    float refractionRatio = Materials[payload.HitMaterial].RefractionRatio;
     bool isFront = isFaceFront(ray.Direction, payload.HitNormal);
     
     float rt = isFront ? 1.0 / refractionRatio : refractionRatio;
@@ -241,10 +331,12 @@ float reflectRay(inout Ray ray, in Payload payload)
 {
     ray.Origin = payload.HitPosition + payload.HitNormal * 0.0001;
     
-    float isBounceSpecular = Materials[Spheres[payload.HitObject].MaterialId].SpecularProbability >= fastRandom(Global.seed) ? 1.0 : 0.0;
+    float isBounceSpecular = Materials[payload.HitMaterial].SpecularProbability >= fastRandom(Global.seed) ? 1.0 : 0.0;
     vec3 diffuseDir = normalize(payload.HitNormal + randomUnitSpehere(Global.seed));
-    vec3 specularDir = reflect(ray.Direction, payload.HitNormal) + randomUnitSpehere(Global.seed) * Materials[Spheres[payload.HitObject].MaterialId].Metalic;
-    ray.Direction = mix(diffuseDir, specularDir, Materials[Spheres[payload.HitObject].MaterialId].Roughness * isBounceSpecular);
+    vec3 specularDir = reflect(ray.Direction, payload.HitNormal) +
+        (randomUnitSpehere(Global.seed) + payload.HitNormal) * Materials[payload.HitMaterial].Metalic;
+    ray.Direction = mix(diffuseDir, specularDir, Materials[payload.HitMaterial].Roughness * isBounceSpecular);
+    ray.Direction = normalize(ray.Direction);
 
     return isBounceSpecular;
 }
@@ -252,7 +344,7 @@ float reflectRay(inout Ray ray, in Payload payload)
 void scatter(inout Ray ray, in Payload payload, inout Pixel pixel)
 {
     float isBounceSpecular = 0.0;
-    if (Materials[Spheres[payload.HitObject].MaterialId].RefractionRatio > 1.0)
+    if (Materials[payload.HitMaterial].RefractionRatio > 1.0)
     {
         refractRay(ray, payload);
     }

@@ -12,9 +12,11 @@ namespace RT
 		, farPlane(farPlane)
 		, viewSize(0)
 	{
-		spec.position = glm::vec3(0, 0, 5);
+		spec.position = glm::vec3(0, 1, 5);
 		direction = glm::vec3(0, 0, -1);
 		spec.invProjection = glm::mat4(0);
+		spec.focusDistance = 1.0f;
+		spec.defocusStrength = 0.0f;
 		spec.blurStrength = 0.0f;
 
 		recalculateInvView();
