@@ -11,8 +11,9 @@ layout (local_size_x = 8, local_size_y = 8, local_size_y = 1) in;
 
 layout(set = 0, binding = 0, rgba32f) uniform image2D AccumulationTexture;
 layout(set = 0, binding = 1, rgba8) uniform image2D OutTexture;
+layout(set = 0, binding = 2) uniform sampler2D SkyMap;
 
-layout(std140, set = 0, binding = 2) uniform Amounts
+layout(std140, set = 0, binding = 3) uniform Amounts
 {
     float DrawEnvironment;
     uint MaxBounces;
@@ -24,7 +25,7 @@ layout(std140, set = 0, binding = 2) uniform Amounts
     int TrianglesCount;
 };
 
-layout(std140, set = 0, binding = 3) uniform CameraBuffer
+layout(std140, set = 0, binding = 4) uniform CameraBuffer
 {
     mat4 invProjection;
     mat4 invView;
@@ -144,19 +145,25 @@ vec3 getEmmision(in int matIndex)
 
 vec3 getSkyColor(in Ray ray)
 {
+    //// Basic sky gradient
     // float a = 0.5 * (ray.Direction.y + 1.0);
     // vec3 skyColor = (1.0 - a) * vec3(1.0, 1.0, 1.0) + a * vec3(0.5, 0.7, 1.0);
 
-    const vec3 LightDir = normalize(vec3(-1, -1, -1));
-    const vec3 GroundColor = vec3(0.3);
-    const vec3 SkyColorZenith = vec3(0.5, 0.7, 1.0);
-    const vec3 SkyColorHorizon = vec3(0.6, 0.4, 0.4);
+    //// Sky with sun based on math
+    // const vec3 LightDir = normalize(vec3(-1, -1, -1));
+    // const vec3 GroundColor = vec3(0.3);
+    // const vec3 SkyColorZenith = vec3(0.5, 0.7, 1.0);
+    // const vec3 SkyColorHorizon = vec3(0.6, 0.4, 0.4);
 
-    float skyLerp = pow(smoothstep(0.0, 0.4, ray.Direction.y), 0.35);
-    float groundToSky = smoothstep(-0.01, 0.0, ray.Direction.y);
-    vec3 skyGradient = mix(SkyColorHorizon, SkyColorZenith, skyLerp);
-    float sun = pow(max(0.0, dot(ray.Direction, -LightDir)), 500.0) * 100.0;
-    vec3 skyColor = mix(GroundColor, skyGradient, groundToSky) + sun * float(groundToSky >= 1.0);
+    // float skyLerp = pow(smoothstep(0.0, 0.4, ray.Direction.y), 0.35);
+    // float groundToSky = smoothstep(-0.01, 0.0, ray.Direction.y);
+    // vec3 skyGradient = mix(SkyColorHorizon, SkyColorZenith, skyLerp);
+    // float sun = pow(max(0.0, dot(ray.Direction, -LightDir)), 500.0) * 100.0;
+    // vec3 skyColor = mix(GroundColor, skyGradient, groundToSky) + sun * float(groundToSky >= 1.0);
+
+    //// SkyMap
+    vec2 uv = vec2(atan(ray.Direction.z, ray.Direction.x) / (2.0 * PI), asin(ray.Direction.y) / PI) + 0.5;
+    vec3 skyColor = texture(SkyMap, uv).xyz;
 
     return skyColor;
 }
@@ -416,7 +423,7 @@ void main()
     }
     
     vec3 outColor = incomingLight / float(FrameIndex);
-    outColor = sqrt(outColor);
+    // outColor = sqrt(outColor);
     
     imageStore(AccumulationTexture, ivec2(gl_GlobalInvocationID.xy), vec4(incomingLight, 1.0));
     imageStore(OutTexture, ivec2(gl_GlobalInvocationID.xy), vec4(outColor, 1.0));

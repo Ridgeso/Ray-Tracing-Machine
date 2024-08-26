@@ -9,10 +9,11 @@ namespace RT::Vulkan
 	class VulkanTexture final : public Texture
 	{
 	public:
+		VulkanTexture(const std::filesystem::path& path);
 		VulkanTexture(const glm::uvec2 size, const ImageFormat imageFormat);
 		~VulkanTexture() final;
 
-		void setBuff(const void* data) final;
+		void setBuffer(const void* data) final;
 
 		const ImTextureID getTexId() const final { return descriptorSet; }
 		const glm::uvec2 getSize() const final { return size; }
@@ -31,19 +32,21 @@ namespace RT::Vulkan
 		const VkDescriptorImageInfo getWriteImageInfo() const;
 
 		static const VkFormat imageFormat2VulkanFormat(const ImageFormat imageFormat);
-		static const uint32_t format2Size(const ImageFormat imageFormat);
+		static const uint32_t imageFormat2Size(const ImageFormat imageFormat);
 		static const VkImageLayout imageLayout2VulkanLayout(const ImageLayout imageLayout);
 		static const VkAccessFlags imageAccess2VulkanAccess(const ImageAccess imageAccess);
 
 	private:
-		void createImage();
+		void initVulkanImage(const bool isFromMemory);
+		void createImage(const bool isFromMemory);
 		void allocateMemory();
 		void allocateStaginBuffer();
 		void createImageView();
 		void createSampler();
 
-		void uploadToBuffer();
+		void uploadToBuffer(const void* data);
 		void copyToImage();
+		const size_t calcImSize() const { return size.x * size.y * imageFormat2Size(format); }
 
 	private:
 		glm::uvec2 size = {};

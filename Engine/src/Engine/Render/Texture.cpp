@@ -7,6 +7,16 @@
 namespace RT
 {
 
+	Local<Texture> Texture::create(const std::filesystem::path& path)
+	{
+		switch (RenderApi::api)
+		{
+			// case RenderApi::Api::OpenGL: return makeLocal<OpenGl::OpenGlTexture>(size, imageFormat);
+			case RenderApi::Api::Vulkan: return makeLocal<Vulkan::VulkanTexture>(path);
+		}
+		return nullptr;
+	}
+
 	Local<Texture> Texture::create(const glm::uvec2 size, const ImageFormat imageFormat)
 	{
 		switch (RenderApi::api)

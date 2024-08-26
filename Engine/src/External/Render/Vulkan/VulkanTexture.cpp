@@ -10,29 +10,41 @@
 
 #include <backends/imgui_impl_vulkan.h>
 
+#include "stb_image.h"
+
 namespace RT::Vulkan
 {
 
+	VulkanTexture::VulkanTexture(const std::filesystem::path& path)
+		: format{ImageFormat::RGBA8}
+	{
+		stbi_set_flip_vertically_on_load(1);
+		RT_LOG_INFO("Loading Texture: {{ path = {} }}", path);
+
+		int32_t bytesPerPixel = 0;
+		auto* data = stbi_load(path.string().c_str(), (int32_t*)&size.x, (int32_t*)&size.y, &bytesPerPixel, STBI_rgb_alpha);
+		if (data == nullptr)
+		{
+			RT_LOG_WARN("Couldn't load texture");
+			return;
+		}
+		
+		imSize = calcImSize();
+
+		initVulkanImage(true);
+		setBuffer(data);
+
+		RT_LOG_INFO("Texture loaded: {{ size = {}, imageFormat = {} }}", size, RT::Utils::imageFormat2Str(format));
+		stbi_image_free(data);
+	}
+	
 	VulkanTexture::VulkanTexture(const glm::uvec2 size, const ImageFormat imageFormat)
 		: size{size}
 		, format{imageFormat}
-		, imSize{size.x * size.y * format2Size(format)}
+		, imSize{calcImSize()}
 	{
 		RT_LOG_INFO("Creating Texture: {{ size = {}, imageFormat = {} }}", size, RT::Utils::imageFormat2Str(format));
-		createImage();
-
-		allocateMemory();
-		allocateStaginBuffer();
-		createImageView();
-		createSampler();
-
-		if (ImageFormat::Depth != imageFormat)
-		{
-			descriptorSet = ImGui_ImplVulkan_AddTexture(
-				sampler,
-				imageView,
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-		}
+		initVulkanImage(false);
 		RT_LOG_INFO("Texture Created");
 	}
 
@@ -50,9 +62,9 @@ namespace RT::Vulkan
 		vkFreeMemory(device, stagingBufferMemory, nullptr);
 	}
 
-	void VulkanTexture::setBuff(const void* data)
+	void VulkanTexture::setBuffer(const void* data)
 	{
-		uploadToBuffer();
+		uploadToBuffer(data);
 		copyToImage();
 	}
 
@@ -131,7 +143,7 @@ namespace RT::Vulkan
 		return VK_FORMAT_UNDEFINED;
 	}
 
-	const uint32_t VulkanTexture::format2Size(const ImageFormat imageFormat)
+	const uint32_t VulkanTexture::imageFormat2Size(const ImageFormat imageFormat)
 	{
 		switch (imageFormat)
 		{
@@ -166,7 +178,25 @@ namespace RT::Vulkan
 		return VK_ACCESS_NONE;
 	}
 
-	void VulkanTexture::createImage()
+	void VulkanTexture::initVulkanImage(const bool isFromMemory)
+	{
+		createImage(isFromMemory);
+
+		allocateMemory();
+		allocateStaginBuffer();
+		createImageView();
+		createSampler();
+
+		if (ImageFormat::Depth != format)
+		{
+			descriptorSet = ImGui_ImplVulkan_AddTexture(
+				sampler,
+				imageView,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		}
+	}
+
+	void VulkanTexture::createImage(const bool isFromMemory)
 	{
 		auto imageCreateInfo = VkImageCreateInfo{};
 		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -190,8 +220,10 @@ namespace RT::Vulkan
 		else
 		{
 			imageCreateInfo.format = imageFormat2VulkanFormat(format);
-			imageCreateInfo.usage = VK_IMAGE_USAGE_STORAGE_BIT |
-				VK_IMAGE_USAGE_SAMPLED_BIT;
+			imageCreateInfo.usage = isFromMemory ?
+				VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT :
+				VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+
 				//VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
 				//VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
 				//VK_IMAGE_USAGE_TRANSFER_DST_BIT;
@@ -309,22 +341,14 @@ namespace RT::Vulkan
 			"failed to create texture image sampler!");
 	}
 
-	void VulkanTexture::uploadToBuffer()
+	void VulkanTexture::uploadToBuffer(const void* data)
 	{
 		auto device = DeviceInstance.getDevice();
 
 		void* dstData = nullptr;
 		vkMapMemory(device, stagingBufferMemory, 0, imSize, 0, &dstData);
 
-		// just for testing RGBA32F format
-		for (uint32_t i = 0; i < imSize / sizeof(float); i += 4)
-		{
-			((float*)dstData)[i + 0] = 0.0f;
-			((float*)dstData)[i + 1] = 0.2f;
-			((float*)dstData)[i + 2] = 1.0f;
-			((float*)dstData)[i + 3] = 1.0f;
-		}
-		//std::memset(dstData, 255, imSize);
+		std::memcpy(dstData, data, imSize);
 
 		auto range = VkMappedMemoryRange{};
 		range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;

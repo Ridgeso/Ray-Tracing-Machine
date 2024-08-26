@@ -15,3 +15,7 @@
 	path = Dependencies/glm
 	url = https://github.com/g-truc/glm.git
 	ignore = untracked
+[submodule "Dependencies/stb"]
+	path = Dependencies/stb
+	url = https://github.com/nothings/stb.git
+	ignore = untracked

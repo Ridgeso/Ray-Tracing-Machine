@@ -101,7 +101,7 @@ namespace RT::Vulkan
     }
 
     VulkanPipeline::VulkanPipeline(PipelineSpec& spec)
-        : layouts{std::move(spec.uniformLayouts)}, descriptors{ layouts }
+        : layouts{std::move(spec.uniformLayouts)}, descriptors{layouts}
     {
         createPipelineLayout();
 

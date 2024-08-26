@@ -14,7 +14,7 @@ namespace
 		{
 			case RT::UniformType::Uniform: return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			case RT::UniformType::Storage: return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			case RT::UniformType::Sampler: return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+			case RT::UniformType::Sampler: return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			case RT::UniformType::Image:   return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 		}
 		return VkDescriptorType{};
