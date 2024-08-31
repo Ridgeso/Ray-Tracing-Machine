@@ -187,7 +187,6 @@ namespace RT::Vulkan
 		if constexpr (EnableValidationLayers)
 		{
 			extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-			VK_EXT_debug_utils;
 		}
 
 		return extensions;

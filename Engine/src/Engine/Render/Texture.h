@@ -10,23 +10,14 @@
 namespace RT
 {
 
-	enum class ImageFormat
-	{
-		R8, RGB8, RGBA8, RGBA32F, Depth
-	};
-
-	enum class ImageLayout
-	{
-		Undefined, General, ShaderRead
-	};
-
-	enum class ImageAccess
-	{
-		None, Write, Read
-	};
-
 	struct Texture
 	{
+		enum class Format { R8, RGB8, RGBA8, RGBA32F, Depth };
+		enum class Layout { Undefined, General, ShaderRead };
+		enum class Access { None, Write, Read };
+		enum class Filter { None, Nearest, Linear };
+		enum class Mode { Repeat, Mirrored, ClampToEdge, ClampToBorder };
+
 		virtual ~Texture() = 0 {}
 
 		virtual void setBuffer(const void* data) = 0;
@@ -34,17 +25,22 @@ namespace RT
 		virtual const ImTextureID getTexId() const = 0;
 		virtual const glm::uvec2 getSize() const = 0;
 		
-		virtual void transition(const ImageAccess imageAccess, const ImageLayout imageLayout) const = 0;
-		virtual void barrier(const ImageAccess imageAccess, const ImageLayout imageLayout) const = 0;
+		virtual void transition(const Access imageAccess, const Layout imageLayout) const = 0;
+		virtual void barrier(const Access imageAccess, const Layout imageLayout) const = 0;
 
-		static Local<Texture> create(const std::filesystem::path& path);
-		static Local<Texture> create(const glm::uvec2 size, const ImageFormat imageFormat);
+		static Local<Texture> create(
+			const std::filesystem::path& path,
+			const Filter filter = Filter::Linear,
+			const Mode mode = Mode::Repeat);
+		static Local<Texture> create(const glm::uvec2 size, const Format imageFormat);
 	};
+
+	using TextureArray = std::vector<Local<Texture>>;
 
 	namespace Utils
 	{
 
-		const std::string_view imageFormat2Str(const ImageFormat imageFormat);
+		const std::string_view imageFormat2Str(const Texture::Format imageFormat);
 
 	}
 

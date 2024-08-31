@@ -14,7 +14,7 @@ namespace RT::OpenGl
 		using path = std::filesystem::path;
 
 	public:
-		OpenGlTexture(const glm::uvec2 size, const ImageFormat imageFormat);
+		OpenGlTexture(const glm::uvec2 size, const Texture::Format imageFormat);
 		~OpenGlTexture(); // final;
 
 		void setBuff(const void* data); // final;
@@ -27,12 +27,12 @@ namespace RT::OpenGl
 		const uint32_t getId() const { return texId; }
 
 	private:
-		constexpr int32_t imageFormat2GlFormat(const ImageFormat imageFormat);
+		constexpr int32_t imageFormat2GlFormat(const Texture::Format imageFormat);
 
 	private:
 		uint32_t texId;
 		glm::uvec2 size;
-		ImageFormat imageFormat;
+		Texture::Format imageFormat;
 	};
 
 }

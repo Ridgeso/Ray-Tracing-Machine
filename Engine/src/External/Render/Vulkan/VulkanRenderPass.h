@@ -30,8 +30,8 @@ namespace RT::Vulkan
 		const glm::uvec2 getSize() const { return size; }
 
 	private:
-		void createAttachments(const std::vector<ImageFormat>& attachmentTypes);
-		void createRenderPass(const std::vector<ImageFormat>& attachmentTypes);
+		void createAttachments(const std::vector<Texture::Format>& attachmentTypes);
+		void createRenderPass(const std::vector<Texture::Format>& attachmentTypes);
 		void createFrameBuffers();
 
 	private:

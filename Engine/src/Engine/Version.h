@@ -1,2 +1,2 @@
 #pragma once
-#define __RT_VERSION__ "v1.0.5"
+#define __RT_VERSION__ "v1.0.6"

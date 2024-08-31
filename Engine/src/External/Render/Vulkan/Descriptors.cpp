@@ -82,7 +82,6 @@ namespace RT::Vulkan
 		const VulkanTexture& sampler,
 		const RT::UniformType samplerType) const
 	{
-		const auto info = sampler.getWriteImageInfo();
 		auto writeSets = MultiVkWriteDescriptorSet{};
 		uint32_t setNr = 0u;
 		for (auto& write : writeSets)
@@ -92,7 +91,36 @@ namespace RT::Vulkan
 			write.dstBinding = binding;
 			write.descriptorType = uniformType2VkDescriptorType(samplerType);
 			write.descriptorCount = 1;
-			write.pImageInfo = &info;
+			write.pImageInfo = sampler.getWriteImageInfo();
+			setNr++;
+		}
+
+		vkUpdateDescriptorSets(DeviceInstance.getDevice(), writeSets.size(), writeSets.data(), 0, nullptr);
+	}
+
+	void Descriptors::write(
+		const uint32_t layout,
+		const uint32_t set,
+		const uint32_t binding,
+		const TextureArray& samplers,
+		const RT::UniformType samplerType) const
+	{
+		auto info = std::vector<VkDescriptorImageInfo>{};
+		for (const auto& sampler : samplers)
+		{
+			info.push_back(*static_cast<const VulkanTexture&>(*sampler).getWriteImageInfo());
+		}
+
+		auto writeSets = MultiVkWriteDescriptorSet{};
+		uint32_t setNr = 0u;
+		for (auto& write : writeSets)
+		{
+			write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			write.dstSet = layoutSets[layout][set][setNr];
+			write.dstBinding = binding;
+			write.descriptorType = uniformType2VkDescriptorType(samplerType);
+			write.descriptorCount = info.size();
+			write.pImageInfo = info.data();
 			setNr++;
 		}
 
@@ -113,8 +141,8 @@ namespace RT::Vulkan
 			for (uint32_t i = 0; i < uniformLayout.layout.size(); i++)
 			{
 				bindings[i].binding = i;
-				bindings[i].descriptorType = uniformType2VkDescriptorType(uniformLayout.layout[i]);
-				bindings[i].descriptorCount = uniformLayout.nrOfSets;
+				bindings[i].descriptorType = uniformType2VkDescriptorType(uniformLayout.layout[i].type);
+				bindings[i].descriptorCount = uniformLayout.layout[i].count;
 				bindings[i].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_ALL_GRAPHICS;
 			}
 
@@ -144,7 +172,7 @@ namespace RT::Vulkan
 			setsCount += uniformLayout.nrOfSets;
 			for (const auto layout : uniformLayout.layout)
 			{
-				descriptors[layout] += uniformLayout.nrOfSets * Constants::MAX_FRAMES_IN_FLIGHT;
+				descriptors[layout.type] += uniformLayout.nrOfSets * layout.count * Constants::MAX_FRAMES_IN_FLIGHT;
 			}
 		}
 

@@ -32,6 +32,12 @@ namespace RT::Vulkan
 			const uint32_t binding,
 			const VulkanTexture& sampler,
 			const RT::UniformType samplerType) const;
+		void write(
+			const uint32_t layout,
+			const uint32_t set,
+			const uint32_t binding,
+			const TextureArray& samplers,
+			const RT::UniformType samplerType) const;
 		VkDescriptorSet currFrameSet(const uint32_t layout, const uint32_t set) const;
 
 		const std::vector<VkDescriptorSetLayout>& layouts() const { return descriptorLayouts; }

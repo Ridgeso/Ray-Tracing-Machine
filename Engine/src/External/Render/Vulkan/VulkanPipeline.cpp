@@ -136,7 +136,12 @@ namespace RT::Vulkan
 
     void VulkanPipeline::updateSet(const uint32_t layout, const uint32_t set, const uint32_t binding, const Texture& sampler) const
     {
-        descriptors.write(layout, set, binding, static_cast<const VulkanTexture&>(sampler), layouts[layout].layout[binding]);
+        descriptors.write(layout, set, binding, static_cast<const VulkanTexture&>(sampler), layouts[layout].layout[binding].type);
+    }
+
+    void VulkanPipeline::updateSet(const uint32_t layout, const uint32_t set, const uint32_t binding, const TextureArray& samplers) const
+    {
+        descriptors.write(layout, set, binding, samplers, layouts[layout].layout[binding].type);
     }
 
     void VulkanPipeline::bindSet(const uint32_t layout, const uint32_t set) const

@@ -16,6 +16,8 @@ namespace RT
 		float specularProbability;
 		float emissionPower;
 		float refractionRatio;
+		int32_t textureId;
+		float padding_2[3];
 	};
 	#pragma pack(pop)
 
@@ -37,7 +39,12 @@ namespace RT
 		glm::vec3 B;
 		float padding_2;
 		glm::vec3 C;
+		float padding_3;
+		glm::vec2 uvA;
+		glm::vec2 uvB;
+		glm::vec2 uvC;
 		int32_t materialId;
+		float padding_4;
 	};
 	#pragma pack(pop)
 

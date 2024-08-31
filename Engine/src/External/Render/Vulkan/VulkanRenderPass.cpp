@@ -38,7 +38,7 @@ namespace RT::Vulkan
         createRenderPass(compatibleFormats);
     }
     
-    void VulkanRenderPass::createAttachments(const std::vector<ImageFormat>& attachmentTypes)
+    void VulkanRenderPass::createAttachments(const std::vector<Texture::Format>& attachmentTypes)
     {
         attachments.reserve(attachmentTypes.size());
         for (int32_t i = 0; i < attachmentTypes.size(); i++)
@@ -47,7 +47,7 @@ namespace RT::Vulkan
         }
     }
 
-    void VulkanRenderPass::createRenderPass(const std::vector<ImageFormat>& attachmentTypes)
+    void VulkanRenderPass::createRenderPass(const std::vector<Texture::Format>& attachmentTypes)
     {
         auto colorAtt = std::make_tuple(
             std::vector<VkAttachmentDescription>(),
@@ -59,7 +59,7 @@ namespace RT::Vulkan
 
         for (int32_t i = 0; i < attachmentTypes.size(); i++)
         {
-            const bool isDepth = ImageFormat::Depth == attachmentTypes[i];
+            const bool isDepth = Texture::Format::Depth == attachmentTypes[i];
 
             allAttDesc[i].format = isDepth ?
                 Swapchain::findDepthFormat() :

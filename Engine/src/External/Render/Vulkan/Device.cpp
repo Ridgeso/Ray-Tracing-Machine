@@ -218,7 +218,24 @@ namespace RT::Vulkan
         createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
         createInfo.ppEnabledExtensionNames = deviceExtensions.data();
         enableDebugingForCreateInfo(createInfo);
-        
+
+        auto vulkan12Features = VkPhysicalDeviceVulkan12Features{};
+        auto indexingFeatures = VkPhysicalDeviceDescriptorIndexingFeaturesEXT{};
+        if (deviceProperties.apiVersion >= VK_API_VERSION_1_2)
+        {
+            vulkan12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+            vulkan12Features.runtimeDescriptorArray = VK_TRUE;
+
+            createInfo.pNext = &vulkan12Features;
+        }
+        else
+        {
+            indexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
+            indexingFeatures.runtimeDescriptorArray = VK_TRUE;
+         
+            createInfo.pNext = &indexingFeatures;
+        }
+
         CHECK_VK(vkCreateDevice(physicalDevice, &createInfo, nullptr, &device), "failed to create logical device");
 
         vkGetDeviceQueue(device, queueFamilyIndices.graphicsFamily, 0, &graphicsQueue);

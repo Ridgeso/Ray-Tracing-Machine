@@ -1,6 +1,8 @@
 ###SHADER COMPUTE
 #version 450 core
 
+#extension GL_EXT_nonuniform_qualifier : enable
+
 #define LOWETS_THRESHOLD 1.0e-6F
 #define FLT_MAX 3.402823466e+38F
 #define UINT_MAX 4294967295.0
@@ -44,6 +46,7 @@ struct Material
     float SpecularProbability;
     float EmmisionPower;
     float RefractionRatio;
+    int TextureId;
 };
 
 struct Sphere
@@ -58,6 +61,9 @@ struct Triangle
     vec3 A;
     vec3 B;
     vec3 C;
+    vec2 uvA;
+    vec2 uvB;
+    vec2 uvC;
     int MaterialId;
 };
 
@@ -75,6 +81,8 @@ layout(std140, set = 1, binding = 2) readonly buffer TriangleBuffer
 {
     Triangle Triangles[];
 };
+
+layout(set = 1, binding = 3) uniform sampler2D Textures[];
 
 uint PCGhash(in uint random)
 {
@@ -116,6 +124,7 @@ struct Payload
 {
     vec3 HitPosition;
     vec3 HitNormal;
+    vec2 HitUV;
     float HitDistance;
     int HitObject;
     int HitMaterial;
@@ -173,6 +182,7 @@ Payload miss(in Ray ray)
     Payload payload;
     payload.HitPosition = vec3(0);
     payload.HitNormal = vec3(0);
+    payload.HitUV = vec2(0);
     payload.HitDistance = FLT_MAX;
     payload.HitObject = -1;
     payload.HitMaterial = -1;
@@ -190,6 +200,7 @@ Payload closestHit(in Ray ray, in float closestDistance, in int closestObject, i
     if (isSphere)
     {
         payload.HitNormal = normalize(payload.HitPosition - Spheres[closestObject].Position);
+        payload.HitUV = vec2(atan(payload.HitNormal.z, payload.HitNormal.x) / (2.0 * PI), asin(payload.HitNormal.y) / PI) + 0.5;;
         payload.HitMaterial = Spheres[closestObject].MaterialId;
     }
     else
@@ -198,6 +209,21 @@ Payload closestHit(in Ray ray, in float closestDistance, in int closestObject, i
         vec3 edgeAC = Triangles[closestObject].C - Triangles[closestObject].A;
         vec3 normalVec = cross(edgeAB, edgeAC);
         payload.HitNormal = normalize(normalVec);
+
+        vec3 ao = ray.Origin - Triangles[closestObject].A;
+        vec3 dao = cross(ao, ray.Direction);
+        float determinant = -dot(ray.Direction, normalVec);
+        float invDet = 1 / determinant;
+        float u = dot(edgeAC, dao) * invDet;
+        float v = -dot(edgeAB, dao) * invDet;
+        float w = 1 - u - v;
+        
+        vec2 texUV =
+            Triangles[payload.HitObject].uvA * u +
+            Triangles[payload.HitObject].uvB * v +
+            Triangles[payload.HitObject].uvC * w;
+
+        payload.HitUV = texUV;
 
         payload.HitMaterial = Triangles[closestObject].MaterialId;
     }
@@ -294,8 +320,19 @@ Payload bounceRay(in Ray ray)
 
 void accumulateColor(inout Pixel pixel, in Payload payload, in float isBounceSpecular)
 {
-    pixel.Color += getEmmision(payload.HitMaterial) * pixel.Contribution;
-    pixel.Contribution *= mix(Materials[payload.HitMaterial].Albedo, vec3(1.0), isBounceSpecular);
+    vec3 albedo = vec3(0);
+    int texId = Materials[payload.HitMaterial].TextureId;
+    if (-1 != texId)
+    {
+        albedo = texture(Textures[texId], payload.HitUV).xyz;
+        pixel.Color += albedo * Materials[payload.HitMaterial].EmmisionPower * pixel.Contribution;
+    }
+    else
+    {
+        pixel.Color += getEmmision(payload.HitMaterial) * pixel.Contribution;
+        albedo = Materials[payload.HitMaterial].Albedo;
+    }
+    pixel.Contribution *= mix(albedo, vec3(1.0), isBounceSpecular);
 }
 
 bool reflectance(in vec3 direction, in vec3 surfaceNormal, in float refIdx)

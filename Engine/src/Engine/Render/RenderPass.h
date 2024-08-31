@@ -8,7 +8,7 @@
 namespace RT
 {
 
-	using AttachmentFormats = std::vector<ImageFormat>;
+	using AttachmentFormats = std::vector<Texture::Format>;
 
 	struct RenderPassSpec
 	{

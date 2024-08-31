@@ -15,8 +15,10 @@
 namespace RT::Vulkan
 {
 
-	VulkanTexture::VulkanTexture(const std::filesystem::path& path)
-		: format{ImageFormat::RGBA8}
+	VulkanTexture::VulkanTexture(const std::filesystem::path& path, const Filter filter, const Mode mode)
+		: format{Format::RGBA8}
+		, mode{mode}
+		, filter{filter}
 	{
 		stbi_set_flip_vertically_on_load(1);
 		RT_LOG_INFO("Loading Texture: {{ path = {} }}", path);
@@ -38,9 +40,11 @@ namespace RT::Vulkan
 		stbi_image_free(data);
 	}
 	
-	VulkanTexture::VulkanTexture(const glm::uvec2 size, const ImageFormat imageFormat)
+	VulkanTexture::VulkanTexture(const glm::uvec2 size, const Format imageFormat)
 		: size{size}
 		, format{imageFormat}
+		, filter{Filter::Nearest}
+		, mode{Mode::ClampToBorder}
 		, imSize{calcImSize()}
 	{
 		RT_LOG_INFO("Creating Texture: {{ size = {}, imageFormat = {} }}", size, RT::Utils::imageFormat2Str(format));
@@ -68,7 +72,7 @@ namespace RT::Vulkan
 		copyToImage();
 	}
 
-	void VulkanTexture::transition(const ImageAccess imageAccess, const ImageLayout imageLayout) const
+	void VulkanTexture::transition(const Access imageAccess, const Layout imageLayout) const
 	{
 		DeviceInstance.execSingleCmdPass([&](const auto cmdBuffer) -> void
 		{
@@ -83,8 +87,8 @@ namespace RT::Vulkan
 	}
 
 	void VulkanTexture::barrier(
-		const ImageAccess imageAccess,
-		const ImageLayout imageLayout) const
+		const Access imageAccess,
+		const Layout imageLayout) const
 	{
 		auto dstAccessMask = imageAccess2VulkanAccess(imageAccess);
 		auto newLayout = imageLayout2VulkanLayout(imageLayout);
@@ -122,60 +126,63 @@ namespace RT::Vulkan
 			1, &barrier);
 	}
 
-	const VkDescriptorImageInfo VulkanTexture::getWriteImageInfo() const
-	{
-		auto info = VkDescriptorImageInfo();
-		info.sampler = sampler;
-		info.imageView = imageView;
-		info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-		return info;
-	}
-
-	const VkFormat VulkanTexture::imageFormat2VulkanFormat(const ImageFormat imageFormat)
+	const VkFormat VulkanTexture::imageFormat2VulkanFormat(const Format imageFormat)
 	{
 		switch (imageFormat)
 		{
-			case ImageFormat::R8:		return VK_FORMAT_R8_UNORM;
-			case ImageFormat::RGB8:		return VK_FORMAT_R8G8B8_UNORM;
-			case ImageFormat::RGBA8:	return VK_FORMAT_R8G8B8A8_UNORM;
-			case ImageFormat::RGBA32F:	return VK_FORMAT_R32G32B32A32_SFLOAT;
+			case Format::R8:	  return VK_FORMAT_R8_UNORM;
+			case Format::RGB8:	  return VK_FORMAT_R8G8B8_UNORM;
+			case Format::RGBA8:	  return VK_FORMAT_R8G8B8A8_UNORM;
+			case Format::RGBA32F: return VK_FORMAT_R32G32B32A32_SFLOAT;
 		}
 		return VK_FORMAT_UNDEFINED;
 	}
 
-	const uint32_t VulkanTexture::imageFormat2Size(const ImageFormat imageFormat)
+	const uint32_t VulkanTexture::imageFormat2Size(const Format imageFormat)
 	{
 		switch (imageFormat)
 		{
-			case ImageFormat::R8:		return 1;
-			case ImageFormat::RGB8:		return 3;
-			case ImageFormat::RGBA8:	return 4;
-			case ImageFormat::RGBA32F:	return 4 * 4;
-			case ImageFormat::Depth:	return 0;
+			case Format::R8:	  return 1;
+			case Format::RGB8:	  return 3;
+			case Format::RGBA8:	  return 4;
+			case Format::RGBA32F: return 4 * 4;
+			case Format::Depth:	  return 0;
 		}
 		return 0;
 	}
 
-	const VkImageLayout VulkanTexture::imageLayout2VulkanLayout(const ImageLayout imageLayout)
+	const VkImageLayout VulkanTexture::imageLayout2VulkanLayout(const Layout imageLayout)
 	{
 		switch (imageLayout)
 		{
-			case ImageLayout::Undefined:  return VK_IMAGE_LAYOUT_UNDEFINED;
-			case ImageLayout::General:    return VK_IMAGE_LAYOUT_GENERAL;
-			case ImageLayout::ShaderRead: return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			case Layout::Undefined:  return VK_IMAGE_LAYOUT_UNDEFINED;
+			case Layout::General:    return VK_IMAGE_LAYOUT_GENERAL;
+			case Layout::ShaderRead: return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		}
 		return VK_IMAGE_LAYOUT_UNDEFINED;
 	}
 
-	const VkAccessFlags VulkanTexture::imageAccess2VulkanAccess(const ImageAccess imageAccess)
+	const VkAccessFlags VulkanTexture::imageAccess2VulkanAccess(const Access imageAccess)
 	{
 		switch (imageAccess)
 		{
-			case ImageAccess::None:  return VK_ACCESS_NONE;
-			case ImageAccess::Write: return VK_ACCESS_SHADER_WRITE_BIT;
-			case ImageAccess::Read:  return VK_ACCESS_SHADER_READ_BIT;
+			case Access::None:  return VK_ACCESS_NONE;
+			case Access::Write: return VK_ACCESS_SHADER_WRITE_BIT;
+			case Access::Read:  return VK_ACCESS_SHADER_READ_BIT;
 		}
 		return VK_ACCESS_NONE;
+	}
+
+	const VkSamplerAddressMode VulkanTexture::imageMode2VulkanMode(const Mode imageMode)
+	{
+		switch (imageMode)
+		{
+			case Mode::Repeat:		  return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			case Mode::Mirrored:	  return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+			case Mode::ClampToEdge:   return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+			case Mode::ClampToBorder: return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+		}
+		return VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	}
 
 	void VulkanTexture::initVulkanImage(const bool isFromMemory)
@@ -185,15 +192,19 @@ namespace RT::Vulkan
 		allocateMemory();
 		allocateStaginBuffer();
 		createImageView();
-		createSampler();
+		createSampler(isFromMemory);
 
-		if (ImageFormat::Depth != format)
+		if (Format::Depth != format)
 		{
 			descriptorSet = ImGui_ImplVulkan_AddTexture(
 				sampler,
 				imageView,
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		}
+
+		imageInfo.sampler = sampler;
+		imageInfo.imageView = imageView;
+		imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 	}
 
 	void VulkanTexture::createImage(const bool isFromMemory)
@@ -212,7 +223,7 @@ namespace RT::Vulkan
 		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageCreateInfo.flags = 0;
 
-		if (ImageFormat::Depth == format)
+		if (Format::Depth == format)
 		{
 			imageCreateInfo.format = Swapchain::findDepthFormat();
 			imageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
@@ -304,7 +315,7 @@ namespace RT::Vulkan
 		viewInfo.components.b = VK_COMPONENT_SWIZZLE_B;
 		viewInfo.components.a = VK_COMPONENT_SWIZZLE_A;
 
-		if (ImageFormat::Depth == format)
+		if (Format::Depth == format)
 		{
 			viewInfo.format = Swapchain::findDepthFormat();
 			viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
@@ -320,22 +331,20 @@ namespace RT::Vulkan
 			"failed to create texture image view!");
 	}
 
-	void VulkanTexture::createSampler()
+	void VulkanTexture::createSampler(const bool isFromMemory)
 	{
 		auto info = VkSamplerCreateInfo{};
 		info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-		//info.magFilter = VK_FILTER_LINEAR;
-		//info.minFilter = VK_FILTER_LINEAR;
-		//info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		info.magFilter = VK_FILTER_NEAREST;
-		info.minFilter = VK_FILTER_NEAREST;
-		info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-		info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		info.magFilter = Filter::Nearest == filter ? VK_FILTER_NEAREST : VK_FILTER_LINEAR;
+		info.minFilter = Filter::Nearest == filter ? VK_FILTER_NEAREST : VK_FILTER_LINEAR;
+		info.mipmapMode = Filter::Nearest == filter ? VK_SAMPLER_MIPMAP_MODE_NEAREST : VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		info.addressModeU = imageMode2VulkanMode(mode);
+		info.addressModeV = imageMode2VulkanMode(mode);
+		info.addressModeW = imageMode2VulkanMode(mode);
 		info.minLod = -1000;
 		info.maxLod = 1000;
 		info.maxAnisotropy = 1.0f;
+		info.compareOp = VK_COMPARE_OP_NEVER;
 		CHECK_VK(
 			vkCreateSampler(DeviceInstance.getDevice(), &info, nullptr, &sampler),
 			"failed to create texture image sampler!");

@@ -45,6 +45,7 @@ namespace RT::Vulkan
 
         void updateSet(const uint32_t layout, const uint32_t set, const uint32_t binding, const Uniform& uniform) const final;
         void updateSet(const uint32_t layout, const uint32_t set, const uint32_t binding, const Texture& sampler) const final;
+        void updateSet(const uint32_t layout, const uint32_t set, const uint32_t binding, const TextureArray& samplers) const final;
         void bindSet(const uint32_t layout, const uint32_t set) const final;
 
         void bind() const final;
