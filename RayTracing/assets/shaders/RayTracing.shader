@@ -43,7 +43,6 @@ struct Material
     vec3 EmmisionColor;
     float Roughness;
     float Metalic;
-    float SpecularProbability;
     float EmmisionPower;
     float RefractionRatio;
     int TextureId;
@@ -219,9 +218,9 @@ Payload closestHit(in Ray ray, in float closestDistance, in int closestObject, i
         float w = 1 - u - v;
         
         vec2 texUV =
-            Triangles[payload.HitObject].uvA * u +
-            Triangles[payload.HitObject].uvB * v +
-            Triangles[payload.HitObject].uvC * w;
+            Triangles[payload.HitObject].uvA * w +
+            Triangles[payload.HitObject].uvB * u +
+            Triangles[payload.HitObject].uvC * v;
 
         payload.HitUV = texUV;
 
@@ -318,7 +317,7 @@ Payload bounceRay(in Ray ray)
     return closestHit(ray, closestDistance, closestObject, isSphere);
 }
 
-void accumulateColor(inout Pixel pixel, in Payload payload, in float isBounceSpecular)
+void accumulateColor(inout Pixel pixel, in Payload payload)
 {
     vec3 albedo = vec3(0);
     int texId = Materials[payload.HitMaterial].TextureId;
@@ -332,7 +331,7 @@ void accumulateColor(inout Pixel pixel, in Payload payload, in float isBounceSpe
         pixel.Color += getEmmision(payload.HitMaterial) * pixel.Contribution;
         albedo = Materials[payload.HitMaterial].Albedo;
     }
-    pixel.Contribution *= mix(albedo, vec3(1.0), isBounceSpecular);
+    pixel.Contribution *= albedo;
 }
 
 bool reflectance(in vec3 direction, in vec3 surfaceNormal, in float refIdx)
@@ -371,33 +370,29 @@ void refractRay(inout Ray ray, in Payload payload)
     }
 }
 
-float reflectRay(inout Ray ray, in Payload payload)
+void reflectRay(inout Ray ray, in Payload payload)
 {
     ray.Origin = payload.HitPosition + payload.HitNormal * 0.0001;
     
-    float isBounceSpecular = Materials[payload.HitMaterial].SpecularProbability >= fastRandom(Global.seed) ? 1.0 : 0.0;
     vec3 diffuseDir = normalize(payload.HitNormal + randomUnitSpehere(Global.seed));
-    vec3 specularDir = reflect(ray.Direction, payload.HitNormal) +
-        (randomUnitSpehere(Global.seed) + payload.HitNormal) * Materials[payload.HitMaterial].Metalic;
-    ray.Direction = mix(diffuseDir, specularDir, Materials[payload.HitMaterial].Roughness * isBounceSpecular);
+    vec3 specularDir = normalize(reflect(ray.Direction, payload.HitNormal) + randomUnitSpehere(Global.seed) * (1.0 - Materials[payload.HitMaterial].Metalic));
+    
+    ray.Direction = mix(diffuseDir, specularDir, Materials[payload.HitMaterial].Roughness);
     ray.Direction = normalize(ray.Direction);
-
-    return isBounceSpecular;
 }
 
 void scatter(inout Ray ray, in Payload payload, inout Pixel pixel)
 {
-    float isBounceSpecular = 0.0;
     if (Materials[payload.HitMaterial].RefractionRatio > 1.0)
     {
         refractRay(ray, payload);
     }
     else
     {
-        isBounceSpecular = reflectRay(ray, payload);
+        reflectRay(ray, payload);
     }
 
-    accumulateColor(pixel, payload, isBounceSpecular);
+    accumulateColor(pixel, payload);
 }
 
 vec3 traceRay(in Ray ray)

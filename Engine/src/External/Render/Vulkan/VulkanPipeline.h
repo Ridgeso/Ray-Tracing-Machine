@@ -70,6 +70,8 @@ namespace RT::Vulkan
         UniformLayouts layouts = {};
         Descriptors descriptors;
         mutable std::vector<VkDescriptorSet> bindingSets = {};
+
+        static constexpr glm::uvec2 group = { 8u, 8u };
     };
 
 }

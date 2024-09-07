@@ -384,20 +384,20 @@ namespace RT::Vulkan
     {
         for (const auto& availablePresentMode : availablePresentModes)
         {
-            if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
-            {
-                RT_LOG_WARN("Present mode: Mailbox");
-                return availablePresentMode;
-            }
+           if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
+           {
+               RT_LOG_WARN("Present mode: Mailbox");
+               return availablePresentMode;
+           }
         }
 
         for (const auto& availablePresentMode : availablePresentModes)
         {
-            if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)
-            {
-                RT_LOG_WARN("Present mode: Immediate");
-                return availablePresentMode;
-            }
+           if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)
+           {
+               RT_LOG_WARN("Present mode: Immediate");
+               return availablePresentMode;
+           }
         }
 
         RT_LOG_INFO("Present mode: V-Sync");
