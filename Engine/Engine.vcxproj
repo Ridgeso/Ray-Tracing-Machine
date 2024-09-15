@@ -13,6 +13,7 @@
   <ItemGroup>
     <ClCompile Include="src\Engine\Core\Log.cpp" />
     <ClCompile Include="src\Engine\Render\Buffer.cpp" />
+    <ClCompile Include="src\Engine\Render\Mesh.cpp" />
     <ClCompile Include="src\Engine\Render\Pipeline.cpp" />
     <ClCompile Include="src\Engine\Render\RenderPass.cpp" />
     <ClCompile Include="src\Engine\Render\Texture.cpp" />
@@ -22,7 +23,8 @@
     <ClCompile Include="src\Engine\Window\Window.cpp" />
     <ClCompile Include="src\Engine\Render\Camera.cpp" />
     <ClCompile Include="src\Engine\Render\Scene.cpp" />
-    <ClCompile Include="src\External\Render\Common\Image.cpp" />
+    <ClCompile Include="src\External\Implementatins.cpp" />
+    <ClCompile Include="src\External\Render\Common\MeshLoader.cpp" />
     <ClCompile Include="src\External\Render\Vulkan\Descriptors.cpp" />
     <ClCompile Include="src\External\Render\Vulkan\Device.cpp" />
     <ClCompile Include="src\External\Render\Vulkan\VulkanPipeline.cpp" />
@@ -35,7 +37,6 @@
     <ClCompile Include="src\External\Render\Vulkan\VulkanTexture.cpp" />
     <ClCompile Include="src\External\Window\GlfwWindow\Utils.cpp" />
     <ClCompile Include="src\External\Window\GlfwWindow\GlfwWindow.cpp" />
-    <ClCompile Include="src\External\Window\ImGuiBackend.cpp" />
     <ClCompile Include="src\External\Window\ImGuiImpl.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -47,6 +48,7 @@
     <ClInclude Include="src\Engine\Event\Event.h" />
     <ClInclude Include="src\Engine\Frame\Frame.h" />
     <ClInclude Include="src\Engine\Render\Buffer.h" />
+    <ClInclude Include="src\Engine\Render\Mesh.h" />
     <ClInclude Include="src\Engine\Render\Pipeline.h" />
     <ClInclude Include="src\Engine\Render\Renderer.h" />
     <ClInclude Include="src\Engine\Render\RenderPass.h" />
@@ -64,6 +66,7 @@
     <ClInclude Include="src\Engine\Window\Window.h" />
     <ClInclude Include="src\Engine\Render\Camera.h" />
     <ClInclude Include="src\Engine\Render\Scene.h" />
+    <ClInclude Include="src\External\Render\Common\MeshLoader.h" />
     <ClInclude Include="src\External\Render\Vulkan\Context.h" />
     <ClInclude Include="src\External\Render\Vulkan\Descriptors.h" />
     <ClInclude Include="src\External\Render\Vulkan\Utils\Constants.h" />
@@ -145,7 +148,7 @@
       <PreprocessorDefinitions>_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS;GLM_ENABLE_EXPERIMENTAL;GLFW_INCLUDE_NONE;RT_ROOT_PATH=R"($(ProjectDir)src\)";VK_DEBUG;RT_DEBUG;_DEBUG</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Engine\src;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\stb;$(SolutionDir)Dependencies\glad\include;$(VULKAN_SDK)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Engine\src;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\stb;$(SolutionDir)Dependencies\tinygltf;$(SolutionDir)Dependencies\glad\include;$(VULKAN_SDK)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -168,7 +171,7 @@
       <PreprocessorDefinitions>_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS;GLM_ENABLE_EXPERIMENTAL;GLFW_INCLUDE_NONE;RT_ROOT_PATH=R"($(ProjectDir)src\)";NDEBUG</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Engine\src;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\stb;$(SolutionDir)Dependencies\glad\include;$(VULKAN_SDK)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Engine\src;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\stb;$(SolutionDir)Dependencies\tinygltf;$(SolutionDir)Dependencies\glad\include;$(VULKAN_SDK)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <DebugInformationFormat>None</DebugInformationFormat>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>

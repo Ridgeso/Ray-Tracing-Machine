@@ -5,6 +5,7 @@
 
 #include <Engine/Render/Camera.h>
 #include <Engine/Render/Scene.h>
+#include <Engine/Render/Mesh.h>
 #include <Engine/Render/Pipeline.h>
 #include <Engine/Render/Texture.h>
 
@@ -34,6 +35,7 @@ public:
 		, lastWinSize{RT::Application::getWindow()->getSize()}
 		, camera(45.0f, 0.1f, 1.0f)
 		, scene{}
+		, mesh{}
 	{
 		loadScene(0);
 
@@ -747,6 +749,16 @@ private:
 
 				break;
 			}
+			case 4:
+			{
+				LOG_WARN("Loading a scene which is heavy for current engine implementation, will be improved in future");
+
+				scene.materials.emplace_back(RT::Material{ { 1.0f, 1.0f, 1.0f }, 0.0, { 1.0f, 1.0f, 1.0f }, 0.0f, 0.0f, 0.0f, 1.0f, -1 });
+
+				mesh.load(assetDir / "models" / "tinyStanfordDragon.glb");
+				scene.triangles = mesh.getModel();
+				break;
+			}
 		}
 	}
 
@@ -758,6 +770,7 @@ private:
 
 	RT::Camera camera;
 	RT::Scene scene;
+	RT::Mesh mesh;
 
 	RT::Local<RT::Texture> accumulationTexture;
 	RT::Local<RT::Texture> outTexture;
