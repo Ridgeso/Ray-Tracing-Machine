@@ -12,20 +12,23 @@
 namespace RT
 {
 
-	struct UnknownLoader
+	#define LOADER_IMPL								  \
+		bool load(const std::filesystem::path& path); \
+		std::vector<Triangle> buildModel() const;	  \
+		Box buildVolume() const;
+
+	class UnknownLoader
 	{
 	public:
-		bool load(const std::filesystem::path& path);
-		std::vector<Triangle> buildModel() const;
+		LOADER_IMPL
 	};
 
-	struct GltfLoader
+	class GltfLoader
 	{
 	public:
 		tinygltf::Model model = {};
 		
-		bool load(const std::filesystem::path& path);
-		std::vector<Triangle> buildModel() const;
+		LOADER_IMPL
 
 	private:
 		static bool isBinGltf(const std::filesystem::path& path);
@@ -42,6 +45,7 @@ namespace RT
 		bool load(const std::filesystem::path& path);
 
 		std::vector<Triangle> buildModel() const;
+		Box buildVolume() const;
 
 	private:
 		Loader loader = {};

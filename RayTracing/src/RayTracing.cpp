@@ -4,7 +4,6 @@
 #include <Engine/Event/AppEvents.h>
 
 #include <Engine/Render/Camera.h>
-#include <Engine/Render/Scene.h>
 #include <Engine/Render/Mesh.h>
 #include <Engine/Render/Pipeline.h>
 #include <Engine/Render/Texture.h>
@@ -12,18 +11,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/quaternion.hpp>
 
-uint32_t pcg_hash(uint32_t input)
-{
-	uint32_t state = input * 747796405u + 2891336453u;
-	uint32_t word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
-	return (word >> 22u) ^ word;
-}
-
-float FastRandom(uint32_t& seed)
-{
-	seed = pcg_hash(seed);
-	return (float)seed / std::numeric_limits<uint32_t>::max();
-}
+#include "RTScene.h"
 
 class RayTracingClient : public RT::Frame
 {
@@ -35,9 +23,9 @@ public:
 		, lastWinSize{RT::Application::getWindow()->getSize()}
 		, camera(45.0f, 0.1f, 1.0f)
 		, scene{}
-		, mesh{}
+		, rtScene{}
 	{
-		loadScene(0);
+		loadScene(4);
 
 		//screenBuff = VertexBuffer::create(sizeof(screenVertices), screenVertices);
 		//screenBuff->registerAttributes({ VertexElement::Float2, VertexElement::Float2 });
@@ -57,8 +45,10 @@ public:
 
 		infoUniform.resolution = lastWinSize;
 		infoUniform.materialsCount = scene.materials.size();
-		infoUniform.spheresCount = scene.spheres.size();
-		infoUniform.trianglesCount = scene.triangles.size();
+		infoUniform.spheresCount = rtScene.spheres.size();
+		infoUniform.trianglesCount = rtScene.triangles.size();
+		infoUniform.meshesCount = scene.meshes.size();
+		infoUniform.texturesCount = textures.size();
 
 		ammountsUniform = RT::Uniform::create(RT::UniformType::Uniform, sizeof(InfoUniform));
 		ammountsUniform->setData(&infoUniform, sizeof(InfoUniform));
@@ -69,11 +59,14 @@ public:
 		materialsStorage = RT::Uniform::create(RT::UniformType::Storage, scene.materials.size() > 0 ? sizeof(RT::Material) * scene.materials.size() : 1);
 		materialsStorage->setData(scene.materials.data(), sizeof(RT::Material) * scene.materials.size());
 
-		spheresStorage = RT::Uniform::create(RT::UniformType::Storage, scene.spheres.size() > 0 ? sizeof(RT::Sphere) * scene.spheres.size() : 1);
-		spheresStorage->setData(scene.spheres.data(), sizeof(RT::Sphere) * scene.spheres.size());
+		spheresStorage = RT::Uniform::create(RT::UniformType::Storage, rtScene.spheres.size() > 0 ? sizeof(Sphere) * rtScene.spheres.size() : 1);
+		spheresStorage->setData(rtScene.spheres.data(), sizeof(Sphere) * rtScene.spheres.size());
 		
-		trianglesStorage = RT::Uniform::create(RT::UniformType::Storage, scene.triangles.size() > 0 ? sizeof(RT::Triangle) * scene.triangles.size() : 1);
-		trianglesStorage->setData(scene.triangles.data(), sizeof(RT::Triangle) * scene.triangles.size());
+		trianglesStorage = RT::Uniform::create(RT::UniformType::Storage, rtScene.triangles.size() > 0 ? sizeof(RT::Triangle) * rtScene.triangles.size() : 1);
+		trianglesStorage->setData(rtScene.triangles.data(), sizeof(RT::Triangle) * rtScene.triangles.size());
+
+		meshWrappersStorage = RT::Uniform::create(RT::UniformType::Storage, rtScene.meshWrappers.size() > 0 ? sizeof(MeshWrapper) * rtScene.meshWrappers.size() : 1);
+		meshWrappersStorage->setData(rtScene.meshWrappers.data(), sizeof(MeshWrapper) * rtScene.meshWrappers.size());
 
 		auto pipelineSpec = RT::PipelineSpec{};
 		pipelineSpec.shaderPath = assetDir / "shaders" / "RayTracing.shader";
@@ -85,6 +78,7 @@ public:
 				{ .type = RT::UniformType::Uniform, .count = 1 },
 				{ .type = RT::UniformType::Uniform, .count = 1 } } },
 			{ .nrOfSets = 1, .layout = {
+				{ .type = RT::UniformType::Storage, .count = 1 },
 				{ .type = RT::UniformType::Storage, .count = 1 },
 				{ .type = RT::UniformType::Storage, .count = 1 },
 				{ .type = RT::UniformType::Storage, .count = 1 },
@@ -101,9 +95,10 @@ public:
 		pipeline->updateSet(1, 0, 0, *materialsStorage);
 		pipeline->updateSet(1, 0, 1, *spheresStorage);
 		pipeline->updateSet(1, 0, 2, *trianglesStorage);
+		pipeline->updateSet(1, 0, 3, *meshWrappersStorage);
 		if (0 < textures.size())
 		{
-			pipeline->updateSet(1, 0, 3, textures);
+			pipeline->updateSet(1, 0, 4, textures);
 		}
 
 		registerEvents();
@@ -118,6 +113,8 @@ public:
 		cameraUniform.reset();
 		materialsStorage.reset();
 		spheresStorage.reset();
+		trianglesStorage.reset();
+		meshWrappersStorage.reset();
 
 		accumulationTexture.reset();
 		outTexture.reset();
@@ -184,7 +181,7 @@ public:
 
 			bool shouldUpdateMaterials = false;
 			bool shouldUpdateSpeheres = false;
-			bool shouldUpdateTriangles = false;
+			bool shouldUpdateMeshes = false;
 
 			ImGui::Separator();
 
@@ -214,10 +211,10 @@ public:
 					shouldUpdateMaterials |= ImGui::DragFloat("Refraction Index", &material.refractionRatio, 0.005f, 1.0f, 32.0f);
 					shouldUpdateMaterials |= ImGui::SliderInt("Texture Id", &material.textureId, -1, textures.size() - 1);
 					
-					if (ImGui::Button("Delete Sphere"))
+					if (ImGui::Button("Delete Material"))
 					{
 						scene.materials.erase(scene.materials.begin() + materialId);
-						for (auto& sphere : scene.spheres)
+						for (auto& sphere : rtScene.spheres)
 						{
 							if (sphere.materialId == materialId)
 							{
@@ -232,17 +229,18 @@ public:
 						}
 						shouldUpdateMaterials = true;
 
-						for (auto& triangle : scene.triangles)
+						// TODO: adjust when materialId will be moved to 'objects'
+						for (auto& triangle : scene.meshes)
 						{
 							if (triangle.materialId == materialId)
 							{
 								triangle.materialId = 0;
-								shouldUpdateTriangles = true;
+								shouldUpdateMeshes = true;
 							}
 							else if (triangle.materialId > materialId)
 							{
 								triangle.materialId--;
-								shouldUpdateTriangles = true;
+								shouldUpdateMeshes = true;
 							}
 						}
 						shouldUpdateMaterials = true;
@@ -260,11 +258,11 @@ public:
 			{
 				if (ImGui::Button("Add Sphere"))
 				{
-					scene.spheres.emplace_back(RT::Sphere{ { 0.0f, 0.0f, -2.0f }, 1.0f, 0 });
+					rtScene.spheres.emplace_back(Sphere{ { 0.0f, 0.0f, -2.0f }, 1.0f, 0 });
 					shouldUpdateSpeheres = true;
 				}
 
-				for (size_t sphereId = 0u; sphereId < scene.spheres.size(); sphereId++)
+				for (size_t sphereId = 0u; sphereId < rtScene.spheres.size(); sphereId++)
 				{
 					if (!ImGui::TreeNode(fmt::format("Sphere: {}", sphereId).c_str()))
 					{
@@ -272,7 +270,7 @@ public:
 					}
 
 					ImGui::PushID((int32_t)sphereId);
-					auto& sphere = scene.spheres[sphereId];
+					auto& sphere = rtScene.spheres[sphereId];
 
 					shouldUpdateSpeheres |= ImGui::DragFloat3("Position", glm::value_ptr(sphere.position), 0.1f);
 					shouldUpdateSpeheres |= ImGui::DragFloat("Radius", &sphere.radius, 0.01f, 0.0f, std::numeric_limits<float>::max());
@@ -280,7 +278,7 @@ public:
 
 					if (ImGui::Button("Delete Sphere"))
 					{
-						scene.spheres.erase(scene.spheres.begin() + sphereId);
+						rtScene.spheres.erase(rtScene.spheres.begin() + sphereId);
 						shouldUpdateSpeheres = true;
 					}
 
@@ -292,49 +290,30 @@ public:
 			
 			ImGui::Separator();
 
-			if (ImGui::CollapsingHeader("Triangles"))
+			if (ImGui::CollapsingHeader("Meshes"))
 			{
-				if (ImGui::Button("Triangle"))
+				for (size_t meshId = 0u; meshId < scene.meshes.size(); meshId++)
 				{
-					scene.triangles.emplace_back(RT::Triangle{
-						{ 0.0f, 0.0f, 0.0f }, 0.0f,
-						{ 0.0f, 0.0f, 0.0f }, 0.0f,
-						{ 0.0f, 0.0f, 0.0f }, 0.0f,
-						{ 0.0f, 0.0f },
-						{ 0.0f, 0.0f },
-						{ 0.0f, 0.0f },
-						0, 0.0f});
-					shouldUpdateTriangles = true;
-				}
-
-				for (size_t triangleId = 0u; triangleId < scene.triangles.size(); triangleId++)
-				{
-					if (!ImGui::TreeNode(fmt::format("Triangle: {}", triangleId).c_str()))
+					if (!ImGui::TreeNode(fmt::format("Mesh: {}", meshId).c_str()))
 					{
 						continue;
 					}
+					
+					ImGui::PushID((int32_t)meshId);
+					auto& mesh = scene.meshes[meshId];
 
-					ImGui::PushID((int32_t)triangleId);
-					auto& triangle = scene.triangles[triangleId];
+					shouldUpdateMeshes |= ImGui::SliderInt("Material", &mesh.materialId, 0, scene.materials.size() - 1);
 
-					shouldUpdateTriangles |= ImGui::DragFloat3("Position: A", glm::value_ptr(triangle.A), 0.1f);
-					shouldUpdateTriangles |= ImGui::DragFloat3("Position: B", glm::value_ptr(triangle.B), 0.1f);
-					shouldUpdateTriangles |= ImGui::DragFloat3("Position: C", glm::value_ptr(triangle.C), 0.1f);
-					shouldUpdateTriangles |= ImGui::DragFloat2("UV: A", glm::value_ptr(triangle.uvA), 0.1f);
-					shouldUpdateTriangles |= ImGui::DragFloat2("UV: B", glm::value_ptr(triangle.uvB), 0.1f);
-					shouldUpdateTriangles |= ImGui::DragFloat2("UV: C", glm::value_ptr(triangle.uvC), 0.1f);
-					shouldUpdateTriangles |= ImGui::SliderInt("Material", &triangle.materialId, 0, scene.materials.size() - 1);
-
-					if (ImGui::Button("Delete triangle"))
+					if (shouldUpdateMeshes)
 					{
-						scene.triangles.erase(scene.triangles.begin() + triangleId);
-						shouldUpdateTriangles = true;
+						rtScene.meshWrappers[meshId].materialId = mesh.materialId;
 					}
 
 					ImGui::Separator();
 					ImGui::PopID();
 					ImGui::TreePop();
 				}
+
 			}
 			
 			if (shouldUpdateMaterials)
@@ -354,33 +333,35 @@ public:
 			}
 			if (shouldUpdateSpeheres)
 				{
-					if (scene.spheres.size() != infoUniform.spheresCount)
+					if (rtScene.spheres.size() != infoUniform.spheresCount)
 					{
-						infoUniform.spheresCount = scene.spheres.size();
+						infoUniform.spheresCount = rtScene.spheres.size();
 						ammountsUniform->setData(&infoUniform.spheresCount, sizeof(float), offsetof(InfoUniform, spheresCount));
 
-						uint32_t sphStorSize = sizeof(RT::Sphere) * scene.spheres.size();
+						uint32_t sphStorSize = sizeof(Sphere) * rtScene.spheres.size();
 						spheresStorage = RT::Uniform::create(RT::UniformType::Storage, sphStorSize > 0 ? sphStorSize : 1);
 
 						pipeline->updateSet(1, 0, 1, *spheresStorage);
 					}
 
-					spheresStorage->setData(scene.spheres.data(), sizeof(RT::Sphere) * scene.spheres.size());
+					spheresStorage->setData(rtScene.spheres.data(), sizeof(Sphere) * rtScene.spheres.size());
 				}
-			if (shouldUpdateTriangles)
+			if (shouldUpdateMeshes)
 			{
-				if (scene.triangles.size() != infoUniform.trianglesCount)
-				{
-					infoUniform.trianglesCount = scene.triangles.size();
-					ammountsUniform->setData(&infoUniform.trianglesCount, sizeof(float), offsetof(InfoUniform, trianglesCount));
+				//if (scene.triangles.size() != infoUniform.trianglesCount)
+				//{
+				//	infoUniform.trianglesCount = scene.triangles.size();
+				//	ammountsUniform->setData(&infoUniform.trianglesCount, sizeof(float), offsetof(InfoUniform, trianglesCount));
 
-					uint32_t triStorSize = sizeof(RT::Triangle) * scene.triangles.size();
-					trianglesStorage = RT::Uniform::create(RT::UniformType::Storage, triStorSize > 0 ? triStorSize : 1);
+				//	uint32_t triStorSize = sizeof(RT::Triangle) * scene.triangles.size();
+				//	trianglesStorage = RT::Uniform::create(RT::UniformType::Storage, triStorSize > 0 ? triStorSize : 1);
 
-					pipeline->updateSet(1, 0, 2, *trianglesStorage);
-				}
+				//	pipeline->updateSet(1, 0, 2, *trianglesStorage);
+				//}
 
-				trianglesStorage->setData(scene.triangles.data(), sizeof(RT::Triangle) * scene.triangles.size());
+				//trianglesStorage->setData(scene.triangles.data(), sizeof(RT::Triangle) * scene.triangles.size());
+				 
+				meshWrappersStorage->setData(rtScene.meshWrappers.data(), sizeof(MeshWrapper) * rtScene.meshWrappers.size());
 			}
 		}
 		ImGui::End();
@@ -534,20 +515,21 @@ private:
 		{
 			case 1:
 			{
+				LOG_WARN("Scene does not work. Will be fixed soon");
 				//**// SCENE 1 //**//
 				scene.materials.emplace_back(RT::Material{ { 1.0f, 1.0f, 1.0f }, 0.0, { 1.0f, 1.0f, 1.0f }, 0.0f, 0.0f, 0.0f, 1.0f, -1 });
 				scene.materials.emplace_back(RT::Material{ { 0.0f, 0.0f, 1.0f }, 0.0, { 1.0f, 1.0f, 1.0f }, 0.0f, 0.0f, 0.0f, 1.0f, -1 });
 				scene.materials.emplace_back(RT::Material{ { 1.0f, 0.0f, 0.0f }, 0.0, { 1.0f, 1.0f, 1.0f }, 0.0f, 0.0f, 0.0f, 1.0f, -1 });
 
-				scene.spheres.emplace_back(RT::Sphere{ { 0.0f, 0.0f, -10007.0f }, 10000.0f, 0 });
-				scene.spheres.emplace_back(RT::Sphere{ { 0.0f, 0.0f, 10003.0f }, 10000.0f, 0 });
-				scene.spheres.emplace_back(RT::Sphere{ { 0.0f, -10001.0f, -2.0f }, 10000.0f, 0 });
-				scene.spheres.emplace_back(RT::Sphere{ { 0.0f, 10009.0f, -2.0f }, 10000.0f, 0 });
-				scene.spheres.emplace_back(RT::Sphere{ { -10005.0f, 0.0f, -2.0f }, 10000.0f, 1 });
-				scene.spheres.emplace_back(RT::Sphere{ { 10005.0f, 0.0f, -2.0f }, 10000.0f, 2 });
+				rtScene.spheres.emplace_back(Sphere{ { 0.0f, 0.0f, -10007.0f }, 10000.0f, 0 });
+				rtScene.spheres.emplace_back(Sphere{ { 0.0f, 0.0f, 10003.0f }, 10000.0f, 0 });
+				rtScene.spheres.emplace_back(Sphere{ { 0.0f, -10001.0f, -2.0f }, 10000.0f, 0 });
+				rtScene.spheres.emplace_back(Sphere{ { 0.0f, 10009.0f, -2.0f }, 10000.0f, 0 });
+				rtScene.spheres.emplace_back(Sphere{ { -10005.0f, 0.0f, -2.0f }, 10000.0f, 1 });
+				rtScene.spheres.emplace_back(Sphere{ { 10005.0f, 0.0f, -2.0f }, 10000.0f, 2 });
 
 				scene.materials.emplace_back(RT::Material{ { 1.0f, 1.0f, 1.0f }, 0.0, { 1.0f, 1.0f, 1.0f }, 0.0f, 0.0f, 1.0f, 1.0f, -1 });
-				scene.spheres.emplace_back(RT::Sphere{ { 0.0f, 18.8f, -2.0f }, 10.0f, 3 });
+				rtScene.spheres.emplace_back(Sphere{ { 0.0f, 18.8f, -2.0f }, 10.0f, 3 });
 				//**// SCENE 1 //**//
 			
 				break;
@@ -555,6 +537,7 @@ private:
 
 			case 2:
 			{
+				LOG_WARN("Scene does not work. Will be fixed soon");
 				//**// SCENE 2 //**//
 				textures.emplace_back(RT::Texture::create(assetDir / "textures" / "templategrid_albedo.png"));
 				textures[0]->transition(RT::Texture::Access::Read, RT::Texture::Layout::General);
@@ -564,10 +547,10 @@ private:
 				scene.materials.emplace_back(RT::Material{ { 0.8f, 0.6f, 0.5f }, 0.0, { 0.8f, 0.6f, 0.5f }, 0.0f, 0.0f, 1.0f, 1.0f, -1 });
 				scene.materials.emplace_back(RT::Material{ { 0.4f, 0.3f, 0.8f }, 0.0, { 0.8f, 0.6f, 0.5f }, 0.0f, 0.0f, 0.0f, 1.0f, -1 });
 
-				scene.spheres.emplace_back(RT::Sphere{ { 0.0f, 0.0f, -2.0f }, 1.0f, 0 });
+				rtScene.spheres.emplace_back(Sphere{ { 0.0f, 0.0f, -2.0f }, 1.0f, 0 });
 				
 				//scene.spheres.emplace_back(RT::Sphere{ { 0.0f, -2001.0f, -2.0f }, 2000.0f, 1 });
-				scene.triangles.emplace_back(RT::Triangle{
+				rtScene.triangles.emplace_back(RT::Triangle{
 					{ -50.0f, -1.0f, -50.0f }, 0.0,
 					{ -50.0f, -1.0f,  50.0f }, 0.0,
 					{  50.0f, -1.0f, -50.0f }, 0.0,
@@ -575,7 +558,7 @@ private:
 					{  0.0, 10.0 },
 					{ 10.0,  0.0 },
 					1, 0.0 });
-				scene.triangles.emplace_back(RT::Triangle{
+				rtScene.triangles.emplace_back(RT::Triangle{
 					{  50.0f, -1.0f,  50.0f }, 0.0,
 					{  50.0f, -1.0f, -50.0f }, 0.0,
 					{ -50.0f, -1.0f,  50.0f }, 0.0,
@@ -584,8 +567,21 @@ private:
 					{  0.0, 10.0 },
 					1, 0.0 });
 
-				scene.spheres.emplace_back(RT::Sphere{ {  2.5f, 0.0f, -2.0f }, 1.0f, 2 });
-				scene.spheres.emplace_back(RT::Sphere{ { -2.5f, 0.0f, -2.0f }, 1.0f, 3 });
+				rtScene.spheres.emplace_back(Sphere{ {  2.5f, 0.0f, -2.0f }, 1.0f, 2 });
+				rtScene.spheres.emplace_back(Sphere{ { -2.5f, 0.0f, -2.0f }, 1.0f, 3 });
+
+				//auto pcg_hash = [](uint32_t input) -> uint32_t
+				//{
+				//	uint32_t state = input * 747796405u + 2891336453u;
+				//	uint32_t word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+				//	return (word >> 22u) ^ word;
+				//};
+
+				//auto FastRandom = [&pcg_hash](uint32_t& seed) -> float
+				//{
+				//	seed = pcg_hash(seed);
+				//	return (float)seed / std::numeric_limits<uint32_t>::max();
+				//}
 
 				//uint32_t seed = 93262352u;
 				//auto getRandPos = [&seed](float rad) { return FastRandom(seed) * rad - rad / 2; };
@@ -614,6 +610,7 @@ private:
 
 			case 3:
 			{
+				LOG_WARN("Scene does not work. Will be fixed soon");
 				//**// SCENE 3 //**//
 				scene.materials.emplace_back(RT::Material{ { 1.0f, 1.0f, 1.0f }, 0.0, { 1.0f, 1.0f, 1.0f }, 0.0f, 0.0f, 0.0f, 1.0f, -1 });
 				scene.materials.emplace_back(RT::Material{ { 1.0f, 0.0f, 0.0f }, 0.0, { 1.0f, 1.0f, 1.0f }, 0.0f, 0.0f, 0.0f, 1.0f, -1 });
@@ -621,7 +618,7 @@ private:
 				scene.materials.emplace_back(RT::Material{ { 1.0f, 1.0f, 1.0f }, 0.0, { 1.0f, 1.0f, 1.0f }, 0.0f, 0.0f, 8.0f, 1.0f, -1 });
 
 				// bottom
-				scene.triangles.emplace_back(RT::Triangle{
+				rtScene.triangles.emplace_back(RT::Triangle{
 					{  3.0f, 0.0f,  1.0f }, 0.0,
 					{  3.0f, 0.0f, -5.0f }, 0.0,
 					{ -3.0f, 0.0f, -5.0f }, 0.0,
@@ -629,7 +626,7 @@ private:
 					{ 0.0, 0.0 },
 					{ 0.0, 0.0 },
 					0, 0.0 });
-				scene.triangles.emplace_back(RT::Triangle{
+				rtScene.triangles.emplace_back(RT::Triangle{
 					{  3.0f, 0.0f,  1.0f }, 0.0,
 					{ -3.0f, 0.0f, -5.0f }, 0.0,
 					{ -3.0f, 0.0f,  1.0f }, 0.0,
@@ -639,7 +636,7 @@ private:
 					0, 0.0 });
 
 				// top
-				scene.triangles.emplace_back(RT::Triangle{
+				rtScene.triangles.emplace_back(RT::Triangle{
 					{  3.0f, 6.0f, -5.0f }, 0.0,
 					{  3.0f, 6.0f,  1.0f }, 0.0,
 					{ -3.0f, 6.0f, -5.0f }, 0.0,
@@ -647,7 +644,7 @@ private:
 					{ 0.0, 0.0 },
 					{ 0.0, 0.0 },
 					0, 0.0 });
-				scene.triangles.emplace_back(RT::Triangle{
+				rtScene.triangles.emplace_back(RT::Triangle{
 					{ -3.0f, 6.0f, -5.0f }, 0.0,
 					{  3.0f, 6.0f,  1.0f }, 0.0,
 					{ -3.0f, 6.0f,  1.0f }, 0.0,
@@ -657,7 +654,7 @@ private:
 					0, 0.0 });
 
 				// back
-				scene.triangles.emplace_back(RT::Triangle{
+				rtScene.triangles.emplace_back(RT::Triangle{
 					{  3.0f, 0.0f, -5.0f }, 0.0,
 					{  3.0f, 6.0f, -5.0f }, 0.0,
 					{ -3.0f, 0.0f, -5.0f }, 0.0,
@@ -665,7 +662,7 @@ private:
 					{ 0.0, 0.0 },
 					{ 0.0, 0.0 },
 					0, 0.0 });
-				scene.triangles.emplace_back(RT::Triangle{
+				rtScene.triangles.emplace_back(RT::Triangle{
 					{ -3.0f, 0.0f, -5.0f }, 0.0,
 					{  3.0f, 6.0f, -5.0f }, 0.0,
 					{ -3.0f, 6.0f, -5.0f }, 0.0,
@@ -675,7 +672,7 @@ private:
 					0, 0.0 });
 
 				// front
-				scene.triangles.emplace_back(RT::Triangle{
+				rtScene.triangles.emplace_back(RT::Triangle{
 					{  3.0f, 6.0f, 1.0f }, 0.0,
 					{  3.0f, 0.0f, 1.0f }, 0.0,
 					{ -3.0f, 0.0f, 1.0f }, 0.0,
@@ -683,7 +680,7 @@ private:
 					{ 0.0, 0.0 },
 					{ 0.0, 0.0 },
 					0, 0.0 });
-				scene.triangles.emplace_back(RT::Triangle{
+				rtScene.triangles.emplace_back(RT::Triangle{
 					{  3.0f, 6.0f, 1.0f }, 0.0,
 					{ -3.0f, 0.0f, 1.0f }, 0.0,
 					{ -3.0f, 6.0f, 1.0f }, 0.0,
@@ -693,7 +690,7 @@ private:
 					0, 0.0 });
 
 				// left
-				scene.triangles.emplace_back(RT::Triangle{
+				rtScene.triangles.emplace_back(RT::Triangle{
 					{ 3.0f, 0.0f, -5.0f }, 0.0,
 					{ 3.0f, 0.0f,  1.0f }, 0.0,
 					{ 3.0f, 6.0f, -5.0f }, 0.0,
@@ -701,7 +698,7 @@ private:
 					{ 0.0, 0.0 },
 					{ 0.0, 0.0 },
 					1, 0.0 });
-				scene.triangles.emplace_back(RT::Triangle{
+				rtScene.triangles.emplace_back(RT::Triangle{
 					{ 3.0f, 0.0f,  1.0f }, 0.0,
 					{ 3.0f, 6.0f,  1.0f }, 0.0,
 					{ 3.0f, 6.0f, -5.0f }, 0.0,
@@ -711,7 +708,7 @@ private:
 					1, 0.0 });
 
 				// right
-				scene.triangles.emplace_back(RT::Triangle{
+				rtScene.triangles.emplace_back(RT::Triangle{
 					{ -3.0f, 0.0f, -5.0f }, 0.0,
 					{ -3.0f, 6.0f, -5.0f }, 0.0,
 					{ -3.0f, 0.0f,  1.0f }, 0.0,
@@ -719,7 +716,7 @@ private:
 					{ 0.0, 0.0 },
 					{ 0.0, 0.0 },
 					2, 0.0 });
-				scene.triangles.emplace_back(RT::Triangle{
+				rtScene.triangles.emplace_back(RT::Triangle{
 					{ -3.0f, 0.0f,  1.0f }, 0.0,
 					{ -3.0f, 6.0f, -5.0f }, 0.0,
 					{ -3.0f, 6.0f,  1.0f }, 0.0,
@@ -729,7 +726,7 @@ private:
 					2, 0.0 });
 
 				// light
-				scene.triangles.emplace_back(RT::Triangle{
+				rtScene.triangles.emplace_back(RT::Triangle{
 					{  1.0f, 5.9f, -3.0f }, 0.0,
 					{  1.0f, 5.9f, -1.0f }, 0.0,
 					{ -1.0f, 5.9f, -3.0f }, 0.0,
@@ -737,7 +734,7 @@ private:
 					{ 0.0, 0.0 },
 					{ 0.0, 0.0 },
 					3, 0.0 });
-				scene.triangles.emplace_back(RT::Triangle{
+				rtScene.triangles.emplace_back(RT::Triangle{
 					{ -1.0f, 5.9f, -3.0f }, 0.0,
 					{  1.0f, 5.9f, -1.0f }, 0.0,
 					{ -1.0f, 5.9f, -1.0f }, 0.0,
@@ -755,8 +752,10 @@ private:
 
 				scene.materials.emplace_back(RT::Material{ { 1.0f, 1.0f, 1.0f }, 0.0, { 1.0f, 1.0f, 1.0f }, 0.0f, 0.0f, 0.0f, 1.0f, -1 });
 
-				mesh.load(assetDir / "models" / "tinyStanfordDragon.glb");
-				scene.triangles = mesh.getModel();
+				scene.meshes.emplace_back();
+				scene.meshes[0].load(assetDir / "models" / "tinyStanfordDragon.glb");
+				rtScene.addMesh(scene.meshes[0]);
+
 				break;
 			}
 		}
@@ -770,7 +769,7 @@ private:
 
 	RT::Camera camera;
 	RT::Scene scene;
-	RT::Mesh mesh;
+	RTScene rtScene;
 
 	RT::Local<RT::Texture> accumulationTexture;
 	RT::Local<RT::Texture> outTexture;
@@ -782,6 +781,7 @@ private:
 	RT::Local<RT::Uniform> materialsStorage;
 	RT::Local<RT::Uniform> spheresStorage;
 	RT::Local<RT::Uniform> trianglesStorage;
+	RT::Local<RT::Uniform> meshWrappersStorage;
 
 	RT::Local<RT::Pipeline> pipeline;
 
@@ -798,6 +798,9 @@ private:
 		int32_t materialsCount = 0;
 		int32_t spheresCount = 0;
 		int32_t trianglesCount = 0;
+		int32_t meshesCount = 0;
+		int32_t texturesCount = 0;
+		float padding_1[1];
 	} infoUniform;
 
 	// TODO: return renderPass and graphics pipeline for post processing

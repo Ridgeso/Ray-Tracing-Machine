@@ -18,6 +18,9 @@
       <Project>{9efa1ff9-cc26-45bc-9ff9-ffb4a52fd5a8}</Project>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\RTScene.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>

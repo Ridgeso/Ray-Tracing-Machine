@@ -163,7 +163,7 @@ namespace RT::Vulkan
     {
         bindDescriptors<VK_PIPELINE_BIND_POINT_COMPUTE>();
         vkCmdBindPipeline(Context::frameCmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
-        const auto dispatchGroup = groups / group + groups % group;
+        const auto dispatchGroup = (groups + group - 1u) / group;
         vkCmdDispatch(Context::frameCmd, dispatchGroup.x, dispatchGroup.y, 1);
     }
 

@@ -20,7 +20,8 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="imgui.ini" />
-    <None Include="assets\shaders\RayTracing.shader" />
+    <ClInclude Include="src\RTScene.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

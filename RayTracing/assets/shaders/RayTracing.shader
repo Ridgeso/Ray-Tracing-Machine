@@ -25,6 +25,8 @@ layout(std140, set = 0, binding = 3) uniform Amounts
     int MaterialsCount;
     int SpheresCount;
     int TrianglesCount;
+    int MeshesCount;
+    int TexturesCount;
 };
 
 layout(std140, set = 0, binding = 4) uniform CameraBuffer
@@ -55,6 +57,12 @@ struct Sphere
     int MaterialId;
 };
 
+struct Box
+{
+    vec3 leftBottomFront;
+    vec3 rightTopBack;
+};
+
 struct Triangle
 {
     vec3 A;
@@ -63,7 +71,18 @@ struct Triangle
     vec2 uvA;
     vec2 uvB;
     vec2 uvC;
+};
+
+struct Mesh
+{
+    Box volume;
+    uvec2 bufferRegion;
     int MaterialId;
+};
+
+struct MeshInstance
+{
+    int MeshId;
 };
 
 layout(std140, set = 1, binding = 0) readonly buffer MaterialsBuffer
@@ -81,7 +100,12 @@ layout(std140, set = 1, binding = 2) readonly buffer TriangleBuffer
     Triangle Triangles[];
 };
 
-layout(set = 1, binding = 3) uniform sampler2D Textures[];
+layout(std140, set = 1, binding = 3) readonly buffer MeshBuffer
+{
+    Mesh Meshes[];
+};
+
+layout(set = 1, binding = 4) uniform sampler2D Textures[];
 
 uint PCGhash(in uint random)
 {
@@ -189,7 +213,7 @@ Payload miss(in Ray ray)
     return payload;
 }
 
-Payload closestHit(in Ray ray, in float closestDistance, in int closestObject, in bool isSphere)
+Payload closestHit(in Ray ray, in float closestDistance, in int closestObject, in bool isSphere, int closestMesh)
 {
     Payload payload;
     payload.HitPosition = ray.Origin + closestDistance * ray.Direction;
@@ -224,7 +248,7 @@ Payload closestHit(in Ray ray, in float closestDistance, in int closestObject, i
 
         payload.HitUV = texUV;
 
-        payload.HitMaterial = Triangles[closestObject].MaterialId;
+        payload.HitMaterial = Meshes[closestMesh].MaterialId;
     }
 
     return payload;
@@ -247,9 +271,26 @@ HitInfo triangleHit(in Ray ray, in Triangle triangle)
     float w = 1 - u - v;
     
     HitInfo hitInfo;
-    hitInfo.didHit = determinant > FLT_EPS && t >= 0 && u >= 0 && v >= 0 && w >= 0;
+    hitInfo.didHit = determinant > FLT_EPS && all(greaterThanEqual(vec4(t, u, v, w), vec4(0.0)));
     // hitInfo.normal = normalize(triangle.normalA * w + triangle.normalB * u + triangle.normalC * v);
     hitInfo.distance = t;
+    return hitInfo;
+}
+
+HitInfo hitBox(in Ray ray, in Box box)
+{
+    vec3 lb = (box.leftBottomFront - ray.Origin) / ray.Direction;
+    vec3 rt = (box.rightTopBack - ray.Origin) / ray.Direction;
+
+    vec3 tMin = min(lb, rt);
+    vec3 tMax = max(lb, rt);
+
+    float tNear = max(max(tMin.x, tMin.y), tMin.z);
+    float tFar = min(min(tMax.x, tMax.y), tMax.z);
+
+    HitInfo hitInfo;
+    hitInfo.didHit = 0 <= tFar && tNear <= tFar;
+    hitInfo.distance = tNear;
     return hitInfo;
 }
 
@@ -286,6 +327,7 @@ HitInfo sphereHit(in Ray ray, in Sphere sphere)
 Payload bounceRay(in Ray ray)
 {
     float closestDistance = FLT_MAX;
+    int closestMesh = -1;
     int closestObject = -1;
     bool isSphere = false;
     
@@ -300,21 +342,32 @@ Payload bounceRay(in Ray ray)
         }
     }
     
-    for (int triangleId = 0; triangleId < TrianglesCount; triangleId++)
+    for (int meshId = 0; meshId < MeshesCount; meshId++)
     {
-        HitInfo hitInfo = triangleHit(ray, Triangles[triangleId]);
-        if (hitInfo.didHit && hitInfo.distance < closestDistance)
+        HitInfo meshHit = hitBox(ray, Meshes[meshId].volume);
+
+        if (!meshHit.didHit || closestDistance <= meshHit.distance)
         {
-            closestDistance = hitInfo.distance;
-            closestObject = triangleId;
-            isSphere = false;
+            continue;
+        }
+
+        for (uint triangleId = Meshes[meshId].bufferRegion.x; triangleId <= Meshes[meshId].bufferRegion.y; triangleId++)
+        {
+            HitInfo hitInfo = triangleHit(ray, Triangles[triangleId]);
+            if (hitInfo.didHit && hitInfo.distance < closestDistance)
+            {
+                closestDistance = hitInfo.distance;
+                closestMesh = meshId;
+                closestObject = int(triangleId);
+                isSphere = false;
+            }
         }
     }
     
     if (closestObject == -1)
         return miss(ray);
     
-    return closestHit(ray, closestDistance, closestObject, isSphere);
+    return closestHit(ray, closestDistance, closestObject, isSphere, closestMesh);
 }
 
 void accumulateColor(inout Pixel pixel, in Payload payload)
@@ -421,10 +474,17 @@ vec3 traceRay(in Ray ray)
 
 void main()
 {
+    ivec2 index = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 screenSize = imageSize(AccumulationTexture);
+    if (any(greaterThan(index, screenSize)))
+    {
+        return;
+    }
+
     const vec3 rightVec = Camera.invView[0].xyz;
     const vec3 upVec = Camera.invView[1].xyz;
 
-    vec2 pixelCoord = gl_GlobalInvocationID.xy / Resolution;
+    vec2 pixelCoord = vec2(index) / Resolution;
     vec4 coord = Camera.invProjection * (2.0 * vec4(pixelCoord, 1.0, 1.0) - 1.0);
 
     vec3 direction = vec3(Camera.invView * vec4(coord.xyz / coord.w, 0)) * Camera.focusDistance;
@@ -434,7 +494,7 @@ void main()
 
     for (uint frame = 1; frame <= MaxFrames; frame++)
     {
-        Global.seed = uint(gl_GlobalInvocationID.y * Resolution.x + gl_GlobalInvocationID.x) + frame * FrameIndex * 735529;
+        Global.seed = uint(index.y * Resolution.x + index.x) + frame * FrameIndex * 735529;
         
         vec2 focusJitter = randomCirclePoint(Global.seed) / Resolution * Camera.defocusStrength;
         vec2 deviationJitter = randomCirclePoint(Global.seed) / Resolution * Camera.blurStrength;
@@ -451,12 +511,12 @@ void main()
     incomingLight = incomingLight / float(MaxFrames);
     if (FrameIndex != 1)
     {
-        incomingLight += imageLoad(AccumulationTexture, ivec2(gl_GlobalInvocationID.xy)).rgb;
+        incomingLight += imageLoad(AccumulationTexture, index).rgb;
     }
     
     vec3 outColor = incomingLight / float(FrameIndex);
     // outColor = sqrt(outColor);
     
-    imageStore(AccumulationTexture, ivec2(gl_GlobalInvocationID.xy), vec4(incomingLight, 1.0));
-    imageStore(OutTexture, ivec2(gl_GlobalInvocationID.xy), vec4(outColor, 1.0));
+    imageStore(AccumulationTexture, index, vec4(incomingLight, 1.0));
+    imageStore(OutTexture, index, vec4(outColor, 1.0));
 }

@@ -22,6 +22,12 @@ namespace RT
         return {};
     }
 
+    Box UnknownLoader::buildVolume() const
+    {
+        RT_LOG_ERROR("Cannot build Volume from unknown format");
+        return {};
+    }
+
     /*
         GltfLoader impl
     */
@@ -138,6 +144,42 @@ namespace RT
         return rtModel;
     }
 
+    Box GltfLoader::buildVolume() const
+    {
+        auto box = Box{};
+
+        for (const auto& mesh : model.meshes)
+        {
+            const auto primitive = std::find_if(
+                mesh.primitives.begin(),
+                mesh.primitives.end(),
+                [](const auto& primitive) { return TINYGLTF_MODE_TRIANGLES == primitive.mode; });
+            
+            if (mesh.primitives.end() == primitive)
+            {
+                RT_LOG_WARN("Could not find volue of: {}", mesh.name);
+                continue;
+            }
+
+            auto primAccessorIdx = primitive->attributes.find("POSITION");
+            if (primitive->attributes.end() == primAccessorIdx)
+            {
+                RT_LOG_WARN("Could not load mesh: {}. No POSITION found", mesh.name);
+                continue;
+            }
+
+            const auto& primAccessor = model.accessors[primAccessorIdx->second];
+
+            auto vMin = glm::make_vec3(primAccessor.minValues.data());
+            auto vMax = glm::make_vec3(primAccessor.maxValues.data());
+
+            box.leftBottomFront = glm::min(box.leftBottomFront, glm::vec3{vMin});
+            box.rightTopBack = glm::max(box.rightTopBack, glm::vec3{vMax});
+        }
+
+        return box;
+    }
+
     bool GltfLoader::isBinGltf(const std::filesystem::path& path)
     {
         return ".glb" == path.extension();
@@ -217,6 +259,11 @@ namespace RT
     std::vector<Triangle> MeshLoader::buildModel() const
     {
         return std::visit([](const auto& loader) { return loader.buildModel(); }, loader);
+    }
+    
+    Box MeshLoader::buildVolume() const
+    {
+        return std::visit([](const auto& loader) { return loader.buildVolume(); }, loader);
     }
 
 }
