@@ -24,6 +24,7 @@ layout(std140, set = 0, binding = 3) uniform Amounts
     vec2 Resolution;
     int MaterialsCount;
     int SpheresCount;
+    int BVHCount;
     int TrianglesCount;
     int MeshesCount;
     int TexturesCount;
@@ -61,6 +62,7 @@ struct Box
 {
     vec3 leftBottomFront;
     vec3 rightTopBack;
+    uvec2 bufferRegion;
 };
 
 struct Triangle
@@ -75,8 +77,8 @@ struct Triangle
 
 struct Mesh
 {
-    Box volume;
-    uvec2 bufferRegion;
+    uint BVHRoot;
+    uint ModelRoot;
     int MaterialId;
 };
 
@@ -95,17 +97,22 @@ layout(std140, set = 1, binding = 1) readonly buffer SpheresBuffer
     Sphere Spheres[];
 };
 
-layout(std140, set = 1, binding = 2) readonly buffer TriangleBuffer
+layout(std140, set = 1, binding = 2) readonly buffer BoxBuffer
+{
+    Box Boxes[];
+};
+
+layout(std140, set = 1, binding = 3) readonly buffer TriangleBuffer
 {
     Triangle Triangles[];
 };
 
-layout(std140, set = 1, binding = 3) readonly buffer MeshBuffer
+layout(std140, set = 1, binding = 4) readonly buffer MeshBuffer
 {
     Mesh Meshes[];
 };
 
-layout(set = 1, binding = 4) uniform sampler2D Textures[];
+layout(set = 1, binding = 5) uniform sampler2D Textures[];
 
 uint PCGhash(in uint random)
 {
@@ -249,6 +256,7 @@ Payload closestHit(in Ray ray, in float closestDistance, in int closestObject, i
         payload.HitUV = texUV;
 
         payload.HitMaterial = Meshes[closestMesh].MaterialId;
+        // payload.HitNormal = normalize(vec3(1.0));
     }
 
     return payload;
@@ -292,6 +300,56 @@ HitInfo hitBox(in Ray ray, in Box box)
     hitInfo.didHit = 0 <= tFar && tNear <= tFar;
     hitInfo.distance = tNear;
     return hitInfo;
+}
+
+HitInfo bvhTraverse(in Ray ray, in uint bvhRoot, in uint modelRoot, out int closestObject)
+{
+    HitInfo meshHit = hitBox(ray, Boxes[bvhRoot]);
+    if (!meshHit.didHit)
+    {
+        return meshHit;
+    }
+
+    HitInfo returnInfo;
+    returnInfo.distance = FLT_MAX;
+    returnInfo.didHit = false;
+
+    const uint maxDepth = 32u;
+    uint stack[maxDepth];
+    uint stackIdx = 0u;
+
+    stack[stackIdx] = bvhRoot;
+    stackIdx++;
+
+    while (stackIdx > 0u)
+    {
+        stackIdx--;
+        Box box = Boxes[stack[stackIdx]];
+
+        bool isLeaf = box.bufferRegion.y > 0u;
+
+        if (isLeaf)
+        {
+            for (uint triangleId = box.bufferRegion.x; triangleId <= box.bufferRegion.y; triangleId++)
+            {
+                HitInfo hitInfo = triangleHit(ray, Triangles[modelRoot + triangleId]);
+                if (hitInfo.didHit && hitInfo.distance < returnInfo.distance)
+                {
+                    returnInfo.distance = hitInfo.distance;
+                    closestObject = int(triangleId);
+                    returnInfo.didHit = true;
+                }
+            }
+        }
+        else
+        {
+
+        }
+    }
+
+    // returnInfo.distance = 1.0;
+    // returnInfo.didHit = true;
+    return returnInfo;
 }
 
 HitInfo sphereHit(in Ray ray, in Sphere sphere)
@@ -344,23 +402,15 @@ Payload bounceRay(in Ray ray)
     
     for (int meshId = 0; meshId < MeshesCount; meshId++)
     {
-        HitInfo meshHit = hitBox(ray, Meshes[meshId].volume);
+        int cloObject = -1;
+        HitInfo meshHit = bvhTraverse(ray, Meshes[meshId].BVHRoot, Meshes[meshId].ModelRoot, cloObject);
 
-        if (!meshHit.didHit || closestDistance <= meshHit.distance)
+        if (meshHit.didHit && meshHit.distance < closestDistance)
         {
-            continue;
-        }
-
-        for (uint triangleId = Meshes[meshId].bufferRegion.x; triangleId <= Meshes[meshId].bufferRegion.y; triangleId++)
-        {
-            HitInfo hitInfo = triangleHit(ray, Triangles[triangleId]);
-            if (hitInfo.didHit && hitInfo.distance < closestDistance)
-            {
-                closestDistance = hitInfo.distance;
-                closestMesh = meshId;
-                closestObject = int(triangleId);
-                isSphere = false;
-            }
+            closestDistance = meshHit.distance;
+            closestMesh = meshId;
+            closestObject = cloObject;
+            isSphere = false;
         }
     }
     

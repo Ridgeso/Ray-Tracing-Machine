@@ -18,9 +18,15 @@
     <ClCompile Include="src\RayTracing.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\BVH.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\RTScene.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\BVH.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -62,6 +62,9 @@ public:
 		spheresStorage = RT::Uniform::create(RT::UniformType::Storage, rtScene.spheres.size() > 0 ? sizeof(Sphere) * rtScene.spheres.size() : 1);
 		spheresStorage->setData(rtScene.spheres.data(), sizeof(Sphere) * rtScene.spheres.size());
 		
+		bvhStorage = RT::Uniform::create(RT::UniformType::Storage, rtScene.boundingBoxes.size() > 0 ? sizeof(BoundingBox) * rtScene.boundingBoxes.size() : 1);
+		bvhStorage->setData(rtScene.boundingBoxes.data(), sizeof(BoundingBox) * rtScene.boundingBoxes.size());
+		
 		trianglesStorage = RT::Uniform::create(RT::UniformType::Storage, rtScene.triangles.size() > 0 ? sizeof(RT::Triangle) * rtScene.triangles.size() : 1);
 		trianglesStorage->setData(rtScene.triangles.data(), sizeof(RT::Triangle) * rtScene.triangles.size());
 
@@ -82,6 +85,7 @@ public:
 				{ .type = RT::UniformType::Storage, .count = 1 },
 				{ .type = RT::UniformType::Storage, .count = 1 },
 				{ .type = RT::UniformType::Storage, .count = 1 },
+				{ .type = RT::UniformType::Storage, .count = 1 },
 				{ .type = RT::UniformType::Sampler, .count = 0 < (uint32_t)textures.size() ? (uint32_t)textures.size() : 1 } } }
 		};
 		pipelineSpec.attachmentFormats = {};
@@ -94,11 +98,12 @@ public:
 		pipeline->updateSet(0, 0, 4, *cameraUniform);
 		pipeline->updateSet(1, 0, 0, *materialsStorage);
 		pipeline->updateSet(1, 0, 1, *spheresStorage);
-		pipeline->updateSet(1, 0, 2, *trianglesStorage);
-		pipeline->updateSet(1, 0, 3, *meshWrappersStorage);
+		pipeline->updateSet(1, 0, 2, *bvhStorage);
+		pipeline->updateSet(1, 0, 3, *trianglesStorage);
+		pipeline->updateSet(1, 0, 4, *meshWrappersStorage);
 		if (0 < textures.size())
 		{
-			pipeline->updateSet(1, 0, 4, textures);
+			pipeline->updateSet(1, 0, 5, textures);
 		}
 
 		registerEvents();
@@ -113,6 +118,7 @@ public:
 		cameraUniform.reset();
 		materialsStorage.reset();
 		spheresStorage.reset();
+		bvhStorage.reset();
 		trianglesStorage.reset();
 		meshWrappersStorage.reset();
 
@@ -780,6 +786,7 @@ private:
 	RT::Local<RT::Uniform> ammountsUniform;
 	RT::Local<RT::Uniform> materialsStorage;
 	RT::Local<RT::Uniform> spheresStorage;
+	RT::Local<RT::Uniform> bvhStorage;
 	RT::Local<RT::Uniform> trianglesStorage;
 	RT::Local<RT::Uniform> meshWrappersStorage;
 
@@ -797,10 +804,10 @@ private:
 		glm::vec2 resolution = {};
 		int32_t materialsCount = 0;
 		int32_t spheresCount = 0;
+		int32_t bvhCount = 0;
 		int32_t trianglesCount = 0;
 		int32_t meshesCount = 0;
 		int32_t texturesCount = 0;
-		float padding_1[1];
 	} infoUniform;
 
 	// TODO: return renderPass and graphics pipeline for post processing
