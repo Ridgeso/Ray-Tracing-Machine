@@ -8,7 +8,6 @@ struct Node
 	glm::vec3 vMin;
 	glm::vec3 vMax;
 	glm::vec3 center;
-	//uint32_t index;
 };
 
 #pragma pack(push, 1)
@@ -25,17 +24,54 @@ struct BoundingBox
 
 class BVH
 {
+private:
+	struct Split
+	{
+		float cost;
+		float position;
+		uint8_t axis;
+	};
+
+public:
+	struct Stats
+	{
+		float buildTime;
+		uint32_t triCnt;
+		uint32_t nodeCnt;
+		uint32_t leafCnt;
+		glm::uvec2 leafDepth;
+		float leafDepthSum;
+		glm::uvec2 leafTris;
+		float leafTrisSum;
+
+		float meanDepth() const { return leafDepthSum / leafCnt; }
+		float meanTris() const { return leafTrisSum / leafCnt; }
+		void print() const;
+	} stats = { 0, 0, 0, 0, { 100, 0 }, 0, { 1000000, 0 }, 0 };
+
 public:
 	BVH(const RT::Mesh& mesh);
 
+	std::vector<RT::Triangle> buildTriangles() const;
 	const std::vector<BoundingBox>& getHierarchy() const { return hierarchy; }
 	
 private:
-	void split(const uint32_t parentIdx, glm::uvec2 bufferRegion, const uint8_t depth = maxDepth);
+	void buildNodes();
+	void construct();
+	void split(const uint32_t parentIdx, const glm::uvec2 bufferRegion, const uint8_t depth = 0u);
+	Split splitAxis(const BoundingBox& box, const glm::uvec2 bufferRegion) const;
+	float evaluateCost(const uint8_t axis, const float position, const glm::uvec2 bufferRegion) const;
 
 private:
+	const RT::Mesh& mesh;
+	std::vector<uint32_t> indices = {};
 	std::vector<Node> nodes = {};
 	std::vector<BoundingBox> hierarchy = {};
 
-	static constexpr uint8_t maxDepth = 0u;
+	static constexpr uint8_t maxDepth = 32u;
+	static constexpr BoundingBox emptyBox = {
+		glm::vec3{std::numeric_limits<float>::max()}, 0.0f,
+		glm::vec3{std::numeric_limits<float>::lowest()}, 0.0f,
+		glm::uvec2{0u}
+	};
 };

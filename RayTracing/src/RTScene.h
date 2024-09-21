@@ -25,16 +25,25 @@ struct MeshWrapper
 
 struct RTScene
 {
-	std::vector<RT::Triangle> triangles;
 	std::vector<Sphere> spheres;
 	std::vector<BoundingBox> boundingBoxes;
+	std::vector<RT::Triangle> triangles;
 	std::vector<MeshWrapper> meshWrappers;
 
 	void addMesh(const RT::Mesh& mesh)
 	{
-		meshWrappers.emplace_back(MeshWrapper{ (uint32_t)boundingBoxes.size(), (uint32_t)triangles.size(), mesh.materialId });
-		triangles.insert(triangles.end(), mesh.getModel().begin(), mesh.getModel().end());
 		auto bvh = BVH(mesh);
-		boundingBoxes.insert(boundingBoxes.end(), bvh.getHierarchy().begin(), bvh.getHierarchy().end());
+
+		auto trianglesOffset = triangles.size();
+		auto boxesOffset = boundingBoxes.size();
+		const auto& bvhHierarchy = bvh.getHierarchy();
+		auto bvhModel = bvh.buildTriangles();
+
+		boundingBoxes.insert(boundingBoxes.end(), bvhHierarchy.begin(), bvhHierarchy.end());
+		triangles.insert(triangles.end(), bvhModel.begin(), bvhModel.end());
+		meshWrappers.emplace_back(MeshWrapper{ (uint32_t)boxesOffset, (uint32_t)trianglesOffset, mesh.materialId });
+
+		LOG_DEBUG("Mesh BVH build:");
+		bvh.stats.print();
 	}
 };

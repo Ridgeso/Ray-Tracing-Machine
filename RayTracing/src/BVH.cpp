@@ -1,5 +1,6 @@
 #include "BVH.h"
 
+#include "Engine/Core/Time.h"
 #include "Engine/Core/Log.h"
 
 namespace
@@ -11,74 +12,121 @@ namespace
 		box.vMax = glm::max(box.vMax, node.vMax);
 	}
 
-	int8_t splitAxis(const BoundingBox& box)
+	float area(const BoundingBox& box)
 	{
-		auto size = box.vMax - box.vMin;
-		int8_t axis = 0;
-		if (size.x < size.y)
+		
+		if (glm::any(glm::greaterThan(box.vMin, box.vMax)))
 		{
-			axis = 1;
+			return 0.0f;
 		}
-		if (size[axis] < size.z)
-		{
-			axis = 2;
-		}
-		return axis;
+		auto size = box.vMin - box.vMax;
+		auto halfArea = size.x * size.y + size.y * size.z + size.x * size.z;
+		return halfArea * 2.0f;
+	}
+
+	float calculateCost(const BoundingBox& box, const float primitiveCost)
+	{
+		return area(box) * primitiveCost;
 	}
 
 }
 
 BVH::BVH(const RT::Mesh& mesh)
+	: mesh{mesh}
+{
+	auto buildTimer = RT::Timer{};
+	
+	buildNodes();
+	construct();
+
+	stats.buildTime = buildTimer.Ellapsed();
+}
+
+std::vector<RT::Triangle> BVH::buildTriangles() const
 {
 	const auto& triangles = mesh.getModel();
-	const auto& meshVolume = mesh.getVolume();
+	auto alignedTriangles = std::vector<RT::Triangle>();
+	alignedTriangles.reserve(nodes.size());
 
+	for (const auto& index : indices)
+	{
+		alignedTriangles.push_back(triangles[index]);
+	}
+
+	return alignedTriangles;
+}
+
+void BVH::buildNodes()
+{
+	const auto& triangles = mesh.getModel();
+	indices.reserve(triangles.size());
 	nodes.reserve(triangles.size());
+	uint32_t index = 0u;
 	for (const auto& triangle : triangles)
 	{
-		auto node = Node{};
+		indices.push_back(index++);
+	
+		auto& node = nodes.emplace_back();
 		node.vMin = glm::min(glm::min(triangle.A, triangle.B), triangle.C);
 		node.vMax = glm::max(glm::max(triangle.A, triangle.B), triangle.C);
 		node.center = (triangle.A + triangle.B + triangle.C) / 3.0f;
-		//node.index = nodes.size();
-		nodes.push_back(node);
 	}
 
+	stats.triCnt = triangles.size();
+}
+
+void BVH::construct()
+{
+	const auto& meshVolume = mesh.getVolume();
+	
 	auto& rootBoundingBox = hierarchy.emplace_back();
 	rootBoundingBox.vMin = meshVolume.leftBottomFront;
 	rootBoundingBox.vMax = meshVolume.rightTopBack;
-	rootBoundingBox.bufferRegion = glm::uvec3{0u};
+	rootBoundingBox.bufferRegion = glm::uvec3{ 0u };
 
-	split(0, { 0, nodes.size() - 1 });
+	split(0, { 0, nodes.size() });
+
+	stats.nodeCnt = hierarchy.size();
 }
 
-void BVH::split(const uint32_t parentIdx, glm::uvec2 bufferRegion, const uint8_t depth)
+void BVH::split(const uint32_t parentIdx, const glm::uvec2 bufferRegion, const uint8_t depth)
 {
-	if (depth == 0)
+	const uint32_t triangleCount = bufferRegion.y - bufferRegion.x;
+	
+	auto splitInfo = splitAxis(hierarchy[parentIdx], bufferRegion);
+	auto paretnCost = calculateCost(hierarchy[parentIdx], triangleCount);
+
+	if (maxDepth == depth or splitInfo.cost >= paretnCost)
 	{
+		stats.leafCnt++;
+		stats.leafDepth.x = depth < stats.leafDepth.x ? depth : stats.leafDepth.x;
+		stats.leafDepth.y = depth >= stats.leafDepth.y ? depth : stats.leafDepth.y;
+		stats.leafDepthSum += depth;
+		stats.leafTris.x = triangleCount < stats.leafTris.x ? triangleCount : stats.leafTris.x;
+		stats.leafTris.y = triangleCount >= stats.leafTris.y ? triangleCount : stats.leafTris.y;
+		stats.leafTrisSum += triangleCount;
+
 		hierarchy[parentIdx].bufferRegion = bufferRegion;
 		return;
 	}
-	
-	uint32_t leftBoxSize = 0;
-	auto axis = splitAxis(hierarchy[parentIdx]);
-	auto boxAxisCenter = (hierarchy[parentIdx].vMax[axis] + hierarchy[parentIdx].vMin[axis]) / 2.0f;
 
-	auto leftChild = BoundingBox{};
-	auto rightChild = BoundingBox{};
+	auto leftChild = emptyBox;
+	auto rightChild = emptyBox;
 
-	for (uint32_t i = bufferRegion.x; i <= bufferRegion.y; i++)
+	uint32_t bufferCenter = bufferRegion.x;
+	for (uint32_t i = bufferRegion.x; i < bufferRegion.y; i++)
 	{
-		if (nodes[i].center[axis] < boxAxisCenter)
+		const auto& node = nodes[indices[i]];
+		if (node.center[splitInfo.axis] < splitInfo.position)
 		{
-			growToInclude(nodes[i], leftChild);
+			growToInclude(node, leftChild);
 
-			std::swap(nodes[i], nodes[bufferRegion.x + leftBoxSize]);
-			leftBoxSize++;
+			std::swap(indices[bufferCenter], indices[i]);
+			bufferCenter++;
 		}
 		else
 		{
-			growToInclude(nodes[i], rightChild);
+			growToInclude(node, rightChild);
 		}
 	}
 
@@ -86,7 +134,63 @@ void BVH::split(const uint32_t parentIdx, glm::uvec2 bufferRegion, const uint8_t
 	hierarchy[parentIdx].bufferRegion.y = 0u;
 	hierarchy.push_back(leftChild);
 	hierarchy.push_back(rightChild);
-		
-	split(hierarchy[parentIdx].bufferRegion.x, { bufferRegion.x, bufferRegion.x + leftBoxSize }, depth - 1);
-	split(hierarchy[parentIdx].bufferRegion.x + 1, { bufferRegion.x + leftBoxSize + 1u, bufferRegion.y }, depth - 1);
+	
+	split(hierarchy[parentIdx].bufferRegion.x, { bufferRegion.x, bufferCenter }, depth + 1u);
+	split(hierarchy[parentIdx].bufferRegion.x + 1u, { bufferCenter, bufferRegion.y }, depth + 1u);
+}
+
+BVH::Split BVH::splitAxis(const BoundingBox& box, const glm::uvec2 bufferRegion) const
+{
+	auto jump = (bufferRegion.y - bufferRegion.x) / 5u + 1u;
+
+	auto split = Split{ std::numeric_limits<float>::max(), 0.0f, 0 };
+	for (uint8_t axis = 0u; axis < 3u; axis++)
+	{
+		for (uint32_t i = bufferRegion.x; i < bufferRegion.y; i += jump)
+		{
+			float position = nodes[indices[i]].center[axis];
+			float cost = evaluateCost(axis, position, bufferRegion);
+			if (cost < split.cost)
+			{
+				split = Split{ cost, position, axis };
+			}
+		}
+	}
+
+	return split;
+}
+
+float BVH::evaluateCost(const uint8_t axis, const float position, const glm::uvec2 bufferRegion) const
+{
+	auto left = emptyBox;
+	auto right = emptyBox;
+	float leftCnt = 0.0f;
+	float rightCnt = 0.0f;
+
+	for (uint32_t i = bufferRegion.x; i < bufferRegion.y; i++)
+	{
+		auto node = nodes[indices[i]];
+		if (node.center[axis] < position)
+		{
+			growToInclude(node, left);
+			leftCnt++;
+		}
+		else
+		{
+			growToInclude(node, right);
+			rightCnt++;
+		}
+	}
+
+	return calculateCost(left, leftCnt) + calculateCost(right, rightCnt);
+}
+
+void BVH::Stats::print() const
+{
+	LOG_DEBUG("BVH buildTime: {} ms", buildTime);
+	LOG_DEBUG("BVH triangles: {}", triCnt);
+	LOG_DEBUG("BVH nodes: {}", nodeCnt);
+	LOG_DEBUG("BVH leaf: {}", leafCnt);
+	LOG_DEBUG("BVH leaf Depth: Min: {} Max: {} Mean: {}", leafDepth.x, leafDepth.y, meanDepth());
+	LOG_DEBUG("BVH leaf Tris : Min: {} Max: {} Mean: {}", leafTris.x, leafTris.y, meanTris());
 }

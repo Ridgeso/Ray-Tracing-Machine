@@ -26,8 +26,6 @@ namespace RT
 	class GltfLoader
 	{
 	public:
-		tinygltf::Model model = {};
-		
 		LOADER_IMPL
 
 	private:
@@ -35,6 +33,9 @@ namespace RT
 		static constexpr uint32_t primitiveComponentTypeToSize(const uint32_t componentType);
 		static constexpr uint32_t primitiveTypeToSize(const uint32_t type);
 		static constexpr uint32_t maskPrimitiveType(const uint32_t type);
+
+	private:
+		tinygltf::Model model = {};
 	};
 
 	class MeshLoader

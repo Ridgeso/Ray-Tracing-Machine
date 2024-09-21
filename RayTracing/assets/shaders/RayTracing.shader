@@ -8,6 +8,7 @@
 #define UINT_MAX 4294967295.0
 #define PI 3.141592653589793
 #define FLT_EPS 1.192092896e-07F
+#define DBL_EPS 2.2204460492503131e-016
 
 layout (local_size_x = 8, local_size_y = 8, local_size_y = 1) in;
 
@@ -127,6 +128,11 @@ float fastRandom(inout uint seed)
     return float(seed) / UINT_MAX;
 }
 
+vec3 fastRandom3(inout uint seed)
+{
+    return vec3(fastRandom(seed), fastRandom(seed), fastRandom(seed));
+}
+
 vec2 randomCirclePoint(inout uint seed)
 {
     float angle = fastRandom(seed) * 2 * PI;
@@ -136,7 +142,7 @@ vec2 randomCirclePoint(inout uint seed)
 
 vec3 randomUnitSpehere(inout uint seed)
 {
-    return 2.0 * vec3(fastRandom(seed), fastRandom(seed), fastRandom(seed)) - 1.0;
+    return 2.0 * fastRandom3(seed) - 1.0;
 }
 
 struct
@@ -256,7 +262,13 @@ Payload closestHit(in Ray ray, in float closestDistance, in int closestObject, i
         payload.HitUV = texUV;
 
         payload.HitMaterial = Meshes[closestMesh].MaterialId;
-        // payload.HitNormal = normalize(vec3(1.0));
+
+        //////////////// DEL
+        // if (closestObject == 0)
+        // {
+        //     payload.HitNormal = normalize(vec3(1.0));
+        // }
+        //////////////// DEL
     }
 
     return payload;
@@ -264,34 +276,34 @@ Payload closestHit(in Ray ray, in float closestDistance, in int closestObject, i
 
 HitInfo triangleHit(in Ray ray, in Triangle triangle)
 {
-    vec3 edgeAB = triangle.B - triangle.A;
-    vec3 edgeAC = triangle.C - triangle.A;
-    vec3 normalVec = cross(edgeAB, edgeAC);
-    vec3 ao = ray.Origin - triangle.A;
-    vec3 dao = cross(ao, ray.Direction);
+    dvec3 edgeAB = dvec3(triangle.B) - dvec3(triangle.A);
+    dvec3 edgeAC = dvec3(triangle.C) - dvec3(triangle.A);
+    dvec3 ao = dvec3(ray.Origin) - dvec3(triangle.A);
+    dvec3 normalVec = cross(edgeAB, edgeAC);
+    dvec3 dao = cross(ao, ray.Direction);
 
-    float determinant = -dot(ray.Direction, normalVec);
-    float invDet = 1 / determinant;
+    double determinant = -dot(dvec3(ray.Direction), normalVec);
+    double invDet = 1 / determinant;
     
-    float t = dot(ao, normalVec) * invDet;
-    float u = dot(edgeAC, dao) * invDet;
-    float v = -dot(edgeAB, dao) * invDet;
-    float w = 1 - u - v;
+    double t = dot(ao, normalVec) * invDet;
+    double u = dot(edgeAC, dao) * invDet;
+    double v = -dot(edgeAB, dao) * invDet;
+    double w = 1 - u - v;
     
     HitInfo hitInfo;
-    hitInfo.didHit = determinant > FLT_EPS && all(greaterThanEqual(vec4(t, u, v, w), vec4(0.0)));
+    hitInfo.didHit = determinant > DBL_EPS && all(greaterThanEqual(dvec4(t, u, v, w), dvec4(0.0)));
     // hitInfo.normal = normalize(triangle.normalA * w + triangle.normalB * u + triangle.normalC * v);
-    hitInfo.distance = t;
+    hitInfo.distance = float(t);
     return hitInfo;
 }
 
 HitInfo hitBox(in Ray ray, in Box box)
 {
-    vec3 lb = (box.leftBottomFront - ray.Origin) / ray.Direction;
-    vec3 rt = (box.rightTopBack - ray.Origin) / ray.Direction;
+    vec3 lbf = (box.leftBottomFront - ray.Origin) / ray.Direction;
+    vec3 rtb = (box.rightTopBack - ray.Origin) / ray.Direction;
 
-    vec3 tMin = min(lb, rt);
-    vec3 tMax = max(lb, rt);
+    vec3 tMin = min(lbf, rtb);
+    vec3 tMax = max(lbf, rtb);
 
     float tNear = max(max(tMin.x, tMin.y), tMin.z);
     float tFar = min(min(tMax.x, tMax.y), tMax.z);
@@ -302,7 +314,11 @@ HitInfo hitBox(in Ray ray, in Box box)
     return hitInfo;
 }
 
-HitInfo bvhTraverse(in Ray ray, in uint bvhRoot, in uint modelRoot, out int closestObject)
+//////////////// DEL
+float boxDepth = 0;
+vec3 boxColor = vec3(0.0);
+//////////////// DEL
+HitInfo bvhTraverse(in Ray ray, in uint bvhRoot, in uint modelRoot, /*out*/ inout int closestObject)
 {
     HitInfo meshHit = hitBox(ray, Boxes[bvhRoot]);
     if (!meshHit.didHit)
@@ -318,19 +334,49 @@ HitInfo bvhTraverse(in Ray ray, in uint bvhRoot, in uint modelRoot, out int clos
     uint stack[maxDepth];
     uint stackIdx = 0u;
 
+    //////////////// DEL
+    // closestObject = 0;
+    // uint depthStack[maxDepth];
+    // uint depthStackIdx = 0u;
+    // depthStack[depthStackIdx++] = 0u;
+    //////////////// DEL
+
     stack[stackIdx] = bvhRoot;
     stackIdx++;
 
     while (stackIdx > 0u)
     {
         stackIdx--;
-        Box box = Boxes[stack[stackIdx]];
+        uint boxIdx = stack[stackIdx];
+        Box box = Boxes[boxIdx];
+
+        //////////////// DEL
+        // uint depthNr = depthStack[--depthStackIdx];
+        // if (depthNr == MaxBounces)
+        // {
+        //     HitInfo info = hitBox(ray, box);
+        //     returnInfo.distance = info.distance;
+        //     returnInfo.didHit = info.didHit;
+        //     uint boxIdxCopy = boxIdx;
+        //     boxColor = fastRandom3(boxIdxCopy);
+
+        //     closestObject = 0;
+        //     break;
+        // }
+        //////////////// DEL
 
         bool isLeaf = box.bufferRegion.y > 0u;
 
         if (isLeaf)
         {
-            for (uint triangleId = box.bufferRegion.x; triangleId <= box.bufferRegion.y; triangleId++)
+            //////////////// DEL
+            // if (boxIdx != MaxBounces - 1)
+            // {
+            //     continue;
+            // }
+            //////////////// DEL
+
+            for (uint triangleId = box.bufferRegion.x; triangleId < box.bufferRegion.y; triangleId++)
             {
                 HitInfo hitInfo = triangleHit(ray, Triangles[modelRoot + triangleId]);
                 if (hitInfo.didHit && hitInfo.distance < returnInfo.distance)
@@ -338,17 +384,91 @@ HitInfo bvhTraverse(in Ray ray, in uint bvhRoot, in uint modelRoot, out int clos
                     returnInfo.distance = hitInfo.distance;
                     closestObject = int(triangleId);
                     returnInfo.didHit = true;
+                    
+                    //////////////// DEL
+                    uint boxIdxCopy = boxIdx;
+                    boxColor = fastRandom3(boxIdxCopy);
+                    boxColor = fastRandom3(boxIdxCopy);
+                    boxColor = fastRandom3(boxIdxCopy);
+                    boxColor = fastRandom3(boxIdxCopy);
+                    //////////////// DEL
                 }
             }
+
+            //////////////// DEL
+            // HitInfo info = hitBox(ray, box);
+            // if (closestObject == -1 && info.didHit && info.distance < returnInfo.distance)
+            // {
+            //     closestObject = 0;
+
+            //     returnInfo.distance = info.distance;
+            //     returnInfo.didHit = info.didHit;
+            //     uint boxIdxCopy = boxIdx;
+            //     boxColor = fastRandom3(boxIdxCopy);
+            // }
+            //////////////// DEL
         }
         else
         {
+            //////////////// DEL
+            // if (boxIdx == MaxBounces - 1)
+            // {
+            //     HitInfo info = hitBox(ray, box);
+            //     returnInfo.distance = info.distance;
+            //     returnInfo.didHit = info.didHit;
+            //     uint boxIdxCopy = boxIdx;
+            //     boxColor = fastRandom3(boxIdxCopy);
 
+            //     closestObject = 0;
+            //     break;
+            // }
+            //////////////// DEL
+
+            uint leftChildIdx = bvhRoot + box.bufferRegion.x + 0u;
+            uint rightChildIdx = bvhRoot + box.bufferRegion.x + 1u;
+            Box leftChild = Boxes[leftChildIdx];
+            Box rightChild = Boxes[rightChildIdx];
+
+            HitInfo leftInfo = hitBox(ray, leftChild);
+            HitInfo rightInfo = hitBox(ray, rightChild);
+
+            //////////////// DEL
+            // boxDepth += 1.0;
+            // if (leftInfo.didHit && leftInfo.distance < returnInfo.distance)
+            // {
+            //     stack[stackIdx] = leftChildIdx;
+            //     stackIdx++;
+            // }
+            //////////////// DEL
+            
+            bool isLeftClosest = leftInfo.distance < rightInfo.distance;
+
+            uint nearIdx = isLeftClosest ? leftChildIdx : rightChildIdx;
+            uint farIdx = isLeftClosest ? rightChildIdx : leftChildIdx;
+            HitInfo nearInfo = isLeftClosest ? leftInfo : rightInfo;
+            HitInfo farInfo = isLeftClosest ? rightInfo : leftInfo;
+
+            if (farInfo.didHit && farInfo.distance < returnInfo.distance)
+            {
+                stack[stackIdx] = farIdx;
+                stackIdx++;
+                
+                //////////////// DEL
+                // depthStack[depthStackIdx++] = depthNr + 1u;
+                //////////////// DEL
+            }
+            if (nearInfo.didHit && nearInfo.distance < returnInfo.distance)
+            {
+                stack[stackIdx] = nearIdx;
+                stackIdx++;
+
+                //////////////// DEL
+                // depthStack[depthStackIdx++] = depthNr + 1u;
+                //////////////// DEL
+            }
         }
     }
 
-    // returnInfo.distance = 1.0;
-    // returnInfo.didHit = true;
     return returnInfo;
 }
 
@@ -422,6 +542,16 @@ Payload bounceRay(in Ray ray)
 
 void accumulateColor(inout Pixel pixel, in Payload payload)
 {
+    //////////////// DEL
+    // if (boxDepth > MaxBounces) pixel.Color = vec3(1.0, 0.0, 0.0);
+    // else pixel.Color = vec3(boxDepth / MaxBounces);
+
+    // pixel.Color = Materials[payload.HitMaterial].Albedo;
+    // pixel.Color = boxColor * (clamp(dot(payload.HitNormal, vec3(1.0)), 0.0, 1.0) / 2.0 + 0.5); // Base debug
+    // pixel.Color = boxColor;
+    // pixel.Color = vec3(1.0) * payload.HitDistance * payload.HitDistance; // Depth test
+    //////////////// DEL
+
     vec3 albedo = vec3(0);
     int texId = Materials[payload.HitMaterial].TextureId;
     if (-1 != texId)
@@ -505,6 +635,7 @@ vec3 traceRay(in Ray ray)
     pixel.Contribution = vec3(1);
 
     for (uint i = 0u; i < MaxBounces; i++)
+    // for (uint i = 0u; i < 1u; i++)
     {
         Global.seed += i;
     
