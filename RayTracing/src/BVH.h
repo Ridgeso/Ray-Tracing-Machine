@@ -43,11 +43,13 @@ public:
 		float leafDepthSum;
 		glm::uvec2 leafTris;
 		float leafTrisSum;
+		float SAH;
 
 		float meanDepth() const { return leafDepthSum / leafCnt; }
 		float meanTris() const { return leafTrisSum / leafCnt; }
+		void measure(const uint8_t depth, const uint32_t triangleCount, const float cost);
 		void print() const;
-	} stats = { 0, 0, 0, 0, { 100, 0 }, 0, { 1000000, 0 }, 0 };
+	} stats = { 0, 0, 0, 0, { 100, 0 }, 0, { 1000000, 0 }, 0, 0 };
 
 public:
 	BVH(const RT::Mesh& mesh);
@@ -59,8 +61,9 @@ private:
 	void buildNodes();
 	void construct();
 	void split(const uint32_t parentIdx, const glm::uvec2 bufferRegion, const uint8_t depth = 0u);
-	Split splitAxis(const BoundingBox& box, const glm::uvec2 bufferRegion) const;
-	float evaluateCost(const uint8_t axis, const float position, const glm::uvec2 bufferRegion) const;
+	Split splitBox(const BoundingBox& box, const glm::uvec2 bufferRegion) const;
+	Split splitAxis(const uint8_t axis, const glm::uvec2 bufferRegion, const glm::vec2) const;
+	glm::vec2 findCenterBounds(const uint8_t axis, const glm::uvec2 bufferRegion) const;
 
 private:
 	const RT::Mesh& mesh;
@@ -69,6 +72,7 @@ private:
 	std::vector<BoundingBox> hierarchy = {};
 
 	static constexpr uint8_t maxDepth = 32u;
+	static constexpr uint32_t nrOfSubplanes = 8u;
 	static constexpr BoundingBox emptyBox = {
 		glm::vec3{std::numeric_limits<float>::max()}, 0.0f,
 		glm::vec3{std::numeric_limits<float>::lowest()}, 0.0f,
