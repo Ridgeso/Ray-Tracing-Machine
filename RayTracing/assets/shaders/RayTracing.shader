@@ -376,9 +376,10 @@ HitInfo bvhTraverse(in Ray ray, in uint bvhRoot, in uint modelRoot, /*out*/ inou
             // }
             //////////////// DEL
 
-            for (uint triangleId = box.bufferRegion.x; triangleId < box.bufferRegion.y; triangleId++)
+            uvec2 modelBufferRegion = box.bufferRegion + modelRoot;
+            for (uint triangleId = modelBufferRegion.x; triangleId < modelBufferRegion.y; triangleId++)
             {
-                HitInfo hitInfo = triangleHit(ray, Triangles[modelRoot + triangleId]);
+                HitInfo hitInfo = triangleHit(ray, Triangles[triangleId]);
                 if (hitInfo.didHit && hitInfo.distance < returnInfo.distance)
                 {
                     returnInfo.distance = hitInfo.distance;
