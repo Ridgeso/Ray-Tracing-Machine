@@ -7,6 +7,42 @@
 
 #include <GLFW/glfw3.h>
 
+namespace
+{
+    
+    struct DeviceFeatrues
+    {
+        VkPhysicalDeviceFeatures deviceFeatures = {};
+        VkPhysicalDeviceVulkan12Features vulkan12Features = {};
+        VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeatures = {};
+    };
+
+    constexpr DeviceFeatrues deviceVulkanFeatures()
+    {
+        auto features = DeviceFeatrues{};
+
+        /*
+        * VkPhysicalDeviceFeatures
+        */
+        features.deviceFeatures.samplerAnisotropy = VK_TRUE;
+        features.deviceFeatures.shaderFloat64 = VK_TRUE;
+
+        /*
+        * VkPhysicalDeviceVulkan12Features
+        */
+        features.vulkan12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+        features.vulkan12Features.runtimeDescriptorArray = VK_TRUE;
+        
+        /*
+        * VkPhysicalDeviceDescriptorIndexingFeaturesEXT
+        */
+        features.indexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
+        features.indexingFeatures.runtimeDescriptorArray = VK_TRUE;
+
+        return features;
+    }
+}
+
 namespace RT::Vulkan
 {
     
@@ -205,8 +241,7 @@ namespace RT::Vulkan
             queueCreateInfos.push_back(queueCreateInfo);
         }
 
-        auto deviceFeatures = VkPhysicalDeviceFeatures{};
-        deviceFeatures.samplerAnisotropy = VK_TRUE;
+        auto vulkanFeatures = deviceVulkanFeatures();
 
         auto createInfo = VkDeviceCreateInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -214,26 +249,18 @@ namespace RT::Vulkan
         createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
         createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
-        createInfo.pEnabledFeatures = &deviceFeatures;
+        createInfo.pEnabledFeatures = &vulkanFeatures.deviceFeatures;
         createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
         createInfo.ppEnabledExtensionNames = deviceExtensions.data();
         enableDebugingForCreateInfo(createInfo);
 
-        auto vulkan12Features = VkPhysicalDeviceVulkan12Features{};
-        auto indexingFeatures = VkPhysicalDeviceDescriptorIndexingFeaturesEXT{};
         if (deviceProperties.apiVersion >= VK_API_VERSION_1_2)
         {
-            vulkan12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
-            vulkan12Features.runtimeDescriptorArray = VK_TRUE;
-
-            createInfo.pNext = &vulkan12Features;
+            createInfo.pNext = &vulkanFeatures.vulkan12Features;
         }
         else
         {
-            indexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
-            indexingFeatures.runtimeDescriptorArray = VK_TRUE;
-         
-            createInfo.pNext = &indexingFeatures;
+            createInfo.pNext = &vulkanFeatures.indexingFeatures;
         }
 
         CHECK_VK(vkCreateDevice(physicalDevice, &createInfo, nullptr, &device), "failed to create logical device");

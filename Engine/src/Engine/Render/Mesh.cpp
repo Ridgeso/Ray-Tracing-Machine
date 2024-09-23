@@ -21,10 +21,10 @@ namespace RT
 
 	MeshInstance Mesh::createInstance()
 	{
-		return MeshInstance(Share<Mesh>{this});
+		return MeshInstance(makeRef<Mesh>(*this));
 	}
 
-	MeshInstance::MeshInstance(const Share<Mesh>& mesh)
+	MeshInstance::MeshInstance(const Ref<Mesh>& mesh)
 		: base{mesh}
 	{
 	}
@@ -34,13 +34,13 @@ namespace RT
 		constexpr auto rotationAxises = glm::mat3{1.0f};
 		auto modelMat = glm::mat4{1.0f};
 
-		modelMat = glm::scale(modelMat, scale);
-		
-		modelMat = glm::rotate(modelMat, glm::radians(rotaion.x), rotationAxises[0]);
-		modelMat = glm::rotate(modelMat, glm::radians(rotaion.y), rotationAxises[1]);
-		modelMat = glm::rotate(modelMat, glm::radians(rotaion.z), rotationAxises[2]);
+		modelMat = glm::translate(modelMat, position);
 
-		modelMat = glm::translate(modelMat, pos);
+		modelMat = glm::rotate(modelMat, glm::radians(rotation.x), rotationAxises[0]);
+		modelMat = glm::rotate(modelMat, glm::radians(rotation.y), rotationAxises[1]);
+		modelMat = glm::rotate(modelMat, glm::radians(rotation.z), rotationAxises[2]);
+		
+		modelMat = glm::scale(modelMat, scale);
 
 		return modelMat;
 	}

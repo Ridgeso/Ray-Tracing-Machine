@@ -55,6 +55,9 @@ BVH::BVH(const RT::Mesh& mesh)
 	construct();
 
 	stats.buildTime = buildTimer.Ellapsed();
+
+	LOG_DEBUG("Mesh BVH build:");
+	stats.print();
 }
 
 std::vector<RT::Triangle> BVH::buildTriangles() const

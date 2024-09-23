@@ -25,9 +25,7 @@ layout(std140, set = 0, binding = 3) uniform Amounts
     vec2 Resolution;
     int MaterialsCount;
     int SpheresCount;
-    int BVHCount;
-    int TrianglesCount;
-    int MeshesCount;
+    int ObjectsCount;
     int TexturesCount;
 };
 
@@ -80,12 +78,13 @@ struct Mesh
 {
     uint BVHRoot;
     uint ModelRoot;
-    int MaterialId;
 };
 
 struct MeshInstance
 {
+    mat4 worldToLocalMatrix;
     int MeshId;
+    int MaterialId;
 };
 
 layout(std140, set = 1, binding = 0) readonly buffer MaterialsBuffer
@@ -113,7 +112,12 @@ layout(std140, set = 1, binding = 4) readonly buffer MeshBuffer
     Mesh Meshes[];
 };
 
-layout(set = 1, binding = 5) uniform sampler2D Textures[];
+layout(std140, set = 1, binding = 5) readonly buffer MeshInstanceBuffer
+{
+    MeshInstance MeshInstances[];
+};
+
+layout(set = 1, binding = 6) uniform sampler2D Textures[];
 
 uint PCGhash(in uint random)
 {
@@ -226,14 +230,14 @@ Payload miss(in Ray ray)
     return payload;
 }
 
-Payload closestHit(in Ray ray, in float closestDistance, in int closestObject, in bool isSphere, int closestMesh)
+Payload closestHit(in Ray ray, in float closestDistance, in int closestObject, int closestInstance)
 {
     Payload payload;
     payload.HitPosition = ray.Origin + closestDistance * ray.Direction;
     payload.HitDistance = closestDistance;
     payload.HitObject = closestObject;
     
-    if (isSphere)
+    if (-1 == closestInstance)
     {
         payload.HitNormal = normalize(payload.HitPosition - Spheres[closestObject].Position);
         payload.HitUV = vec2(atan(payload.HitNormal.z, payload.HitNormal.x) / (2.0 * PI), asin(payload.HitNormal.y) / PI) + 0.5;;
@@ -241,10 +245,12 @@ Payload closestHit(in Ray ray, in float closestDistance, in int closestObject, i
     }
     else
     {
+        MeshInstance object = MeshInstances[closestInstance];
+
         vec3 edgeAB = Triangles[closestObject].B - Triangles[closestObject].A;
         vec3 edgeAC = Triangles[closestObject].C - Triangles[closestObject].A;
         vec3 normalVec = cross(edgeAB, edgeAC);
-        payload.HitNormal = normalize(normalVec);
+        payload.HitNormal = normalize(inverse(object.worldToLocalMatrix) * vec4(normalVec, 0.0)).xyz;
 
         vec3 ao = ray.Origin - Triangles[closestObject].A;
         vec3 dao = cross(ao, ray.Direction);
@@ -261,7 +267,7 @@ Payload closestHit(in Ray ray, in float closestDistance, in int closestObject, i
 
         payload.HitUV = texUV;
 
-        payload.HitMaterial = Meshes[closestMesh].MaterialId;
+        payload.HitMaterial = object.MaterialId;
 
         //////////////// DEL
         // if (closestObject == 0)
@@ -318,7 +324,7 @@ HitInfo hitBox(in Ray ray, in Box box)
 float boxDepth = 0;
 vec3 boxColor = vec3(0.0);
 //////////////// DEL
-HitInfo bvhTraverse(in Ray ray, in uint bvhRoot, in uint modelRoot, /*out*/ inout int closestObject)
+HitInfo bvhTraverse(in Ray ray, in uint bvhRoot, in uint modelRoot, /*out*/ inout int closestTriangle)
 {
     HitInfo meshHit = hitBox(ray, Boxes[bvhRoot]);
     if (!meshHit.didHit)
@@ -335,7 +341,7 @@ HitInfo bvhTraverse(in Ray ray, in uint bvhRoot, in uint modelRoot, /*out*/ inou
     uint stackIdx = 0u;
 
     //////////////// DEL
-    // closestObject = 0;
+    // closestTriangle = 0;
     // uint depthStack[maxDepth];
     // uint depthStackIdx = 0u;
     // depthStack[depthStackIdx++] = 0u;
@@ -360,7 +366,7 @@ HitInfo bvhTraverse(in Ray ray, in uint bvhRoot, in uint modelRoot, /*out*/ inou
         //     uint boxIdxCopy = boxIdx;
         //     boxColor = fastRandom3(boxIdxCopy);
 
-        //     closestObject = 0;
+        //     closestTriangle = 0;
         //     break;
         // }
         //////////////// DEL
@@ -383,7 +389,7 @@ HitInfo bvhTraverse(in Ray ray, in uint bvhRoot, in uint modelRoot, /*out*/ inou
                 if (hitInfo.didHit && hitInfo.distance < returnInfo.distance)
                 {
                     returnInfo.distance = hitInfo.distance;
-                    closestObject = int(triangleId);
+                    closestTriangle = int(triangleId);
                     returnInfo.didHit = true;
                     
                     //////////////// DEL
@@ -398,9 +404,9 @@ HitInfo bvhTraverse(in Ray ray, in uint bvhRoot, in uint modelRoot, /*out*/ inou
 
             //////////////// DEL
             // HitInfo info = hitBox(ray, box);
-            // if (closestObject == -1 && info.didHit && info.distance < returnInfo.distance)
+            // if (closestTriangle == -1 && info.didHit && info.distance < returnInfo.distance)
             // {
-            //     closestObject = 0;
+            //     closestTriangle = 0;
 
             //     returnInfo.distance = info.distance;
             //     returnInfo.didHit = info.didHit;
@@ -420,7 +426,7 @@ HitInfo bvhTraverse(in Ray ray, in uint bvhRoot, in uint modelRoot, /*out*/ inou
             //     uint boxIdxCopy = boxIdx;
             //     boxColor = fastRandom3(boxIdxCopy);
 
-            //     closestObject = 0;
+            //     closestTriangle = 0;
             //     break;
             // }
             //////////////// DEL
@@ -506,9 +512,8 @@ HitInfo sphereHit(in Ray ray, in Sphere sphere)
 Payload bounceRay(in Ray ray)
 {
     float closestDistance = FLT_MAX;
-    int closestMesh = -1;
+    int closestInstance = -1;
     int closestObject = -1;
-    bool isSphere = false;
     
     for (int sphereId = 0; sphereId < SpheresCount; sphereId++)
     {
@@ -517,28 +522,32 @@ Payload bounceRay(in Ray ray)
         {
             closestDistance = hitInfo.distance;
             closestObject = sphereId;
-            isSphere = true;
         }
     }
     
-    for (int meshId = 0; meshId < MeshesCount; meshId++)
+    for (int objectId = 0; objectId < ObjectsCount; objectId++)
     {
-        int cloObject = -1;
-        HitInfo meshHit = bvhTraverse(ray, Meshes[meshId].BVHRoot, Meshes[meshId].ModelRoot, cloObject);
+        int cloTri = -1;
+        MeshInstance object = MeshInstances[objectId];
+
+        Ray modelRay;
+        modelRay.Origin = (object.worldToLocalMatrix * vec4(ray.Origin, 1.0)).xyz;
+        modelRay.Direction = (object.worldToLocalMatrix * vec4(ray.Direction, 0.0)).xyz;
+
+        HitInfo meshHit = bvhTraverse(modelRay, Meshes[object.MeshId].BVHRoot, Meshes[object.MeshId].ModelRoot, cloTri);
 
         if (meshHit.didHit && meshHit.distance < closestDistance)
         {
             closestDistance = meshHit.distance;
-            closestMesh = meshId;
-            closestObject = cloObject;
-            isSphere = false;
+            closestInstance = objectId;
+            closestObject = cloTri;
         }
     }
     
     if (closestObject == -1)
         return miss(ray);
     
-    return closestHit(ray, closestDistance, closestObject, isSphere, closestMesh);
+    return closestHit(ray, closestDistance, closestObject, closestInstance);
 }
 
 void accumulateColor(inout Pixel pixel, in Payload payload)
