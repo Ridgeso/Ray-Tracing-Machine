@@ -45,8 +45,6 @@ namespace RT
 		const std::vector<Triangle>& getModel() const { return model; }
 		const Box& getVolume() const { return volume; }
 
-		MeshInstance createInstance();
-
 	private:
 		std::vector<Triangle> model;
 		Box volume = {};
@@ -55,7 +53,7 @@ namespace RT
 	class MeshInstance
 	{
 	public:
-		MeshInstance(const Ref<Mesh>& mesh);
+		MeshInstance(const int32_t meshId);
 
 		glm::mat4 getModelMatrix() const;
 		glm::mat4 getInvModelMatrix() const;
@@ -65,7 +63,7 @@ namespace RT
 		glm::vec3 scale = glm::vec3{1.0f};
 		glm::vec3 rotation = {};
 		int32_t materialId = 0;
-		Ref<Mesh> base;
+		int32_t meshId;
 
 	private:
 	};

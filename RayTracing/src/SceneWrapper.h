@@ -36,18 +36,12 @@ struct MeshInstanceWrapper
 class SceneWrapper
 {
 public:
-	SceneWrapper() = default;
-	SceneWrapper(const RT::Scene& scene)
-		: SceneWrapper{}
-	{
-
-	}
+	SceneWrapper(RT::Scene& scene);
 	~SceneWrapper() = default;
 
 	void addMesh(const RT::Mesh& mesh);
 	void addMeshInstance(const RT::MeshInstance& object);
-
-	int32_t getInstanceWrapperId(const RT::MeshInstance& object) const;
+	void removeInstanceWrapper(const uint32_t objectId);
 
 public:
 	std::vector<Sphere> spheres;
@@ -57,6 +51,5 @@ public:
 	std::vector<MeshInstanceWrapper> meshInstanceWrappers;
 
 private:
-	std::unordered_map<const RT::Mesh*, int32_t> meshLookup = {};
-	std::unordered_map<const RT::MeshInstance*, int32_t> meshInstanceLookup = {};
+	RT::Scene& baseScene;
 };

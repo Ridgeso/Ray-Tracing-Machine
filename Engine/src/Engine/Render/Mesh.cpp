@@ -19,13 +19,8 @@ namespace RT
 		volume = loader.buildVolume();
 	}
 
-	MeshInstance Mesh::createInstance()
-	{
-		return MeshInstance(makeRef<Mesh>(*this));
-	}
-
-	MeshInstance::MeshInstance(const Ref<Mesh>& mesh)
-		: base{mesh}
+	MeshInstance::MeshInstance(const int32_t meshId)
+		: meshId{meshId}
 	{
 	}
 

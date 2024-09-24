@@ -1,6 +1,8 @@
 #include <Engine/Engine.h>
 #include <Engine/Startup/EntryPoint.h>
 
+#include <array>
+
 #include <Engine/Event/AppEvents.h>
 
 #include <Engine/Render/Camera.h>
@@ -23,7 +25,7 @@ public:
 		, lastWinSize{RT::Application::getWindow()->getSize()}
 		, camera(45.0f, 0.1f, 1.0f)
 		, scene{}
-		, sceneWrapper{}
+		, sceneWrapper{scene}
 	{
 		loadScene(4);
 
@@ -192,6 +194,7 @@ public:
 
 			bool shouldUpdateMaterials = false;
 			bool shouldUpdateSpeheres = false;
+			bool shouldUpdateMeshes = false;
 			bool shouldUpdateObjects = false;
 
 			ImGui::Separator();
@@ -316,6 +319,75 @@ public:
 
 			if (ImGui::CollapsingHeader("Objects"))
 			{
+				{
+					constexpr uint32_t maxPathLength = 260u;
+					static auto newMeshPathBuff = std::array<char, maxPathLength>{};
+					ImGui::InputText("Mesh path", newMeshPathBuff.data(), maxPathLength);
+
+					if (ImGui::Button("Add Mesh"))
+					{
+						const auto newMeshPath = std::filesystem::path(newMeshPathBuff.data());
+						const bool doesMeshExists = std::filesystem::exists(newMeshPath);
+						if (doesMeshExists)
+						{
+							auto& newMesh = scene.meshes.emplace_back();
+							newMesh.load(newMeshPath);
+							sceneWrapper.addMesh(newMesh);
+							shouldUpdateMeshes = true;
+						}
+					}
+				}
+
+				{
+					static auto previewLabel = std::string{ "Choose mesh" };
+					if (ImGui::Button("Add Instance"))
+					{
+						ImGui::OpenPopup("Add Instance");
+						previewLabel = std::string{ "Choose mesh" };
+					}
+
+					const auto popupCenter = ImGui::GetMainViewport()->GetCenter();
+					ImGui::SetNextWindowPos(popupCenter, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+					if (ImGui::BeginPopupModal("Add Instance", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+					{
+						static int32_t selectedMeshId = 0;
+						if (ImGui::BeginCombo("Mesh", previewLabel.c_str()))
+						{
+							for (int32_t meshId = 0; meshId < scene.meshes.size(); meshId++)
+							{
+								const bool isMeshSelected = meshId == selectedMeshId;
+								const auto meshName = fmt::format("Mesh: {}", meshId);
+								if (ImGui::Selectable(meshName.c_str(), isMeshSelected))
+								{
+									selectedMeshId = meshId;
+									previewLabel = meshName;
+								}
+
+								if (isMeshSelected)
+								{
+									ImGui::SetItemDefaultFocus();
+								}
+							}
+							ImGui::EndCombo();
+						}
+
+						if (ImGui::Button("Add", ImVec2(60, 0)))
+						{
+							auto& newObject = scene.objects.emplace_back(selectedMeshId);
+							sceneWrapper.addMeshInstance(newObject);
+							shouldUpdateObjects = true;
+							ImGui::CloseCurrentPopup();
+						}
+						ImGui::SetItemDefaultFocus();
+						ImGui::SameLine();
+						if (ImGui::Button("Cancel", ImVec2(60, 0)))
+						{
+							ImGui::CloseCurrentPopup();
+						}
+						ImGui::EndPopup();
+					}
+				}
+
 				for (size_t objectId = 0u; objectId < scene.objects.size(); objectId++)
 				{
 					if (!ImGui::TreeNode(fmt::format("Mesh: {}", objectId).c_str()))
@@ -330,15 +402,20 @@ public:
 					shouldUpdateObjects |= ImGui::DragFloat3("Scale", glm::value_ptr(object.scale), 0.1f);
 					shouldUpdateObjects |= ImGui::DragFloat3("Rotation", glm::value_ptr(object.rotation), 0.1f, -360.0f, 360.0f);
 					shouldUpdateObjects |= ImGui::SliderInt("Material", &object.materialId, 0, scene.materials.size() - 1);
+					shouldUpdateObjects |= ImGui::SliderInt("Mesh", &object.meshId, 0, scene.meshes.size() - 1);
 
 					if (shouldUpdateObjects)
 					{
-						auto objectId = sceneWrapper.getInstanceWrapperId(object);
 						sceneWrapper.meshInstanceWrappers[objectId].worldToLocalMatrix = object.getInvModelMatrix();
-						//sceneWrapper.meshInstanceWrappers[objectId].position = object.position;
-						//sceneWrapper.meshInstanceWrappers[objectId].scale = object.scale;
-						//sceneWrapper.meshInstanceWrappers[objectId].rotation = object.rotation;
 						sceneWrapper.meshInstanceWrappers[objectId].materialId = object.materialId;
+						sceneWrapper.meshInstanceWrappers[objectId].meshId = object.meshId;
+					}
+
+					if (ImGui::Button("Delete Object"))
+					{
+						scene.objects.erase(scene.objects.begin() + objectId);
+						sceneWrapper.removeInstanceWrapper(objectId);
+						shouldUpdateObjects = true;
 					}
 
 					ImGui::Separator();
@@ -353,9 +430,9 @@ public:
 				if (scene.materials.size() != infoUniform.materialsCount)
 				{
 					infoUniform.materialsCount = scene.materials.size();
-					ammountsUniform->setData(&infoUniform.materialsCount, sizeof(float), offsetof(InfoUniform, materialsCount));
+					ammountsUniform->setData(&infoUniform.materialsCount, sizeof(int32_t), offsetof(InfoUniform, materialsCount));
 
-					uint32_t matStorSize = sizeof(RT::Material) * scene.materials.size();
+					const uint32_t matStorSize = sizeof(RT::Material) * scene.materials.size();
 					materialsStorage = RT::Uniform::create(RT::UniformType::Storage, matStorSize > 0 ? matStorSize : 1);
 
 					pipeline->updateSet(1, 0, 0, *materialsStorage);
@@ -368,9 +445,9 @@ public:
 					if (sceneWrapper.spheres.size() != infoUniform.spheresCount)
 					{
 						infoUniform.spheresCount = sceneWrapper.spheres.size();
-						ammountsUniform->setData(&infoUniform.spheresCount, sizeof(float), offsetof(InfoUniform, spheresCount));
+						ammountsUniform->setData(&infoUniform.spheresCount, sizeof(int32_t), offsetof(InfoUniform, spheresCount));
 
-						uint32_t sphStorSize = sizeof(Sphere) * sceneWrapper.spheres.size();
+						const uint32_t sphStorSize = sizeof(Sphere) * sceneWrapper.spheres.size();
 						spheresStorage = RT::Uniform::create(RT::UniformType::Storage, sphStorSize > 0 ? sphStorSize : 1);
 
 						pipeline->updateSet(1, 0, 1, *spheresStorage);
@@ -378,27 +455,42 @@ public:
 
 					spheresStorage->setData(sceneWrapper.spheres.data(), sizeof(Sphere) * sceneWrapper.spheres.size());
 				}
+			if (shouldUpdateMeshes)
+			{
+				const uint32_t bvhStorSize = sizeof(BoundingBox) * sceneWrapper.boundingBoxes.size();
+				bvhStorage = RT::Uniform::create(RT::UniformType::Storage, bvhStorSize > 0 ? bvhStorSize : 1);
+				pipeline->updateSet(1, 0, 2, *bvhStorage);
+				bvhStorage->setData(sceneWrapper.boundingBoxes.data(), bvhStorSize);
+
+				const uint32_t triStorSize = sizeof(RT::Triangle) * sceneWrapper.triangles.size();
+				trianglesStorage = RT::Uniform::create(RT::UniformType::Storage, triStorSize > 0 ? triStorSize : 1);
+				pipeline->updateSet(1, 0, 3, *trianglesStorage);
+				trianglesStorage->setData(sceneWrapper.triangles.data(), triStorSize);
+
+				const uint32_t objStorSize = sizeof(MeshWrapper) * sceneWrapper.meshWrappers.size();
+				meshWrappersStorage = RT::Uniform::create(RT::UniformType::Storage, objStorSize > 0 ? objStorSize : 1);
+				pipeline->updateSet(1, 0, 4, *meshWrappersStorage);
+				meshWrappersStorage->setData(sceneWrapper.meshWrappers.data(), objStorSize);
+			}
 			if (shouldUpdateObjects)
 			{
-				//if (scene.triangles.size() != infoUniform.trianglesCount)
-				//{
-				//	infoUniform.trianglesCount = scene.triangles.size();
-				//	ammountsUniform->setData(&infoUniform.trianglesCount, sizeof(float), offsetof(InfoUniform, trianglesCount));
+				if (sceneWrapper.meshInstanceWrappers.size() != infoUniform.objectsCount)
+				{
+					infoUniform.objectsCount = sceneWrapper.meshInstanceWrappers.size();
+					ammountsUniform->setData(&infoUniform.objectsCount, sizeof(int32_t), offsetof(InfoUniform, objectsCount));
 
-				//	uint32_t triStorSize = sizeof(RT::Triangle) * scene.triangles.size();
-				//	trianglesStorage = RT::Uniform::create(RT::UniformType::Storage, triStorSize > 0 ? triStorSize : 1);
+					const uint32_t objStorSize = sizeof(MeshInstanceWrapper) * sceneWrapper.meshInstanceWrappers.size();
+					meshInstanceWrappersStorage = RT::Uniform::create(RT::UniformType::Storage, objStorSize > 0 ? objStorSize : 1);
 
-				//	pipeline->updateSet(1, 0, 2, *trianglesStorage);
-				//}
-
-				//trianglesStorage->setData(scene.triangles.data(), sizeof(RT::Triangle) * scene.triangles.size());
+					pipeline->updateSet(1, 0, 5, *meshInstanceWrappersStorage);
+				}
 				 
 				meshInstanceWrappersStorage->setData(sceneWrapper.meshInstanceWrappers.data(), sizeof(MeshInstanceWrapper) * sceneWrapper.meshInstanceWrappers.size());
 			}
 		}
 		ImGui::End();
 
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0.0f, 0.0f });
 		ImGui::Begin("Viewport");
 		{
 			auto viewPort = ImGui::GetContentRegionAvail();
@@ -429,8 +521,8 @@ public:
 		ImGui::End();
 		ImGui::PopStyleVar();
 
-		static bool demo = true;
-		ImGui::ShowDemoWindow(&demo);
+		// static bool demo = true;
+		// ImGui::ShowDemoWindow(&demo);
 	}
 
 	void update(const float ts) final
@@ -786,17 +878,15 @@ private:
 
 				scene.meshes.emplace_back();
 				scene.meshes[0].load(assetDir / "models" / "tinyStanfordDragon.glb");
-				//scene.meshes[0].load(assetDir / "models" / "hugeStanfordDragon.glb");
-				//scene.meshes[0].load(assetDir / "models" / "dragon" / "Dragon_Attenuation.gltf");
 
-				scene.objects.emplace_back(scene.meshes[0].createInstance());
-
-				sceneWrapper.addMesh(scene.meshes[0]);
-				sceneWrapper.addMeshInstance(scene.objects[0]);
+				scene.objects.emplace_back(0);
 
 				break;
 			}
 		}
+
+		sceneWrapper.~SceneWrapper();
+		new (&sceneWrapper) SceneWrapper{ scene };
 	}
 
 private:
