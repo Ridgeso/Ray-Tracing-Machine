@@ -146,7 +146,10 @@ namespace RT
 
     Box GltfLoader::buildVolume() const
     {
-        auto box = Box{};
+        auto volume = Box{
+            glm::vec3{ std::numeric_limits<float>::max() }, 0,
+            glm::vec3{ std::numeric_limits<float>::lowest() }, 0
+        };
 
         for (const auto& mesh : model.meshes)
         {
@@ -173,11 +176,11 @@ namespace RT
             auto vMin = glm::make_vec3(primAccessor.minValues.data());
             auto vMax = glm::make_vec3(primAccessor.maxValues.data());
 
-            box.leftBottomFront = glm::min(box.leftBottomFront, glm::vec3{vMin});
-            box.rightTopBack = glm::max(box.rightTopBack, glm::vec3{vMax});
+            volume.leftBottomFront = glm::min(volume.leftBottomFront, glm::vec3{vMin});
+            volume.rightTopBack = glm::max(volume.rightTopBack, glm::vec3{vMax});
         }
 
-        return box;
+        return volume;
     }
 
     bool GltfLoader::isBinGltf(const std::filesystem::path& path)
@@ -230,6 +233,149 @@ namespace RT
         constexpr uint32_t mask = ~0u;
         return (mask >> (uintBitSize - bitsInByte * primitiveComponentTypeToSize(type)));
     }
+    
+    /*
+        GltfLoader impl
+    */
+    bool ObjLoader::load(const std::filesystem::path& path)
+    {
+        model.open(path);
+        return model.is_open();
+    }
+
+    std::vector<Triangle> ObjLoader::buildModel() const
+    {
+        volume.leftBottomFront = glm::vec3{ std::numeric_limits<float>::max() };
+        volume.rightTopBack = glm::vec3{ std::numeric_limits<float>::lowest() };
+
+        auto vertices = std::vector<glm::vec3>{};
+        vertices.reserve(1000);
+        auto texCoords = std::vector<glm::vec2>{};
+        texCoords.reserve(1000);
+        auto triangles = std::vector<RT::Triangle>{};
+        triangles.reserve(1000);
+
+        auto line = std::string{};
+        while (std::getline(model, line))
+        {
+            auto ss = std::stringstream{ line };
+            auto prefix = std::string{ "" };
+            ss >> prefix;
+
+            if (line.empty() or prefix == "#")
+            {
+                continue;
+            }
+
+            if (prefix == "v")
+            {
+                auto& v = vertices.emplace_back();
+                ss >> v.x >> v.y >> v.z;
+            }
+            else if (prefix == "vt")
+            {
+                auto& vt = texCoords.emplace_back();
+                ss >> vt.x >> vt.y;
+            }
+            else if (prefix == "vn")
+            {
+                // not supported yet
+                // for future, normal may not be normalized
+            }
+            else if (prefix == "l")
+            {
+                // not supported yet
+            }
+            else if (prefix == "f")
+            {
+                const auto setVertex = [&](auto vertexData, auto& v, auto& vt /*, auto& vn*/) -> void
+                {
+                    int32_t vIdx = 0;
+                    int32_t vtIdx = 0;
+                    //int32_t vnIdx = 0;
+
+                    size_t delim = vertexData.find("//");
+                    if (std::string::npos != delim)
+                    {
+                        vertexData.replace(delim, 2u, " ");
+                        auto vA = std::stringstream{ vertexData };
+
+                        vA >> vIdx;
+                        //vA >> vnIdx;
+                        v = vertices[vIdx - 1];
+                        //vn = vertices[vnIdx - 1];
+                        return;
+                    }
+
+                    delim = vertexData.find("/");
+                    if (std::string::npos != delim)
+                    {
+                        std::replace(vertexData.begin(), vertexData.end(), '/', ' ');
+                        auto vA = std::stringstream{ vertexData };
+
+                        vA >> vIdx;
+                        vA >> vtIdx;
+                        v = vertices[vIdx - 1];
+                        vt = texCoords[vtIdx - 1];
+                        //if (' ' == vA.peek())
+                        //{
+                        //    v >> vnIdx;
+                        //    vn = vertices[vnIdx - 1];
+                        //}
+                    }
+                    else
+                    {
+                        auto vA = std::stringstream{ vertexData };
+                        vA >> vIdx;
+                        v = vertices[vIdx - 1];
+                    }
+                };
+
+                auto vertexDataA = std::string{ "" };
+                auto vertexDataB = std::string{ "" };
+                auto vertexDataC = std::string{ "" };
+                ss >> vertexDataA;
+                ss >> vertexDataB;
+                ss >> vertexDataC;
+
+                auto& face = triangles.emplace_back();
+                setVertex(vertexDataA, face.A, face.uvA);
+                setVertex(vertexDataB, face.B, face.uvB);
+                setVertex(vertexDataC, face.C, face.uvC);
+
+                volume.leftBottomFront = glm::min(volume.leftBottomFront, face.A);
+                volume.leftBottomFront = glm::min(volume.leftBottomFront, face.B);
+                volume.leftBottomFront = glm::min(volume.leftBottomFront, face.C);
+                volume.rightTopBack = glm::max(volume.rightTopBack, face.A);
+                volume.rightTopBack = glm::max(volume.rightTopBack, face.B);
+                volume.rightTopBack = glm::max(volume.rightTopBack, face.C);
+
+                if (' ' == ss.peek())
+                {
+                    auto vertexDataD = std::string{ "" };
+                    ss >> vertexDataD;
+                    auto& additionalFace = triangles.emplace_back();
+                    setVertex(vertexDataA, additionalFace.A, additionalFace.uvA);
+                    setVertex(vertexDataC, additionalFace.B, additionalFace.uvB);
+                    setVertex(vertexDataD, additionalFace.C, additionalFace.uvC);
+
+                    volume.leftBottomFront = glm::min(volume.leftBottomFront, additionalFace.A);
+                    volume.leftBottomFront = glm::min(volume.leftBottomFront, additionalFace.B);
+                    volume.leftBottomFront = glm::min(volume.leftBottomFront, additionalFace.C);
+                    volume.rightTopBack = glm::max(volume.rightTopBack, additionalFace.A);
+                    volume.rightTopBack = glm::max(volume.rightTopBack, additionalFace.B);
+                    volume.rightTopBack = glm::max(volume.rightTopBack, additionalFace.C);
+                }
+            }
+        }
+
+        return triangles;
+    }
+
+    Box ObjLoader::buildVolume() const
+    {
+        return volume;
+    }
 
     /*
         MeshLoader impl
@@ -238,7 +384,8 @@ namespace RT
     const std::unordered_map<std::string, std::function<void(MeshLoader::Loader&)>> MeshLoader::loaderSelector =
     {
         SELECTOR(".gltf", GltfLoader),
-        SELECTOR(".glb",  GltfLoader)
+        SELECTOR(".glb",  GltfLoader),
+        SELECTOR(".obj",  ObjLoader)
     };
 
     bool MeshLoader::load(const std::filesystem::path& path)

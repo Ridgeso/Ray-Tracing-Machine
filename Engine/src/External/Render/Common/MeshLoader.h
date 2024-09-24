@@ -1,8 +1,9 @@
 #pragma once
-#include "filesystem"
-#include "functional"
-#include "unordered_map"
-#include "variant"
+#include <fstream>
+#include <filesystem>
+#include <functional>
+#include <unordered_map>
+#include <variant>
 
 #include "Engine/Core/Utils.h"
 #include "Engine/Render/Scene.h"
@@ -38,9 +39,19 @@ namespace RT
 		tinygltf::Model model = {};
 	};
 
+	class ObjLoader
+	{
+	public:
+		LOADER_IMPL
+
+	private:
+		mutable Box volume = {};
+		mutable std::ifstream model = {};
+	};
+
 	class MeshLoader
 	{
-		using Loader = std::variant<UnknownLoader, GltfLoader>;
+		using Loader = std::variant<UnknownLoader, GltfLoader, ObjLoader>;
 
 	public:
 		bool load(const std::filesystem::path& path);
