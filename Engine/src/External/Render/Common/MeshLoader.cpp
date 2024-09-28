@@ -67,78 +67,85 @@ namespace RT
         for (const auto& mesh : model.meshes)
         {
             RT_LOG_INFO("Trying to add mesh: {}", mesh.name);
-            const auto primitive = std::find_if(
-                mesh.primitives.begin(),
-                mesh.primitives.end(),
-                [](const auto& primitive) { return TINYGLTF_MODE_TRIANGLES == primitive.mode; });
-
-            if (mesh.primitives.end() == primitive)
+            for (const auto& primitive : mesh.primitives)
             {
-                RT_LOG_WARN("Could not load mesh: {}. Only Triangle mode supported", mesh.name);
-                continue;
+                if (TINYGLTF_MODE_TRIANGLES != primitive.mode)
+                {
+                    continue;
+                }
+
+                if (-1 == primitive.indices)
+                {
+                    RT_LOG_WARN("Could not load mesh: {}. No indices found", mesh.name);
+                    continue;
+                }
+
+                auto primAccessorIdx = primitive.attributes.find("POSITION");
+                if (primitive.attributes.end() == primAccessorIdx)
+                {
+                    RT_LOG_WARN("Could not load mesh: {}. No POSITION found", mesh.name);
+                    continue;
+                }
+
+                const auto& primAccessor = model.accessors[primAccessorIdx->second];
+                if (TINYGLTF_COMPONENT_TYPE_FLOAT != primAccessor.componentType)
+                {
+                    RT_LOG_WARN("Could not load mesh: {}. Compoenty type must be FLOAT({})", mesh.name, TINYGLTF_COMPONENT_TYPE_FLOAT);
+                    continue;
+                }
+                if (TINYGLTF_TYPE_VEC3 != primAccessor.type)
+                {
+                    RT_LOG_WARN("Could not load mesh: {}. Type must be VEC3({})", mesh.name, TINYGLTF_TYPE_VEC3);
+                    continue;
+                }
+
+                const auto& primBufferView = model.bufferViews[primAccessor.bufferView];
+                const auto* primRawBuffer = model.buffers[primBufferView.buffer].data.data()
+                    + primBufferView.byteOffset
+                    + primAccessor.byteOffset;
+
+                const auto& primIndicesAccessor = model.accessors[primitive.indices];
+                const auto& primIndicesBufferView = model.bufferViews[primIndicesAccessor.bufferView];
+                const auto* primIndicesBuffer = model.buffers[primIndicesBufferView.buffer].data.data()
+                    + primIndicesBufferView.byteOffset
+                    + primIndicesAccessor.byteOffset;
+
+                uint32_t primIndicesPtr = 0u;
+                uint32_t primIndicesIncrement = primIndicesBufferView.byteStride
+                    ? primIndicesBufferView.byteStride
+                    : primitiveComponentTypeToSize(primIndicesAccessor.componentType) * primitiveTypeToSize(primIndicesAccessor.type);
+                uint32_t primStride = primBufferView.byteStride
+                    ? primBufferView.byteStride
+                    : primitiveComponentTypeToSize(primAccessor.componentType) * primitiveTypeToSize(primAccessor.type);
+
+                constexpr size_t nrOfTrianglesInFace = 3;
+                uint32_t lastTriangleSize = rtModel.size();
+                rtModel.resize(lastTriangleSize + primIndicesAccessor.count / nrOfTrianglesInFace);
+                for (int32_t lt = lastTriangleSize; lt < rtModel.size(); lt++)
+                {
+                    uint32_t primPtr = *(uint32_t*)(primIndicesBuffer + primIndicesPtr) & maskPrimitiveType(primIndicesAccessor.componentType);
+                    std::memcpy(glm::value_ptr(rtModel[lt].A), primRawBuffer + primPtr * primStride, sizeof(glm::vec3));
+                    primIndicesPtr += primIndicesIncrement;
+
+                    primPtr = *(uint32_t*)(primIndicesBuffer + primIndicesPtr) & maskPrimitiveType(primIndicesAccessor.componentType);
+                    std::memcpy(glm::value_ptr(rtModel[lt].B), primRawBuffer + primPtr * primStride, sizeof(glm::vec3));
+                    primIndicesPtr += primIndicesIncrement;
+
+                    primPtr = *(uint32_t*)(primIndicesBuffer + primIndicesPtr) & maskPrimitiveType(primIndicesAccessor.componentType);
+                    std::memcpy(glm::value_ptr(rtModel[lt].C), primRawBuffer + primPtr * primStride, sizeof(glm::vec3));
+                    primIndicesPtr += primIndicesIncrement;
+
+                    rtModel[lt].uvA = { 0, 0 };
+                    rtModel[lt].uvB = { 0, 0 };
+                    rtModel[lt].uvC = { 0, 0 };
+                }
+                //break;
             }
+        }
 
-            if (-1 == primitive->indices)
-            {
-                RT_LOG_WARN("Could not load mesh: {}. No indices found", mesh.name);
-                continue;
-            }
-
-            auto primAccessorIdx = primitive->attributes.find("POSITION");
-            if (primitive->attributes.end() == primAccessorIdx)
-            {
-                RT_LOG_WARN("Could not load mesh: {}. No POSITION found", mesh.name);
-                continue;
-            }
-
-            const auto& primAccessor = model.accessors[primAccessorIdx->second];
-            if (TINYGLTF_COMPONENT_TYPE_FLOAT != primAccessor.componentType)
-            {
-                RT_LOG_WARN("Could not load mesh: {}. Compoenty type must be FLOAT({})", mesh.name, TINYGLTF_COMPONENT_TYPE_FLOAT);
-                continue;
-            }
-            if (TINYGLTF_TYPE_VEC3 != primAccessor.type)
-            {
-                RT_LOG_WARN("Could not load mesh: {}. Type must be VEC3({})", mesh.name, TINYGLTF_TYPE_VEC3);
-                continue;
-            }
-
-            const auto& primBufferView = model.bufferViews[primAccessor.bufferView];
-            const auto& primRawBuffer = model.buffers[primBufferView.buffer].data.data() + primBufferView.byteOffset;
-
-            const auto& primIndicesAccessor = model.accessors[primitive->indices];
-            const auto& primIndicesBufferView = model.bufferViews[primIndicesAccessor.bufferView];
-            const auto& primIndicesBuffer = model.buffers[primIndicesBufferView.buffer];
-
-            uint32_t primIndicesPtr = primIndicesBufferView.byteOffset + primIndicesAccessor.byteOffset;
-            uint32_t primIndicesIncrement = primIndicesBufferView.byteStride
-                ? primIndicesBufferView.byteStride
-                : primitiveComponentTypeToSize(primIndicesAccessor.componentType) * primitiveTypeToSize(primIndicesAccessor.type);
-            uint32_t primStride = primBufferView.byteStride
-                ? primBufferView.byteStride
-                : primitiveComponentTypeToSize(primAccessor.componentType) * primitiveTypeToSize(primAccessor.type);
-
-            constexpr size_t nrOfTrianglesInFace = 3;
-            uint32_t lastTriangleSize = rtModel.size();
-            rtModel.resize(lastTriangleSize + primIndicesAccessor.count / nrOfTrianglesInFace);
-            for (int32_t lt = lastTriangleSize; lt < rtModel.size(); lt++)
-            {
-                uint32_t primPtr = *(uint32_t*)(primIndicesBuffer.data.data() + primIndicesPtr) & maskPrimitiveType(primIndicesAccessor.componentType);
-                std::memcpy(glm::value_ptr(rtModel[lt].A), primRawBuffer + primPtr * primStride, sizeof(glm::vec3));
-                primIndicesPtr += primIndicesIncrement;
-
-                primPtr = *(uint32_t*)(primIndicesBuffer.data.data() + primIndicesPtr) & maskPrimitiveType(primIndicesAccessor.componentType);
-                std::memcpy(glm::value_ptr(rtModel[lt].B), primRawBuffer + primPtr * primStride, sizeof(glm::vec3));
-                primIndicesPtr += primIndicesIncrement;
-
-                primPtr = *(uint32_t*)(primIndicesBuffer.data.data() + primIndicesPtr) & maskPrimitiveType(primIndicesAccessor.componentType);
-                std::memcpy(glm::value_ptr(rtModel[lt].C), primRawBuffer + primPtr * primStride, sizeof(glm::vec3));
-                primIndicesPtr += primIndicesIncrement;
-
-                rtModel[lt].uvA = { 0, 0 };
-                rtModel[lt].uvB = { 0, 0 };
-                rtModel[lt].uvC = { 0, 0 };
-            }
+        if (rtModel.empty())
+        {
+            LOG_WARN("Colnd not find any Triangle primitive. No data in mesh");
         }
 
         return rtModel;
@@ -153,31 +160,28 @@ namespace RT
 
         for (const auto& mesh : model.meshes)
         {
-            const auto primitive = std::find_if(
-                mesh.primitives.begin(),
-                mesh.primitives.end(),
-                [](const auto& primitive) { return TINYGLTF_MODE_TRIANGLES == primitive.mode; });
-            
-            if (mesh.primitives.end() == primitive)
+            for (const auto& primitive : mesh.primitives)
             {
-                RT_LOG_WARN("Could not find volue of: {}", mesh.name);
-                continue;
+                if (TINYGLTF_MODE_TRIANGLES != primitive.mode)
+                {
+                    continue;
+                }
+
+                auto primAccessorIdx = primitive.attributes.find("POSITION");
+                if (primitive.attributes.end() == primAccessorIdx)
+                {
+                    RT_LOG_WARN("Could not load mesh: {}. No POSITION found", mesh.name);
+                    continue;
+                }
+
+                const auto& primAccessor = model.accessors[primAccessorIdx->second];
+
+                auto vMin = glm::make_vec3(primAccessor.minValues.data());
+                auto vMax = glm::make_vec3(primAccessor.maxValues.data());
+
+                volume.leftBottomFront = glm::min(volume.leftBottomFront, glm::vec3{ vMin });
+                volume.rightTopBack = glm::max(volume.rightTopBack, glm::vec3{ vMax });
             }
-
-            auto primAccessorIdx = primitive->attributes.find("POSITION");
-            if (primitive->attributes.end() == primAccessorIdx)
-            {
-                RT_LOG_WARN("Could not load mesh: {}. No POSITION found", mesh.name);
-                continue;
-            }
-
-            const auto& primAccessor = model.accessors[primAccessorIdx->second];
-
-            auto vMin = glm::make_vec3(primAccessor.minValues.data());
-            auto vMax = glm::make_vec3(primAccessor.maxValues.data());
-
-            volume.leftBottomFront = glm::min(volume.leftBottomFront, glm::vec3{vMin});
-            volume.rightTopBack = glm::max(volume.rightTopBack, glm::vec3{vMax});
         }
 
         return volume;
