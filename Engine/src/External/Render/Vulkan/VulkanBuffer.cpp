@@ -139,6 +139,12 @@ namespace RT::Vulkan
 		vkUnmapMemory(device, uniMemory);
 		vkDestroyBuffer(device, uniBuffer, nullptr);
 		vkFreeMemory(device, uniMemory, nullptr);
+
+		auto self = std::find(uniformsToFlush.begin(), uniformsToFlush.end(), this);
+		if (uniformsToFlush.end() != self)
+		{
+			uniformsToFlush.erase(self);
+		}
 	}
 
 	void VulkanUniform::setData(const void* data, const uint32_t size, const uint32_t offset)

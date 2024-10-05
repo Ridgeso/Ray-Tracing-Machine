@@ -13,12 +13,9 @@ struct Node
 #pragma pack(push, 1)
 struct BoundingBox
 {
-	glm::vec3 vMin;
-	float padding_1;
-	glm::vec3 vMax;
-	float padding_2;
-	glm::uvec2 bufferRegion;
-	float padding_3[2];
+	glm::vec3 vMin; float pad1;
+	glm::vec3 vMax; float pad2;
+	glm::uvec2 bufferRegion; float pad3[2];
 };
 #pragma pack(pop)
 

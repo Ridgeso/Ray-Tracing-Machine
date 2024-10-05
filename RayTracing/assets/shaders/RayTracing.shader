@@ -485,8 +485,6 @@ HitInfo bvhTraverse(in Ray ray, in uint bvhRoot, in uint modelRoot)
 
 float sphereHit(in Ray ray, in Sphere sphere)
 {
-    HitInfo hitInfo;
-    
     vec3 origin = ray.Origin - sphere.Position;
 
     float a = dot(ray.Direction, ray.Direction);

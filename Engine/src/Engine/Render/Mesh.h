@@ -11,26 +11,32 @@ namespace RT
 	#pragma pack(push, 1)
 	struct Triangle
 	{
-		glm::vec3 A;
-		float padding_1;
-		glm::vec3 B;
-		float padding_2;
-		glm::vec3 C;
-		float padding_3;
+		glm::vec3 A; float pad1;
+		glm::vec3 B; float pad2;
+		glm::vec3 C; float pad3;
 		glm::vec2 uvA;
 		glm::vec2 uvB;
-		glm::vec2 uvC;
-		float padding_4[2];
+		glm::vec2 uvC; float pad4[2];
+
+		Triangle() = default;
+		Triangle(
+			const glm::vec3 A, const glm::vec3 B, const glm::vec3 C,
+			const glm::vec2 uvA, const glm::vec2 uvB, const glm::vec2 uvC)
+			: A{A}, pad1{}
+			, B{B}, pad2{}
+			, C{C}, pad3{}
+			, uvA{uvA}
+			, uvB{uvB}
+			, uvC{uvC}, pad4{}
+		{}
 	};
 	#pragma pack(pop)
 	
 	#pragma pack(push, 1)
 	struct Box
 	{
-		glm::vec3 leftBottomFront;
-		float padding_1;
-		glm::vec3 rightTopBack;
-		float padding_2;
+		glm::vec3 leftBottomFront; float pad1;
+		glm::vec3 rightTopBack; float pad2;
 	};
 	#pragma pack(pop)
 	
@@ -40,6 +46,9 @@ namespace RT
 	{
 		friend MeshInstance;
 	public:
+		Mesh() = default;
+		Mesh(const std::vector<Triangle>& buffer);
+
 		void load(const std::filesystem::path& path);
 
 		const std::vector<Triangle>& getModel() const { return model; }

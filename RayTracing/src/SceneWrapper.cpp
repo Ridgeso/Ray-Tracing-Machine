@@ -5,6 +5,10 @@
 SceneWrapper::SceneWrapper(RT::Scene& scene)
 	: baseScene{ scene }
 {
+}
+
+void SceneWrapper::build()
+{
 	for (const auto& mesh : baseScene.meshes)
 	{
 		addMesh(mesh);

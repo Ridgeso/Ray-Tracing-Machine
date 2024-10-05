@@ -23,12 +23,11 @@ public:
 		, lastFrameDuration{0.0f}
 		, lastMousePos{0.0f}
 		, lastWinSize{RT::Application::getWindow()->getSize()}
+		, selectedScene{3}
 		, camera(45.0f, 0.1f, 1.0f)
 		, scene{}
 		, sceneWrapper{scene}
 	{
-		loadScene(4);
-
 		//screenBuff = VertexBuffer::create(sizeof(screenVertices), screenVertices);
 		//screenBuff->registerAttributes({ VertexElement::Float2, VertexElement::Float2 });
 
@@ -37,80 +36,7 @@ public:
 		//renderPassSpec.attachmentsFormats = AttachmentFormats{ ImageFormat::RGBA32F, ImageFormat::RGBA32F, ImageFormat::Depth };
 		//renderPass = RenderPass::create(renderPassSpec);
 
-		accumulationTexture = RT::Texture::create(lastWinSize, RT::Texture::Format::RGBA32F);
-		accumulationTexture->transition(RT::Texture::Access::Write, RT::Texture::Layout::General);
-
-		outTexture = RT::Texture::create(lastWinSize, RT::Texture::Format::RGBA8);
-		
-		skyMap = RT::Texture::create(assetDir / "skyMaps" / "evening_road_01_puresky_1k.hdr", RT::Texture::Filter::Linear, RT::Texture::Mode::ClampToEdge);
-		skyMap->transition(RT::Texture::Access::Read, RT::Texture::Layout::General);
-
-		infoUniform.resolution = lastWinSize;
-		infoUniform.materialsCount = scene.materials.size();
-		infoUniform.spheresCount = sceneWrapper.spheres.size();
-		infoUniform.objectsCount = sceneWrapper.meshInstanceWrappers.size();
-		infoUniform.texturesCount = textures.size();
-
-		ammountsUniform = RT::Uniform::create(RT::UniformType::Uniform, sizeof(InfoUniform));
-		ammountsUniform->setData(&infoUniform, sizeof(InfoUniform));
-
-		cameraUniform = RT::Uniform::create(RT::UniformType::Uniform, sizeof(RT::Camera::Spec));
-		cameraUniform->setData(&camera.getSpec(), sizeof(RT::Camera::Spec));
-
-		materialsStorage = RT::Uniform::create(RT::UniformType::Storage, scene.materials.size() > 0 ? sizeof(RT::Material) * scene.materials.size() : 1);
-		materialsStorage->setData(scene.materials.data(), sizeof(RT::Material) * scene.materials.size());
-
-		spheresStorage = RT::Uniform::create(RT::UniformType::Storage, sceneWrapper.spheres.size() > 0 ? sizeof(Sphere) * sceneWrapper.spheres.size() : 1);
-		spheresStorage->setData(sceneWrapper.spheres.data(), sizeof(Sphere) * sceneWrapper.spheres.size());
-		
-		bvhStorage = RT::Uniform::create(RT::UniformType::Storage, sceneWrapper.boundingBoxes.size() > 0 ? sizeof(BoundingBox) * sceneWrapper.boundingBoxes.size() : 1);
-		bvhStorage->setData(sceneWrapper.boundingBoxes.data(), sizeof(BoundingBox) * sceneWrapper.boundingBoxes.size());
-		
-		trianglesStorage = RT::Uniform::create(RT::UniformType::Storage, sceneWrapper.triangles.size() > 0 ? sizeof(RT::Triangle) * sceneWrapper.triangles.size() : 1);
-		trianglesStorage->setData(sceneWrapper.triangles.data(), sizeof(RT::Triangle) * sceneWrapper.triangles.size());
-
-		meshWrappersStorage = RT::Uniform::create(RT::UniformType::Storage, sceneWrapper.meshWrappers.size() > 0 ? sizeof(MeshWrapper) * sceneWrapper.meshWrappers.size() : 1);
-		meshWrappersStorage->setData(sceneWrapper.meshWrappers.data(), sizeof(MeshWrapper) * sceneWrapper.meshWrappers.size());
-		
-		meshInstanceWrappersStorage = RT::Uniform::create(RT::UniformType::Storage, sceneWrapper.meshInstanceWrappers.size() > 0 ? sizeof(MeshInstanceWrapper) * sceneWrapper.meshInstanceWrappers.size() : 1);
-		meshInstanceWrappersStorage->setData(sceneWrapper.meshInstanceWrappers.data(), sizeof(MeshInstanceWrapper) * sceneWrapper.meshInstanceWrappers.size());
-
-		auto pipelineSpec = RT::PipelineSpec{};
-		pipelineSpec.shaderPath = assetDir / "shaders" / "RayTracing.shader";
-		pipelineSpec.uniformLayouts = RT::UniformLayouts{
-			{ .nrOfSets = 1, .layout = {
-				{ .type = RT::UniformType::Image,	.count = 1 },
-				{ .type = RT::UniformType::Image,	.count = 1 },
-				{ .type = RT::UniformType::Sampler, .count = 1 },
-				{ .type = RT::UniformType::Uniform, .count = 1 },
-				{ .type = RT::UniformType::Uniform, .count = 1 } } },
-			{ .nrOfSets = 1, .layout = {
-				{ .type = RT::UniformType::Storage, .count = 1 },
-				{ .type = RT::UniformType::Storage, .count = 1 },
-				{ .type = RT::UniformType::Storage, .count = 1 },
-				{ .type = RT::UniformType::Storage, .count = 1 },
-				{ .type = RT::UniformType::Storage, .count = 1 },
-				{ .type = RT::UniformType::Storage, .count = 1 },
-				{ .type = RT::UniformType::Sampler, .count = 0 < (uint32_t)textures.size() ? (uint32_t)textures.size() : 1 } } }
-		};
-		pipelineSpec.attachmentFormats = {};
-		pipeline = RT::Pipeline::create(pipelineSpec);
-
-		pipeline->updateSet(0, 0, 0, *accumulationTexture);
-		pipeline->updateSet(0, 0, 1, *outTexture);
-		pipeline->updateSet(0, 0, 2, *skyMap);
-		pipeline->updateSet(0, 0, 3, *ammountsUniform);
-		pipeline->updateSet(0, 0, 4, *cameraUniform);
-		pipeline->updateSet(1, 0, 0, *materialsStorage);
-		pipeline->updateSet(1, 0, 1, *spheresStorage);
-		pipeline->updateSet(1, 0, 2, *bvhStorage);
-		pipeline->updateSet(1, 0, 3, *trianglesStorage);
-		pipeline->updateSet(1, 0, 4, *meshWrappersStorage);
-		pipeline->updateSet(1, 0, 5, *meshInstanceWrappersStorage);
-		if (0 < textures.size())
-		{
-			pipeline->updateSet(1, 0, 6, textures);
-		}
+		loadScene(selectedScene);
 
 		registerEvents();
 	}
@@ -172,6 +98,33 @@ public:
 			{
 				infoUniform.drawEnvironment = drawEnvironmentTranslator;
 				ammountsUniform->setData(&infoUniform.drawEnvironment, sizeof(float), offsetof(InfoUniform, drawEnvironment));
+			}
+
+			static auto prevSceneLabel = fmt::format("Scene: {}", selectedScene);
+			static int32_t selectedMeshId = 0;
+			if (ImGui::BeginCombo("Scenes", prevSceneLabel.c_str()))
+			{
+				for (int32_t i = 1; i <= 5; i++)
+				{
+					const bool isSceneSelected = i == selectedScene;
+					const auto sceneLabel = fmt::format("Scene: {}", i);
+					if (ImGui::Selectable(sceneLabel.c_str(), isSceneSelected))
+					{
+						selectedScene = i;
+						prevSceneLabel = sceneLabel;
+
+						scene = RT::Scene{};
+						sceneWrapper.~SceneWrapper();
+						new (&sceneWrapper) SceneWrapper{scene};
+						loadScene(selectedScene);
+					}
+
+					if (isSceneSelected)
+					{
+						ImGui::SetItemDefaultFocus();
+					}
+				}
+				ImGui::EndCombo();
 			}
 
 			if (ImGui::SliderInt("Debug", (int32_t*)&infoUniform.debug, 0, 400))
@@ -684,7 +637,6 @@ private:
 		{
 			case 1:
 			{
-				LOG_WARN("Scene does not work. Will be fixed soon");
 				//**// SCENE 1 //**//
 				scene.materials.emplace_back(RT::Material{ { 1.0f, 1.0f, 1.0f }, 0.0, { 1.0f, 1.0f, 1.0f }, 0.0f, 0.0f, 0.0f, 1.0f, -1 });
 				scene.materials.emplace_back(RT::Material{ { 0.0f, 0.0f, 1.0f }, 0.0, { 1.0f, 1.0f, 1.0f }, 0.0f, 0.0f, 0.0f, 1.0f, -1 });
@@ -706,7 +658,6 @@ private:
 
 			case 2:
 			{
-				LOG_WARN("Scene does not work. Will be fixed soon");
 				//**// SCENE 2 //**//
 				textures.emplace_back(RT::Texture::create(assetDir / "textures" / "templategrid_albedo.png"));
 				textures[0]->transition(RT::Texture::Access::Read, RT::Texture::Layout::General);
@@ -718,23 +669,17 @@ private:
 
 				sceneWrapper.spheres.emplace_back(Sphere{ { 0.0f, 0.0f, -2.0f }, 1.0f, 0 });
 				
-				//scene.spheres.emplace_back(RT::Sphere{ { 0.0f, -2001.0f, -2.0f }, 2000.0f, 1 });
-				sceneWrapper.triangles.emplace_back(RT::Triangle{
-					{ -50.0f, -1.0f, -50.0f }, 0.0,
-					{ -50.0f, -1.0f,  50.0f }, 0.0,
-					{  50.0f, -1.0f, -50.0f }, 0.0,
-					{  0.0,  0.0 },
-					{  0.0, 10.0 },
-					{ 10.0,  0.0 },
-					1, 0.0 });
-				sceneWrapper.triangles.emplace_back(RT::Triangle{
-					{  50.0f, -1.0f,  50.0f }, 0.0,
-					{  50.0f, -1.0f, -50.0f }, 0.0,
-					{ -50.0f, -1.0f,  50.0f }, 0.0,
-					{ 10.0, 10.0 },
-					{ 10.0,  0.0 },
-					{  0.0, 10.0 },
-					1, 0.0 });
+				auto triBuffer = std::vector<RT::Triangle>{
+					RT::Triangle{
+						{ -50.0f, -1.0f, -50.0f }, { -50.0f, -1.0f,  50.0f }, {  50.0f, -1.0f, -50.0f },
+						{  0.0,  0.0 }, {  0.0, 10.0 }, { 10.0,  0.0 }},
+					RT::Triangle{
+						{  50.0f, -1.0f,  50.0f }, {  50.0f, -1.0f, -50.0f }, { -50.0f, -1.0f,  50.0f },
+						{ 10.0, 10.0 }, { 10.0,  0.0 }, {  0.0, 10.0 }}};
+				scene.meshes.emplace_back(triBuffer);
+				
+				scene.objects.emplace_back(0);
+				scene.objects[0].materialId = 1;
 
 				sceneWrapper.spheres.emplace_back(Sphere{ {  2.5f, 0.0f, -2.0f }, 1.0f, 2 });
 				sceneWrapper.spheres.emplace_back(Sphere{ { -2.5f, 0.0f, -2.0f }, 1.0f, 3 });
@@ -779,159 +724,189 @@ private:
 
 			case 3:
 			{
-				LOG_WARN("Scene does not work. Will be fixed soon");
 				//**// SCENE 3 //**//
+				textures.emplace_back(RT::Texture::create(assetDir / "textures" / "checkered.jpg"));
+				textures[0]->transition(RT::Texture::Access::Read, RT::Texture::Layout::General);
+
+				scene.materials.emplace_back(RT::Material{ { 1.0f, 1.0f, 1.0f }, 0.0, { 1.0f, 1.0f, 1.0f }, 0.0f, 0.0f, 0.0f, 1.0f, -1 });
+				scene.materials.emplace_back(RT::Material{ { 1.0f, 1.0f, 1.0f }, 0.0, { 1.0f, 1.0f, 1.0f }, 0.0f, 0.0f, 0.0f, 1.0f,  0 });
 				scene.materials.emplace_back(RT::Material{ { 1.0f, 1.0f, 1.0f }, 0.0, { 1.0f, 1.0f, 1.0f }, 0.0f, 0.0f, 0.0f, 1.0f, -1 });
 				scene.materials.emplace_back(RT::Material{ { 1.0f, 0.0f, 0.0f }, 0.0, { 1.0f, 1.0f, 1.0f }, 0.0f, 0.0f, 0.0f, 1.0f, -1 });
 				scene.materials.emplace_back(RT::Material{ { 0.0f, 1.0f, 0.0f }, 0.0, { 1.0f, 1.0f, 1.0f }, 0.0f, 0.0f, 0.0f, 1.0f, -1 });
 				scene.materials.emplace_back(RT::Material{ { 1.0f, 1.0f, 1.0f }, 0.0, { 1.0f, 1.0f, 1.0f }, 0.0f, 0.0f, 8.0f, 1.0f, -1 });
 
-				// bottom
-				sceneWrapper.triangles.emplace_back(RT::Triangle{
-					{  3.0f, 0.0f,  1.0f }, 0.0,
-					{  3.0f, 0.0f, -5.0f }, 0.0,
-					{ -3.0f, 0.0f, -5.0f }, 0.0,
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					0, 0.0 });
-				sceneWrapper.triangles.emplace_back(RT::Triangle{
-					{  3.0f, 0.0f,  1.0f }, 0.0,
-					{ -3.0f, 0.0f, -5.0f }, 0.0,
-					{ -3.0f, 0.0f,  1.0f }, 0.0,
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					0, 0.0 });
+				scene.meshes.emplace_back().load(assetDir / "models" / "tinyStanfordDragon.glb");
+				auto& dragon = scene.objects.emplace_back(0);
+				dragon.position = glm::vec3{ 0.0f, 1.4f, -2.0f };
+				dragon.scale = glm::vec3{ 5.0f };
+				dragon.rotation = glm::vec3{ 0.0f, 128.0, 0.0f };
+				dragon.materialId = 0;
 
-				// top
-				sceneWrapper.triangles.emplace_back(RT::Triangle{
-					{  3.0f, 6.0f, -5.0f }, 0.0,
-					{  3.0f, 6.0f,  1.0f }, 0.0,
-					{ -3.0f, 6.0f, -5.0f }, 0.0,
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					0, 0.0 });
-				sceneWrapper.triangles.emplace_back(RT::Triangle{
-					{ -3.0f, 6.0f, -5.0f }, 0.0,
-					{  3.0f, 6.0f,  1.0f }, 0.0,
-					{ -3.0f, 6.0f,  1.0f }, 0.0,
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					0, 0.0 });
+				auto triBottom = std::vector<RT::Triangle>{
+					RT::Triangle{
+						{  3.0f, 0.0f,  1.0f }, {  3.0f, 0.0f, -5.0f }, { -3.0f, 0.0f, 1.0f },
+						{ 0.0, 0.0 }, { 0.0, 1.0 }, { 1.0, 0.0 }},
+					RT::Triangle{
+						{ -3.0f, 0.0f, -5.0f }, { -3.0f, 0.0f,  1.0f }, {  3.0f, 0.0f, -5.0f },
+						{ 1.0, 1.0 }, { 1.0, 0.0 }, { 0.0, 1.0 }}};
+				auto triTop = std::vector<RT::Triangle>{
+					RT::Triangle{
+						{  3.0f, 6.0f, -5.0f }, {  3.0f, 6.0f,  1.0f }, { -3.0f, 6.0f, -5.0f },
+						{ 0.0, 0.0 }, { 0.0, 0.0 }, { 0.0, 0.0 }},
+					RT::Triangle{
+						{ -3.0f, 6.0f, -5.0f }, {  3.0f, 6.0f,  1.0f }, { -3.0f, 6.0f,  1.0f },
+						{ 0.0, 0.0 }, { 0.0, 0.0 }, { 0.0, 0.0 }}};
+				auto triBack = std::vector<RT::Triangle>{
+					RT::Triangle{
+						{  3.0f, 0.0f, -5.0f }, {  3.0f, 6.0f, -5.0f }, { -3.0f, 0.0f, -5.0f },
+						{ 0.0, 0.0 }, { 0.0, 0.0 }, { 0.0, 0.0 }},
+					RT::Triangle{
+						{ -3.0f, 0.0f, -5.0f }, {  3.0f, 6.0f, -5.0f }, { -3.0f, 6.0f, -5.0f },
+						{ 0.0, 0.0 }, { 0.0, 0.0 }, { 0.0, 0.0 }} };
+				auto triFront = std::vector<RT::Triangle>{
+					RT::Triangle{
+						{  3.0f, 6.0f, 1.0f }, {  3.0f, 0.0f, 1.0f }, { -3.0f, 0.0f, 1.0f },
+						{ 0.0, 0.0 }, { 0.0, 0.0 }, { 0.0, 0.0 }},
+					RT::Triangle{
+						{  3.0f, 6.0f, 1.0f }, { -3.0f, 0.0f, 1.0f }, { -3.0f, 6.0f, 1.0f },
+						{ 0.0, 0.0 }, { 0.0, 0.0 }, { 0.0, 0.0 }} };
+				auto triLeft = std::vector<RT::Triangle>{
+					RT::Triangle{
+						{ 3.0f, 0.0f, -5.0f }, { 3.0f, 0.0f,  1.0f }, { 3.0f, 6.0f, -5.0f },
+						{ 0.0, 0.0 }, { 0.0, 0.0 }, { 0.0, 0.0 }
+					},
+					RT::Triangle{
+						{ 3.0f, 0.0f,  1.0f }, { 3.0f, 6.0f,  1.0f }, { 3.0f, 6.0f, -5.0f },
+						{ 0.0, 0.0 }, { 0.0, 0.0 }, { 0.0, 0.0 }} };
+				auto triRight = std::vector<RT::Triangle>{
+					RT::Triangle{
+						{ -3.0f, 0.0f, -5.0f }, { -3.0f, 6.0f, -5.0f }, { -3.0f, 0.0f,  1.0f },
+						{ 0.0, 0.0 }, { 0.0, 0.0 }, { 0.0, 0.0 }},
+					RT::Triangle{
+						{ -3.0f, 0.0f,  1.0f }, { -3.0f, 6.0f, -5.0f }, { -3.0f, 6.0f,  1.0f },
+						{ 0.0, 0.0 }, { 0.0, 0.0 }, { 0.0, 0.0 }} };
 
-				// back
-				sceneWrapper.triangles.emplace_back(RT::Triangle{
-					{  3.0f, 0.0f, -5.0f }, 0.0,
-					{  3.0f, 6.0f, -5.0f }, 0.0,
-					{ -3.0f, 0.0f, -5.0f }, 0.0,
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					0, 0.0 });
-				sceneWrapper.triangles.emplace_back(RT::Triangle{
-					{ -3.0f, 0.0f, -5.0f }, 0.0,
-					{  3.0f, 6.0f, -5.0f }, 0.0,
-					{ -3.0f, 6.0f, -5.0f }, 0.0,
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					0, 0.0 });
+				auto triLight = std::vector<RT::Triangle>{
+					RT::Triangle{
+						{  1.0f, 5.9f, -3.0f }, {  1.0f, 5.9f, -1.0f }, { -1.0f, 5.9f, -3.0f },
+						{ 0.0, 0.0 }, { 0.0, 0.0 }, { 0.0, 0.0 }},
+					RT::Triangle{
+						{ -1.0f, 5.9f, -3.0f }, {  1.0f, 5.9f, -1.0f }, { -1.0f, 5.9f, -1.0f },
+						{ 0.0, 0.0 }, { 0.0, 0.0 }, { 0.0, 0.0 }}};
 
-				// front
-				sceneWrapper.triangles.emplace_back(RT::Triangle{
-					{  3.0f, 6.0f, 1.0f }, 0.0,
-					{  3.0f, 0.0f, 1.0f }, 0.0,
-					{ -3.0f, 0.0f, 1.0f }, 0.0,
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					0, 0.0 });
-				sceneWrapper.triangles.emplace_back(RT::Triangle{
-					{  3.0f, 6.0f, 1.0f }, 0.0,
-					{ -3.0f, 0.0f, 1.0f }, 0.0,
-					{ -3.0f, 6.0f, 1.0f }, 0.0,
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					0, 0.0 });
+				scene.meshes.emplace_back(triBottom);
+				scene.meshes.emplace_back(triTop);
+				scene.meshes.emplace_back(triBack);
+				scene.meshes.emplace_back(triFront);
+				scene.meshes.emplace_back(triLeft);
+				scene.meshes.emplace_back(triRight);
+				scene.meshes.emplace_back(triLight);
 
-				// left
-				sceneWrapper.triangles.emplace_back(RT::Triangle{
-					{ 3.0f, 0.0f, -5.0f }, 0.0,
-					{ 3.0f, 0.0f,  1.0f }, 0.0,
-					{ 3.0f, 6.0f, -5.0f }, 0.0,
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					1, 0.0 });
-				sceneWrapper.triangles.emplace_back(RT::Triangle{
-					{ 3.0f, 0.0f,  1.0f }, 0.0,
-					{ 3.0f, 6.0f,  1.0f }, 0.0,
-					{ 3.0f, 6.0f, -5.0f }, 0.0,
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					1, 0.0 });
-
-				// right
-				sceneWrapper.triangles.emplace_back(RT::Triangle{
-					{ -3.0f, 0.0f, -5.0f }, 0.0,
-					{ -3.0f, 6.0f, -5.0f }, 0.0,
-					{ -3.0f, 0.0f,  1.0f }, 0.0,
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					2, 0.0 });
-				sceneWrapper.triangles.emplace_back(RT::Triangle{
-					{ -3.0f, 0.0f,  1.0f }, 0.0,
-					{ -3.0f, 6.0f, -5.0f }, 0.0,
-					{ -3.0f, 6.0f,  1.0f }, 0.0,
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					2, 0.0 });
-
-				// light
-				sceneWrapper.triangles.emplace_back(RT::Triangle{
-					{  1.0f, 5.9f, -3.0f }, 0.0,
-					{  1.0f, 5.9f, -1.0f }, 0.0,
-					{ -1.0f, 5.9f, -3.0f }, 0.0,
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					3, 0.0 });
-				sceneWrapper.triangles.emplace_back(RT::Triangle{
-					{ -1.0f, 5.9f, -3.0f }, 0.0,
-					{  1.0f, 5.9f, -1.0f }, 0.0,
-					{ -1.0f, 5.9f, -1.0f }, 0.0,
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					{ 0.0, 0.0 },
-					3, 0.0 });
+				scene.objects.emplace_back(1).materialId = 1;
+				scene.objects.emplace_back(2).materialId = 2;
+				scene.objects.emplace_back(3).materialId = 2;
+				scene.objects.emplace_back(4).materialId = 2;
+				scene.objects.emplace_back(5).materialId = 3;
+				scene.objects.emplace_back(6).materialId = 4;
+				scene.objects.emplace_back(7).materialId = 5;
 				//**// SCENE 3 //**//
 
 				break;
 			}
 			case 4:
 			{
-				LOG_WARN("Loading a scene which is heavy for current engine implementation, will be improved in future");
-
+				//**// SCENE 4 //**//
+				// Dev platform
 				scene.materials.emplace_back(RT::Material{ { 1.0f, 1.0f, 1.0f }, 0.0, { 1.0f, 1.0f, 1.0f }, 0.0f, 0.0f, 0.0f, 1.0f, -1 });
 
-				scene.meshes.emplace_back();
-				scene.meshes[0].load(assetDir / "models" / "tinyStanfordDragon.glb");
-
+				scene.meshes.emplace_back().load(assetDir / "models" / "tinyStanfordDragon.glb");
 				scene.objects.emplace_back(0);
+				//**// SCENE 4 //**//
 
 				break;
 			}
 		}
 
-		sceneWrapper.~SceneWrapper();
-		new (&sceneWrapper) SceneWrapper{ scene };
+		sceneWrapper.build();
+		constructScene();
+	}
+
+	void constructScene()
+	{
+		accumulationTexture = RT::Texture::create(lastWinSize, RT::Texture::Format::RGBA32F);
+		accumulationTexture->transition(RT::Texture::Access::Write, RT::Texture::Layout::General);
+
+		outTexture = RT::Texture::create(lastWinSize, RT::Texture::Format::RGBA8);
+
+		skyMap = RT::Texture::create(assetDir / "skyMaps" / "evening_road_01_puresky_1k.hdr", RT::Texture::Filter::Linear, RT::Texture::Mode::ClampToEdge);
+		skyMap->transition(RT::Texture::Access::Read, RT::Texture::Layout::General);
+
+		infoUniform.resolution = lastWinSize;
+		infoUniform.materialsCount = scene.materials.size();
+		infoUniform.spheresCount = sceneWrapper.spheres.size();
+		infoUniform.objectsCount = sceneWrapper.meshInstanceWrappers.size();
+		infoUniform.texturesCount = textures.size();
+
+		ammountsUniform = RT::Uniform::create(RT::UniformType::Uniform, sizeof(InfoUniform));
+		ammountsUniform->setData(&infoUniform, sizeof(InfoUniform));
+
+		cameraUniform = RT::Uniform::create(RT::UniformType::Uniform, sizeof(RT::Camera::Spec));
+		cameraUniform->setData(&camera.getSpec(), sizeof(RT::Camera::Spec));
+
+		materialsStorage = RT::Uniform::create(RT::UniformType::Storage, scene.materials.size() > 0 ? sizeof(RT::Material) * scene.materials.size() : 1);
+		materialsStorage->setData(scene.materials.data(), sizeof(RT::Material) * scene.materials.size());
+
+		spheresStorage = RT::Uniform::create(RT::UniformType::Storage, sceneWrapper.spheres.size() > 0 ? sizeof(Sphere) * sceneWrapper.spheres.size() : 1);
+		spheresStorage->setData(sceneWrapper.spheres.data(), sizeof(Sphere) * sceneWrapper.spheres.size());
+
+		bvhStorage = RT::Uniform::create(RT::UniformType::Storage, sceneWrapper.boundingBoxes.size() > 0 ? sizeof(BoundingBox) * sceneWrapper.boundingBoxes.size() : 1);
+		bvhStorage->setData(sceneWrapper.boundingBoxes.data(), sizeof(BoundingBox) * sceneWrapper.boundingBoxes.size());
+
+		trianglesStorage = RT::Uniform::create(RT::UniformType::Storage, sceneWrapper.triangles.size() > 0 ? sizeof(RT::Triangle) * sceneWrapper.triangles.size() : 1);
+		trianglesStorage->setData(sceneWrapper.triangles.data(), sizeof(RT::Triangle) * sceneWrapper.triangles.size());
+
+		meshWrappersStorage = RT::Uniform::create(RT::UniformType::Storage, sceneWrapper.meshWrappers.size() > 0 ? sizeof(MeshWrapper) * sceneWrapper.meshWrappers.size() : 1);
+		meshWrappersStorage->setData(sceneWrapper.meshWrappers.data(), sizeof(MeshWrapper) * sceneWrapper.meshWrappers.size());
+
+		meshInstanceWrappersStorage = RT::Uniform::create(RT::UniformType::Storage, sceneWrapper.meshInstanceWrappers.size() > 0 ? sizeof(MeshInstanceWrapper) * sceneWrapper.meshInstanceWrappers.size() : 1);
+		meshInstanceWrappersStorage->setData(sceneWrapper.meshInstanceWrappers.data(), sizeof(MeshInstanceWrapper) * sceneWrapper.meshInstanceWrappers.size());
+
+		auto pipelineSpec = RT::PipelineSpec{};
+		pipelineSpec.shaderPath = assetDir / "shaders" / "RayTracing.shader";
+		pipelineSpec.uniformLayouts = RT::UniformLayouts{
+			{.nrOfSets = 1, .layout = {
+				{.type = RT::UniformType::Image,	.count = 1 },
+				{.type = RT::UniformType::Image,	.count = 1 },
+				{.type = RT::UniformType::Sampler, .count = 1 },
+				{.type = RT::UniformType::Uniform, .count = 1 },
+				{.type = RT::UniformType::Uniform, .count = 1 } } },
+			{.nrOfSets = 1, .layout = {
+				{.type = RT::UniformType::Storage, .count = 1 },
+				{.type = RT::UniformType::Storage, .count = 1 },
+				{.type = RT::UniformType::Storage, .count = 1 },
+				{.type = RT::UniformType::Storage, .count = 1 },
+				{.type = RT::UniformType::Storage, .count = 1 },
+				{.type = RT::UniformType::Storage, .count = 1 },
+				{.type = RT::UniformType::Sampler, .count = 0 < (uint32_t)textures.size() ? (uint32_t)textures.size() : 1 } } }
+		};
+		pipelineSpec.attachmentFormats = {};
+		pipeline = RT::Pipeline::create(pipelineSpec);
+
+		pipeline->updateSet(0, 0, 0, *accumulationTexture);
+		pipeline->updateSet(0, 0, 1, *outTexture);
+		pipeline->updateSet(0, 0, 2, *skyMap);
+		pipeline->updateSet(0, 0, 3, *ammountsUniform);
+		pipeline->updateSet(0, 0, 4, *cameraUniform);
+		pipeline->updateSet(1, 0, 0, *materialsStorage);
+		pipeline->updateSet(1, 0, 1, *spheresStorage);
+		pipeline->updateSet(1, 0, 2, *bvhStorage);
+		pipeline->updateSet(1, 0, 3, *trianglesStorage);
+		pipeline->updateSet(1, 0, 4, *meshWrappersStorage);
+		pipeline->updateSet(1, 0, 5, *meshInstanceWrappersStorage);
+		if (0 < textures.size())
+		{
+			pipeline->updateSet(1, 0, 6, textures);
+		}
 	}
 
 private:
@@ -939,6 +914,7 @@ private:
 	float lastFrameDuration;
 	glm::vec2 lastMousePos;
 	glm::ivec2 lastWinSize;
+	int32_t selectedScene;
 
 	RT::Camera camera;
 	RT::Scene scene;

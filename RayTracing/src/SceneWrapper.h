@@ -8,8 +8,7 @@ struct Sphere
 {
 	glm::vec3 position;
 	float radius;
-	int32_t materialId;
-	float padding_[3];
+	int32_t materialId; float pad[3];
 };
 #pragma pack(pop)
 
@@ -18,8 +17,7 @@ struct MeshWrapper
 {
 	uint32_t bvhRoot;
 	uint32_t modelRoot;
-	int32_t materialId;
-	float padding_[1];
+	int32_t materialId; float pad[1];
 };
 #pragma pack(pop)
 
@@ -28,8 +26,7 @@ struct MeshInstanceWrapper
 {
 	glm::mat4 worldToLocalMatrix;
 	int32_t meshId;
-	int32_t materialId;
-	float padding_2[2];
+	int32_t materialId; float pad[2];
 };
 #pragma pack(pop)
 
@@ -39,6 +36,7 @@ public:
 	SceneWrapper(RT::Scene& scene);
 	~SceneWrapper() = default;
 
+	void build();
 	void addMesh(const RT::Mesh& mesh);
 	void addMeshInstance(const RT::MeshInstance& object);
 	void removeInstanceWrapper(const uint32_t objectId);

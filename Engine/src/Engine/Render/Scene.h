@@ -10,8 +10,7 @@ namespace RT
 	#pragma pack(push, 1)
 	struct Material
 	{
-		glm::vec3 albedo;
-		float padding_1;
+		glm::vec3 albedo; float pad1;
 		glm::vec3 emissionColor;
 		float roughness;
 		float metalic;

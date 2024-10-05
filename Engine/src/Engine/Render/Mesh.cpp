@@ -7,6 +7,23 @@
 namespace RT
 {
 
+	Mesh::Mesh(const std::vector<Triangle>& buffer)
+		: model{buffer}
+		, volume{
+			glm::vec3{ std::numeric_limits<float>::max() }, 0,
+			glm::vec3{ std::numeric_limits<float>::lowest() }, 0}
+	{
+		for (const auto& tri : model)
+		{
+			volume.leftBottomFront = glm::min(volume.leftBottomFront, tri.A);
+			volume.leftBottomFront = glm::min(volume.leftBottomFront, tri.B);
+			volume.leftBottomFront = glm::min(volume.leftBottomFront, tri.C);
+			volume.rightTopBack = glm::max(volume.rightTopBack, tri.A);
+			volume.rightTopBack = glm::max(volume.rightTopBack, tri.B);
+			volume.rightTopBack = glm::max(volume.rightTopBack, tri.C);
+		}
+	}
+	
 	void Mesh::load(const std::filesystem::path& path)
 	{
 		auto loader = MeshLoader{};
