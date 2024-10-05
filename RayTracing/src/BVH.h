@@ -62,7 +62,7 @@ private:
 	void construct();
 	void split(const uint32_t parentIdx, const glm::uvec2 bufferRegion, const uint8_t depth = 0u);
 	Split splitBox(const BoundingBox& box, const glm::uvec2 bufferRegion) const;
-	Split splitAxis(const uint8_t axis, const glm::uvec2 bufferRegion, const glm::vec2) const;
+	Split splitAxis(const uint8_t axis, const glm::uvec2 bufferRegion, const glm::vec2 bounds) const;
 	glm::vec2 findCenterBounds(const uint8_t axis, const glm::uvec2 bufferRegion) const;
 
 private:
@@ -72,7 +72,7 @@ private:
 	std::vector<BoundingBox> hierarchy = {};
 
 	static constexpr uint8_t maxDepth = 32u;
-	static constexpr uint32_t nrOfSubplanes = 8u;
+	static constexpr uint32_t nrOfSubplanes = 6u;
 	static constexpr BoundingBox emptyBox = {
 		glm::vec3{std::numeric_limits<float>::max()}, 0.0f,
 		glm::vec3{std::numeric_limits<float>::lowest()}, 0.0f,

@@ -41,7 +41,7 @@ namespace
 		}
 		auto size = box.vMin - box.vMax;
 		auto halfArea = size.x * size.y + size.y * size.z + size.x * size.z;
-		return halfArea * 2.0f;
+		return halfArea; // *2.0f;
 	}
 
 }
@@ -50,7 +50,7 @@ BVH::BVH(const RT::Mesh& mesh)
 	: mesh{mesh}
 {
 	auto buildTimer = RT::Timer{};
-	
+
 	buildNodes();
 	construct();
 
@@ -96,7 +96,7 @@ void BVH::buildNodes()
 void BVH::construct()
 {
 	const auto& meshVolume = mesh.getVolume();
-	
+
 	auto& rootBoundingBox = hierarchy.emplace_back();
 	rootBoundingBox.vMin = meshVolume.leftBottomFront;
 	rootBoundingBox.vMax = meshVolume.rightTopBack;
@@ -110,7 +110,7 @@ void BVH::construct()
 void BVH::split(const uint32_t parentIdx, const glm::uvec2 bufferRegion, const uint8_t depth)
 {
 	const uint32_t triangleCount = bufferRegion.y - bufferRegion.x;
-	
+
 	auto splitInfo = splitBox(hierarchy[parentIdx], bufferRegion);
 	auto parentCost = area(hierarchy[parentIdx]) * triangleCount;
 
@@ -129,7 +129,7 @@ void BVH::split(const uint32_t parentIdx, const glm::uvec2 bufferRegion, const u
 	for (uint32_t i = bufferRegion.x; i < bufferRegion.y; i++)
 	{
 		const auto& node = nodes[indices[i]];
-		if (node.center[splitInfo.axis] < splitInfo.position)
+		if (node.center[splitInfo.axis] <= splitInfo.position)
 		{
 			extendBox(leftChild, node);
 
@@ -147,14 +147,14 @@ void BVH::split(const uint32_t parentIdx, const glm::uvec2 bufferRegion, const u
 	hierarchy.push_back(leftChild);
 	hierarchy.push_back(rightChild);
 	
-	split(hierarchy[parentIdx].bufferRegion.x, { bufferRegion.x, bufferCenter }, depth + 1u);
-	split(hierarchy[parentIdx].bufferRegion.x + 1u, { bufferCenter, bufferRegion.y }, depth + 1u);
-}	
+	split(hierarchy[parentIdx].bufferRegion.x,		{ bufferRegion.x, bufferCenter   }, depth + 1u);
+	split(hierarchy[parentIdx].bufferRegion.x + 1u, { bufferCenter,   bufferRegion.y }, depth + 1u);
+}
 
 BVH::Split BVH::splitBox(const BoundingBox& box, const glm::uvec2 bufferRegion) const
 {
 	auto bestSplit = Split{ std::numeric_limits<float>::max(), 0.0f, 0 };
-	
+
 	if (0u == bufferRegion.y - bufferRegion.x)
 	{
 		return bestSplit;
@@ -206,7 +206,7 @@ BVH::Split BVH::splitAxis(const uint8_t axis, const glm::uvec2 bufferRegion, con
 		auto ri = nrOfSubplanes - 1u - li;
 		rightBox.cnt += buckets[ri].cnt;
 		rightStat[ri - 1u].sumCnt = rightBox.cnt;
-		growBox(rightBox.bounds, buckets[li].bounds);
+		growBox(rightBox.bounds, buckets[ri].bounds);
 		rightStat[ri - 1u].area = area(rightBox.bounds);
 	}
 

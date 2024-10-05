@@ -137,6 +137,11 @@ public:
 		pipeline.reset();
 	}
 
+	std::ofstream perfFile;
+	bool takeMeasures = false;
+	float angle = 0.0f;
+	float sampleCnt = 0.0f;
+	float sampleSum = 0.0f;
 	void layout() final
 	{
 		ImGui::Begin("Settings");
@@ -153,7 +158,7 @@ public:
 			{
 				ammountsUniform->setData(&infoUniform.maxBounces, sizeof(uint32_t), offsetof(InfoUniform, maxBounces));
 			}
-			if (ImGui::SliderInt("Precalculated Frames Limit", (int32_t*)&infoUniform.maxFrames, 1, 15))
+			if (ImGui::SliderInt("Acumulated Frames", (int32_t*)&infoUniform.maxFrames, 1, 5))
 			{
 				ammountsUniform->setData(&infoUniform.maxFrames, sizeof(uint32_t), offsetof(InfoUniform, maxFrames));
 			}
@@ -167,6 +172,11 @@ public:
 			{
 				infoUniform.drawEnvironment = drawEnvironmentTranslator;
 				ammountsUniform->setData(&infoUniform.drawEnvironment, sizeof(float), offsetof(InfoUniform, drawEnvironment));
+			}
+
+			if (ImGui::SliderInt("Debug", (int32_t*)&infoUniform.debug, 0, 400))
+			{
+				ammountsUniform->setData(&infoUniform.debug, sizeof(uint32_t), offsetof(InfoUniform, debug));
 			}
 		}
 		ImGui::End();
@@ -184,6 +194,16 @@ public:
 			{
 				camera.recalculateInvProjection();
 				cameraUniform->setData(&camera.getSpec(), sizeof(RT::Camera::Spec));
+			}
+			if (ImGui::Button("Measure Performance"))
+			{
+				if (perfFile.is_open())
+				{
+					perfFile.close();
+				}
+				perfFile.open("Measure.txt");
+				takeMeasures = true;
+				angle = 0.0f;
 			}
 		}
 		ImGui::End();
@@ -548,7 +568,7 @@ public:
 private:
 	void updateView(float ts)
 	{
-		const float speed = 5.0f;
+		const float speed = 1.0f;
 		const float mouseSenisity = 0.003f;
 		const float rotationSpeed = 0.3f;
 		const glm::vec3 up = glm::vec3(0, 1, 0);
@@ -620,6 +640,31 @@ private:
 		}
 
 		moved |= camera.resizeCamera((int32_t)viewportSize.x, (int32_t)viewportSize.y);
+
+		if (takeMeasures)
+		{
+			sampleCnt += 1.0f;
+			sampleSum += RT::Application::Get().appDuration();
+
+			if (sampleCnt >= 3.0f)
+			{
+				perfFile << angle << " " << (sampleSum / sampleCnt) << std::endl;
+				sampleCnt = 0.0f;
+				sampleSum = 0.0f;
+				angle += 1.0f;
+
+				moved = true;
+				camera.getPosition() = 2.0f * glm::vec3{ glm::cos(glm::radians(angle)), 0.f, glm::sin(glm::radians(angle)) };
+				camera.getDirection() = -camera.getPosition();
+
+				cameraUniform->setData(&camera.getSpec(), sizeof(RT::Camera::Spec));
+			}
+
+			if (angle >= 360.0f)
+			{
+				takeMeasures = false;
+			}
+		}
 
 		if (moved)
 		{
@@ -921,7 +966,7 @@ private:
 	struct InfoUniform
 	{
 		float drawEnvironment = (float)false;
-		uint32_t maxBounces = 2;
+		uint32_t maxBounces = 1;
 		uint32_t maxFrames = 1;
 		uint32_t frameIndex = 1;
 		glm::vec2 resolution = {};
@@ -929,6 +974,7 @@ private:
 		int32_t spheresCount = 0;
 		int32_t objectsCount = 0;
 		int32_t texturesCount = 0;
+		uint32_t debug = 0;
 	} infoUniform;
 
 	// TODO: return renderPass and graphics pipeline for post processing

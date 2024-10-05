@@ -27,6 +27,7 @@ layout(std140, set = 0, binding = 3) uniform Amounts
     int SpheresCount;
     int ObjectsCount;
     int TexturesCount;
+    uint Debug;
 };
 
 layout(std140, set = 0, binding = 4) uniform CameraBuffer
@@ -173,6 +174,7 @@ struct Payload
 struct HitInfo
 {
     float distance;
+    int triangleId;
     bool didHit;
 };
 
@@ -280,7 +282,7 @@ Payload closestHit(in Ray ray, in float closestDistance, in int closestObject, i
     return payload;
 }
 
-HitInfo triangleHit(in Ray ray, in Triangle triangle)
+float triangleHit(in Ray ray, in Triangle triangle)
 {
     dvec3 edgeAB = dvec3(triangle.B) - dvec3(triangle.A);
     dvec3 edgeAC = dvec3(triangle.C) - dvec3(triangle.A);
@@ -295,15 +297,12 @@ HitInfo triangleHit(in Ray ray, in Triangle triangle)
     double u = dot(edgeAC, dao) * invDet;
     double v = -dot(edgeAB, dao) * invDet;
     double w = 1 - u - v;
-    
-    HitInfo hitInfo;
-    hitInfo.didHit = determinant > DBL_EPS && all(greaterThanEqual(dvec4(t, u, v, w), dvec4(0.0)));
-    // hitInfo.normal = normalize(triangle.normalA * w + triangle.normalB * u + triangle.normalC * v);
-    hitInfo.distance = float(t);
-    return hitInfo;
+
+    bool didHit = determinant > DBL_EPS && all(greaterThanEqual(dvec4(t, u, v, w), dvec4(0.0)));
+    return didHit ? float(t) : FLT_MAX;
 }
 
-HitInfo hitBox(in Ray ray, in Box box)
+float hitBox(in Ray ray, in Box box)
 {
     vec3 lbf = (box.leftBottomFront - ray.Origin) / ray.Direction;
     vec3 rtb = (box.rightTopBack - ray.Origin) / ray.Direction;
@@ -314,26 +313,29 @@ HitInfo hitBox(in Ray ray, in Box box)
     float tNear = max(max(tMin.x, tMin.y), tMin.z);
     float tFar = min(min(tMax.x, tMax.y), tMax.z);
 
-    HitInfo hitInfo;
-    hitInfo.didHit = 0 <= tFar && tNear <= tFar;
-    hitInfo.distance = tNear;
-    return hitInfo;
+    bool didHit = 0 <= tFar && tNear <= tFar;
+    return didHit ? tNear : FLT_MAX;
 }
 
 //////////////// DEL
 float boxDepth = 0;
 vec3 boxColor = vec3(0.0);
 //////////////// DEL
-HitInfo bvhTraverse(in Ray ray, in uint bvhRoot, in uint modelRoot, /*out*/ inout int closestTriangle)
+HitInfo bvhTraverse(in Ray ray, in uint bvhRoot, in uint modelRoot)
 {
-    HitInfo meshHit = hitBox(ray, Boxes[bvhRoot]);
-    if (!meshHit.didHit)
+    float didHitVolume = hitBox(ray, Boxes[bvhRoot]);
+    if (!(didHitVolume < FLT_MAX))
     {
-        return meshHit;
+        HitInfo notHited;
+        notHited.distance = FLT_MAX;
+        notHited.triangleId = -1;
+        notHited.didHit = false;
+        return notHited;
     }
 
     HitInfo returnInfo;
     returnInfo.distance = FLT_MAX;
+    returnInfo.triangleId = -1;
     returnInfo.didHit = false;
 
     const uint maxDepth = 32u;
@@ -341,7 +343,7 @@ HitInfo bvhTraverse(in Ray ray, in uint bvhRoot, in uint modelRoot, /*out*/ inou
     uint stackIdx = 0u;
 
     //////////////// DEL
-    // closestTriangle = 0;
+    // returnInfo.triangleId = 0;
     // uint depthStack[maxDepth];
     // uint depthStackIdx = 0u;
     // depthStack[depthStackIdx++] = 0u;
@@ -358,15 +360,15 @@ HitInfo bvhTraverse(in Ray ray, in uint bvhRoot, in uint modelRoot, /*out*/ inou
 
         //////////////// DEL
         // uint depthNr = depthStack[--depthStackIdx];
-        // if (depthNr == MaxBounces)
+        // if (depthNr == Debug)
         // {
-        //     HitInfo info = hitBox(ray, box);
-        //     returnInfo.distance = info.distance;
-        //     returnInfo.didHit = info.didHit;
+        //     float hitDist = hitBox(ray, box);
+        //     returnInfo.distance = hitDist;
+        //     returnInfo.didHit = hitDist < FLT_MAX;
         //     uint boxIdxCopy = boxIdx;
         //     boxColor = fastRandom3(boxIdxCopy);
 
-        //     closestTriangle = 0;
+        //     returnInfo.triangleId = 0;
         //     break;
         // }
         //////////////// DEL
@@ -376,7 +378,7 @@ HitInfo bvhTraverse(in Ray ray, in uint bvhRoot, in uint modelRoot, /*out*/ inou
         if (isLeaf)
         {
             //////////////// DEL
-            // if (boxIdx != MaxBounces - 1)
+            // if (boxIdx != Debug - 1)
             // {
             //     continue;
             // }
@@ -385,31 +387,33 @@ HitInfo bvhTraverse(in Ray ray, in uint bvhRoot, in uint modelRoot, /*out*/ inou
             uvec2 modelBufferRegion = box.bufferRegion + modelRoot;
             for (uint triangleId = modelBufferRegion.x; triangleId < modelBufferRegion.y; triangleId++)
             {
-                HitInfo hitInfo = triangleHit(ray, Triangles[triangleId]);
-                if (hitInfo.didHit && hitInfo.distance < returnInfo.distance)
+                boxDepth += 1.0;
+
+                float triDist = triangleHit(ray, Triangles[triangleId]);
+                if (triDist < returnInfo.distance)
                 {
-                    returnInfo.distance = hitInfo.distance;
-                    closestTriangle = int(triangleId);
+                    returnInfo.distance = triDist;
+                    returnInfo.triangleId = int(triangleId);
                     returnInfo.didHit = true;
                     
                     //////////////// DEL
-                    uint boxIdxCopy = boxIdx;
-                    boxColor = fastRandom3(boxIdxCopy);
-                    boxColor = fastRandom3(boxIdxCopy);
-                    boxColor = fastRandom3(boxIdxCopy);
-                    boxColor = fastRandom3(boxIdxCopy);
+                    // uint boxIdxCopy = boxIdx;
+                    // boxColor = fastRandom3(boxIdxCopy);
+                    // boxColor = fastRandom3(boxIdxCopy);
+                    // boxColor = fastRandom3(boxIdxCopy);
+                    // boxColor = fastRandom3(boxIdxCopy);
                     //////////////// DEL
                 }
             }
 
             //////////////// DEL
-            // HitInfo info = hitBox(ray, box);
-            // if (closestTriangle == -1 && info.didHit && info.distance < returnInfo.distance)
+            // float hitDist = hitBox(ray, box);
+            // if (hitDist < returnInfo.distance)
             // {
-            //     closestTriangle = 0;
+            //     returnInfo.triangleId = 0;
 
-            //     returnInfo.distance = info.distance;
-            //     returnInfo.didHit = info.didHit;
+            //     returnInfo.distance = hitDist;
+            //     returnInfo.didHit = hitDist < FLT_MAX;
             //     uint boxIdxCopy = boxIdx;
             //     boxColor = fastRandom3(boxIdxCopy);
             // }
@@ -418,15 +422,15 @@ HitInfo bvhTraverse(in Ray ray, in uint bvhRoot, in uint modelRoot, /*out*/ inou
         else
         {
             //////////////// DEL
-            // if (boxIdx == MaxBounces - 1)
+            // if (boxIdx == Debug - 1)
             // {
-            //     HitInfo info = hitBox(ray, box);
-            //     returnInfo.distance = info.distance;
-            //     returnInfo.didHit = info.didHit;
+            //     float hitDist = hitBox(ray, box);
+            //     returnInfo.distance = hitDist;
+            //     returnInfo.didHit = hitDist < FLT_MAX;
             //     uint boxIdxCopy = boxIdx;
             //     boxColor = fastRandom3(boxIdxCopy);
 
-            //     closestTriangle = 0;
+            //     returnInfo.triangleId = 0;
             //     break;
             // }
             //////////////// DEL
@@ -436,26 +440,26 @@ HitInfo bvhTraverse(in Ray ray, in uint bvhRoot, in uint modelRoot, /*out*/ inou
             Box leftChild = Boxes[leftChildIdx];
             Box rightChild = Boxes[rightChildIdx];
 
-            HitInfo leftInfo = hitBox(ray, leftChild);
-            HitInfo rightInfo = hitBox(ray, rightChild);
+            float leftDist = hitBox(ray, leftChild);
+            float rightDist = hitBox(ray, rightChild);
 
             //////////////// DEL
-            // boxDepth += 1.0;
-            // if (leftInfo.didHit && leftInfo.distance < returnInfo.distance)
+            boxDepth += 1.0;
+            // if (leftDist < returnInfo.distance)
             // {
             //     stack[stackIdx] = leftChildIdx;
             //     stackIdx++;
             // }
             //////////////// DEL
             
-            bool isLeftClosest = leftInfo.distance < rightInfo.distance;
+            bool isLeftClosest = leftDist < rightDist;
 
             uint nearIdx = isLeftClosest ? leftChildIdx : rightChildIdx;
             uint farIdx = isLeftClosest ? rightChildIdx : leftChildIdx;
-            HitInfo nearInfo = isLeftClosest ? leftInfo : rightInfo;
-            HitInfo farInfo = isLeftClosest ? rightInfo : leftInfo;
+            float nearDist = isLeftClosest ? leftDist : rightDist;
+            float farDist = isLeftClosest ? rightDist : leftDist;
 
-            if (farInfo.didHit && farInfo.distance < returnInfo.distance)
+            if (farDist < returnInfo.distance)
             {
                 stack[stackIdx] = farIdx;
                 stackIdx++;
@@ -464,7 +468,7 @@ HitInfo bvhTraverse(in Ray ray, in uint bvhRoot, in uint modelRoot, /*out*/ inou
                 // depthStack[depthStackIdx++] = depthNr + 1u;
                 //////////////// DEL
             }
-            if (nearInfo.didHit && nearInfo.distance < returnInfo.distance)
+            if (nearDist < returnInfo.distance)
             {
                 stack[stackIdx] = nearIdx;
                 stackIdx++;
@@ -479,7 +483,7 @@ HitInfo bvhTraverse(in Ray ray, in uint bvhRoot, in uint modelRoot, /*out*/ inou
     return returnInfo;
 }
 
-HitInfo sphereHit(in Ray ray, in Sphere sphere)
+float sphereHit(in Ray ray, in Sphere sphere)
 {
     HitInfo hitInfo;
     
@@ -492,21 +496,17 @@ HitInfo sphereHit(in Ray ray, in Sphere sphere)
 
     if (delta < 0.0)
     {
-        hitInfo.didHit = false;
-        return hitInfo;
+        return FLT_MAX;
     }
 
     float closestT = (-b - sqrt(delta)) / (2.0 * a);
 
     if (closestT < 0.0)
     {
-        hitInfo.didHit = false;
-        return hitInfo;
+        return FLT_MAX;
     }
 
-    hitInfo.didHit = true;
-    hitInfo.distance = closestT;
-    return hitInfo;
+    return closestT;
 }
 
 Payload bounceRay(in Ray ray)
@@ -517,30 +517,29 @@ Payload bounceRay(in Ray ray)
     
     for (int sphereId = 0; sphereId < SpheresCount; sphereId++)
     {
-        HitInfo hitInfo = sphereHit(ray, Spheres[sphereId]);
-        if (hitInfo.didHit && hitInfo.distance < closestDistance)
+        float sphereDist = sphereHit(ray, Spheres[sphereId]);
+        if (sphereDist < closestDistance)
         {
-            closestDistance = hitInfo.distance;
+            closestDistance = sphereDist;
             closestObject = sphereId;
         }
     }
     
     for (int objectId = 0; objectId < ObjectsCount; objectId++)
     {
-        int cloTri = -1;
         MeshInstance object = MeshInstances[objectId];
 
         Ray modelRay;
         modelRay.Origin = (object.worldToLocalMatrix * vec4(ray.Origin, 1.0)).xyz;
         modelRay.Direction = (object.worldToLocalMatrix * vec4(ray.Direction, 0.0)).xyz;
 
-        HitInfo meshHit = bvhTraverse(modelRay, Meshes[object.MeshId].BVHRoot, Meshes[object.MeshId].ModelRoot, cloTri);
+        HitInfo meshHit = bvhTraverse(modelRay, Meshes[object.MeshId].BVHRoot, Meshes[object.MeshId].ModelRoot);
 
         if (meshHit.didHit && meshHit.distance < closestDistance)
         {
             closestDistance = meshHit.distance;
             closestInstance = objectId;
-            closestObject = cloTri;
+            closestObject = meshHit.triangleId;
         }
     }
     
@@ -553,28 +552,41 @@ Payload bounceRay(in Ray ray)
 void accumulateColor(inout Pixel pixel, in Payload payload)
 {
     //////////////// DEL
-    // if (boxDepth > MaxBounces) pixel.Color = vec3(1.0, 0.0, 0.0);
-    // else pixel.Color = vec3(boxDepth / MaxBounces);
+    // if (Debug > 0)
+    // {
+    //     if (boxDepth > float(Debug) pixel.Color = vec3(1.0, 0.0, 0.0);
+    //     else pixel.Color = vec3(boxDepth / float(Debug);
 
-    // pixel.Color = Materials[payload.HitMaterial].Albedo;
-    // pixel.Color = boxColor * (clamp(dot(payload.HitNormal, vec3(1.0)), 0.0, 1.0) / 2.0 + 0.5); // Base debug
-    // pixel.Color = boxColor;
-    // pixel.Color = vec3(1.0) * payload.HitDistance * payload.HitDistance; // Depth test
+    //     // pixel.Color = Materials[payload.HitMaterial].Albedo;
+    //     // pixel.Color = boxColor * (clamp(dot(payload.HitNormal, vec3(1.0)), 0.0, 1.0) / 2.0 + 0.5); // Base debug
+    //     // pixel.Color = boxColor;
+    //     // pixel.Color = vec3(1.0) * payload.HitDistance * payload.HitDistance; // Depth test
+    //     return;
+    // }
     //////////////// DEL
 
-    vec3 albedo = vec3(0);
-    int texId = Materials[payload.HitMaterial].TextureId;
-    if (-1 != texId)
+    if (MaxBounces == 1)
     {
-        albedo = texture(Textures[texId], payload.HitUV).xyz;
-        pixel.Color += albedo * Materials[payload.HitMaterial].EmmisionPower * pixel.Contribution;
+        const vec3 LightDir = normalize(vec3(-1, -1, -1));
+        pixel.Color = Materials[payload.HitMaterial].Albedo
+            * (clamp(0.0, 0.5, dot(-payload.HitNormal, LightDir)) + 0.5);
     }
     else
     {
-        pixel.Color += getEmmision(payload.HitMaterial) * pixel.Contribution;
-        albedo = Materials[payload.HitMaterial].Albedo;
+        vec3 albedo = vec3(0);
+        int texId = Materials[payload.HitMaterial].TextureId;
+        if (-1 != texId)
+        {
+            albedo = texture(Textures[texId], payload.HitUV).xyz;
+            pixel.Color += albedo * Materials[payload.HitMaterial].EmmisionPower * pixel.Contribution;
+        }
+        else
+        {
+            pixel.Color += getEmmision(payload.HitMaterial) * pixel.Contribution;
+            albedo = Materials[payload.HitMaterial].Albedo;
+        }
+        pixel.Contribution *= albedo;
     }
-    pixel.Contribution *= albedo;
 }
 
 bool reflectance(in vec3 direction, in vec3 surfaceNormal, in float refIdx)
@@ -645,7 +657,6 @@ vec3 traceRay(in Ray ray)
     pixel.Contribution = vec3(1);
 
     for (uint i = 0u; i < MaxBounces; i++)
-    // for (uint i = 0u; i < 1u; i++)
     {
         Global.seed += i;
     
