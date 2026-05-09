@@ -37,8 +37,6 @@ namespace RT::Vulkan
 		void allocateCmdBuffers(std::vector<VkCommandBuffer>& cmdBuff);
 		void freeCmdBuffers(std::vector<VkCommandBuffer>& cmdBuff);
 
-		static void flushUniforms();
-
 	private:
 		std::vector<VkCommandBuffer> cmdBuffers = {};
 		std::vector<VkCommandBuffer> imGuiCmdBuffers = {};

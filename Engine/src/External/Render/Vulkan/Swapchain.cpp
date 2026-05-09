@@ -3,6 +3,46 @@
 
 namespace RT::Vulkan
 {
+namespace
+{
+    VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
+    {
+        for (const auto& availableFormat : availableFormats)
+        {
+            if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM &&
+                availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+            {
+                return availableFormat;
+            }
+        }
+
+        return availableFormats[0];
+    }
+
+    VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
+    {
+        for (const auto& availablePresentMode : availablePresentModes)
+        {
+           if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
+           {
+               RT_LOG_WARN("Present mode: Mailbox");
+               return availablePresentMode;
+           }
+        }
+
+        for (const auto& availablePresentMode : availablePresentModes)
+        {
+           if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)
+           {
+               RT_LOG_WARN("Present mode: Immediate");
+               return availablePresentMode;
+           }
+        }
+
+        RT_LOG_INFO("Present mode: V-Sync");
+        return VK_PRESENT_MODE_FIFO_KHR;
+    }
+} // namespace
 
     std::unique_ptr<Swapchain> Swapchain::swapchainInstance = nullptr;
 
@@ -366,42 +406,4 @@ namespace RT::Vulkan
         currentFrame = (currentFrame + 1) % Constants::MAX_FRAMES_IN_FLIGHT;
     }
 
-    VkSurfaceFormatKHR Swapchain::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
-    {
-        for (const auto& availableFormat : availableFormats)
-        {
-            if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM &&
-                availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-            {
-                return availableFormat;
-            }
-        }
-
-        return availableFormats[0];
-    }
-
-    VkPresentModeKHR Swapchain::chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
-    {
-        for (const auto& availablePresentMode : availablePresentModes)
-        {
-           if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
-           {
-               RT_LOG_WARN("Present mode: Mailbox");
-               return availablePresentMode;
-           }
-        }
-
-        for (const auto& availablePresentMode : availablePresentModes)
-        {
-           if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)
-           {
-               RT_LOG_WARN("Present mode: Immediate");
-               return availablePresentMode;
-           }
-        }
-
-        RT_LOG_INFO("Present mode: V-Sync");
-        return VK_PRESENT_MODE_FIFO_KHR;
-    }
-
-}
+} // namespace RT::Vulkan

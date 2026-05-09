@@ -46,11 +46,6 @@ namespace RT::Vulkan
 		SourceMap<std::vector<uint32_t>> compileSources(const SourceMap<std::stringstream>& sources) const;
 		void reflect(const Type type, const std::vector<uint32_t>& shaderData) const;
 
-		static constexpr VkShaderStageFlagBits shaderType2VkType(const Type type);
-		static constexpr shaderc_shader_kind shaderType2ShaderC(const Type type);
-		static constexpr const char* shaderType2Suffix(const Type type);
-		static constexpr const char* shaderType2String(const Type type);
-
 	private:
 		Path shaderPath = "";
 

@@ -81,8 +81,6 @@ namespace RT::Vulkan
         VkCommandBuffer startSingleCmdBuff() const;
         void flushSingleCmdBuff(const VkCommandBuffer commandBuffer) const;
 
-        static bool checkDeviceExtensionSupport(VkPhysicalDevice phyDev);
-
     private:
         VkDevice device = {};
         VkInstance instance = {};
@@ -96,8 +94,6 @@ namespace RT::Vulkan
 
         Utils::SwapChainSupportDetails swapChainSupportDetails = {};
         Utils::QueueFamilyIndices queueFamilyIndices = {};
-
-        static constexpr std::array<const char*, 1> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
         static Device deviceInstance;
     };

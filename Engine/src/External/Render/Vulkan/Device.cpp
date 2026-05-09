@@ -7,9 +7,12 @@
 
 #include <GLFW/glfw3.h>
 
+namespace RT::Vulkan
+{
 namespace
 {
-    
+    static constexpr std::array<const char*, 1> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+ 
     struct DeviceFeatrues
     {
         VkPhysicalDeviceFeatures deviceFeatures = {};
@@ -41,10 +44,26 @@ namespace
 
         return features;
     }
-}
 
-namespace RT::Vulkan
-{
+    bool checkDeviceExtensionSupport(VkPhysicalDevice phyDev)
+    {
+        uint32_t extensionCount = 0u;
+        vkEnumerateDeviceExtensionProperties(phyDev, nullptr, &extensionCount, nullptr);
+        auto availableExtensions = std::vector<VkExtensionProperties>(extensionCount);
+        vkEnumerateDeviceExtensionProperties(
+            phyDev,
+            nullptr,
+            &extensionCount,
+            availableExtensions.data());
+
+        auto requiredExtensions = std::unordered_set<std::string>(deviceExtensions.begin(), deviceExtensions.end());
+        for (const auto& extension : availableExtensions)
+        {
+            requiredExtensions.erase(extension.extensionName);
+        }
+        return requiredExtensions.empty();
+    }
+} // namespace
     
     Device Device::deviceInstance = Device{};
 
@@ -402,23 +421,4 @@ namespace RT::Vulkan
         vkFreeCommandBuffers(device, commandPool, 1, &cmdBuffer);
     }
 
-    bool Device::checkDeviceExtensionSupport(VkPhysicalDevice phyDev)
-    {
-        uint32_t extensionCount = 0u;
-        vkEnumerateDeviceExtensionProperties(phyDev, nullptr, &extensionCount, nullptr);
-        auto availableExtensions = std::vector<VkExtensionProperties>(extensionCount);
-        vkEnumerateDeviceExtensionProperties(
-            phyDev,
-            nullptr,
-            &extensionCount,
-            availableExtensions.data());
-
-        auto requiredExtensions = std::unordered_set<std::string>(deviceExtensions.begin(), deviceExtensions.end());
-        for (const auto& extension : availableExtensions)
-        {
-            requiredExtensions.erase(extension.extensionName);
-        }
-        return requiredExtensions.empty();
-    }
-
-}
+} // namespac RT::Vulkan

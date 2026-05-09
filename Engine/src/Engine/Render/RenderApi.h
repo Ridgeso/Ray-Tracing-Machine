@@ -15,6 +15,8 @@ namespace RT
 		};
 
 	public:
+		static std::unique_ptr<RenderApi> create();
+
 		virtual ~RenderApi() = 0 {}
 
 		virtual void init() = 0;
@@ -28,6 +30,5 @@ namespace RT
 		static Api api;
 	};
 
-	std::unique_ptr<RenderApi> createRenderApi();
 
 }

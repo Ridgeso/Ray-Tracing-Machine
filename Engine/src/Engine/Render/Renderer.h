@@ -10,7 +10,7 @@ namespace RT
 	public:
 		static void init()
 		{
-			renderApi = createRenderApi();
+			renderApi = RenderApi::create();
 			renderApi->init();
 		}
 

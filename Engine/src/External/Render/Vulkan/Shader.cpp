@@ -1,15 +1,72 @@
 #include "Shader.h"
-#include "Device.h"
-
 #include <fstream>
 #include <unordered_set>
 
 #include <spirv_cross/spirv_cross.hpp>
 
+#include "Device.h"
 #include "utils/Debug.h"
 
 namespace RT::Vulkan
 {
+namespace
+{
+    constexpr VkShaderStageFlagBits shaderType2VkType(const Shader::Type type)
+    {
+        switch (type)
+        {
+            case Shader::Type::Vertex:         return VK_SHADER_STAGE_VERTEX_BIT;
+            case Shader::Type::TessControl:    return VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+            case Shader::Type::TessEvaulation: return VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+            case Shader::Type::Geometry:       return VK_SHADER_STAGE_GEOMETRY_BIT;
+            case Shader::Type::Fragment:       return VK_SHADER_STAGE_FRAGMENT_BIT;
+            case Shader::Type::Compute:        return VK_SHADER_STAGE_COMPUTE_BIT;
+        }
+        return VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
+    }
+
+    constexpr shaderc_shader_kind shaderType2ShaderC(const Shader::Type type)
+    {
+        switch (type)
+        {
+            case Shader::Type::Vertex:         return shaderc_vertex_shader;
+            case Shader::Type::TessControl:    return shaderc_tess_control_shader;
+            case Shader::Type::TessEvaulation: return shaderc_tess_evaluation_shader;
+            case Shader::Type::Geometry:       return shaderc_geometry_shader;
+            case Shader::Type::Fragment:       return shaderc_fragment_shader;
+            case Shader::Type::Compute:        return shaderc_compute_shader;
+        }
+        return static_cast<shaderc_shader_kind>(0xFF);
+    }
+
+    constexpr const char* shaderType2Suffix(const Shader::Type type)
+    {
+        switch (type)
+        {
+            case Shader::Type::Vertex:         return ".vert";
+            case Shader::Type::TessControl:    return ".tesc";
+            case Shader::Type::TessEvaulation: return ".tese";
+            case Shader::Type::Geometry:       return ".geom";
+            case Shader::Type::Fragment:       return ".frag";
+            case Shader::Type::Compute:        return ".comp";
+        }
+        return "";
+    }
+
+    constexpr const char* shaderType2String(const Shader::Type type)
+    {
+        switch (type)
+        {
+            case Shader::Type::Vertex:         return "Vertex";
+            case Shader::Type::TessControl:    return "TessControl";
+            case Shader::Type::TessEvaulation: return "TessEvaulation";
+            case Shader::Type::Geometry:       return "Geometry";
+            case Shader::Type::Fragment:       return "Fragment";
+            case Shader::Type::Compute:        return "Compute";
+        }
+        return "";
+    }
+} // namespace
 
     Shader::Shader(const Path& shaderName)
     {
@@ -185,60 +242,4 @@ namespace RT::Vulkan
         }
     }
 
-    constexpr VkShaderStageFlagBits Shader::shaderType2VkType(const Type type)
-    {
-        switch (type)
-        {
-            case Type::Vertex:         return VK_SHADER_STAGE_VERTEX_BIT;
-            case Type::TessControl:    return VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
-            case Type::TessEvaulation: return VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
-            case Type::Geometry:       return VK_SHADER_STAGE_GEOMETRY_BIT;
-            case Type::Fragment:       return VK_SHADER_STAGE_FRAGMENT_BIT;
-            case Type::Compute:        return VK_SHADER_STAGE_COMPUTE_BIT;
-        }
-        return VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
-    }
-
-    constexpr shaderc_shader_kind Shader::shaderType2ShaderC(const Type type)
-    {
-        switch (type)
-        {
-            case Type::Vertex:         return shaderc_vertex_shader;
-            case Type::TessControl:    return shaderc_tess_control_shader;
-            case Type::TessEvaulation: return shaderc_tess_evaluation_shader;
-            case Type::Geometry:       return shaderc_geometry_shader;
-            case Type::Fragment:       return shaderc_fragment_shader;
-            case Type::Compute:        return shaderc_compute_shader;
-        }
-        return static_cast<shaderc_shader_kind>(0xFF);
-    }
-
-    constexpr const char* Shader::shaderType2Suffix(const Type type)
-    {
-        switch (type)
-        {
-            case Type::Vertex:         return ".vert";
-            case Type::TessControl:    return ".tesc";
-            case Type::TessEvaulation: return ".tese";
-            case Type::Geometry:       return ".geom";
-            case Type::Fragment:       return ".frag";
-            case Type::Compute:        return ".comp";
-        }
-        return "";
-    }
-
-    constexpr const char* Shader::shaderType2String(const Type type)
-    {
-        switch (type)
-        {
-            case Type::Vertex:         return "Vertex";
-            case Type::TessControl:    return "TessControl";
-            case Type::TessEvaulation: return "TessEvaulation";
-            case Type::Geometry:       return "Geometry";
-            case Type::Fragment:       return "Fragment";
-            case Type::Compute:        return "Compute";
-        }
-        return "";
-    }
-
-}
+} // namespace RT::Vulkan

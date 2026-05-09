@@ -6,6 +6,59 @@
 
 namespace RT
 {
+namespace
+{
+    bool isBinGltf(const std::filesystem::path& path)
+    {
+        return ".glb" == path.extension();
+    }
+
+    constexpr uint32_t primitiveComponentTypeToSize(const uint32_t componentType)
+    {
+        switch (componentType)
+        {
+            case TINYGLTF_COMPONENT_TYPE_BYTE:
+            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
+                return 1;
+
+            case TINYGLTF_COMPONENT_TYPE_SHORT:
+            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
+                return 2;
+
+            case TINYGLTF_COMPONENT_TYPE_INT:
+            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
+            case TINYGLTF_COMPONENT_TYPE_FLOAT:
+                return 4;
+
+            case TINYGLTF_COMPONENT_TYPE_DOUBLE:
+                return 8;
+            }
+        RT_LOG_ERROR("Unknown componentType: {}", componentType);
+        return 0;
+    }
+
+    constexpr uint32_t primitiveTypeToSize(const uint32_t type)
+    {
+        switch (type)
+        {
+            case TINYGLTF_TYPE_SCALAR: return 1;
+            case TINYGLTF_TYPE_VEC2:   return 2;
+            case TINYGLTF_TYPE_VEC3:   return 3;
+            case TINYGLTF_TYPE_VEC4:   return 4;
+        }
+        RT_LOG_ERROR("Unknown type: {}", type);
+
+        return 0;
+    }
+
+    constexpr uint32_t maskPrimitiveType(const uint32_t type)
+    {
+        constexpr uint8_t bitsInByte = 8u;
+        constexpr uint8_t uintBitSize = sizeof(uint32_t) * bitsInByte;
+        constexpr uint32_t mask = ~0u;
+        return (mask >> (uintBitSize - bitsInByte * primitiveComponentTypeToSize(type)));
+    }
+} // namespace
 
     /*
         GltfLoader impl
@@ -186,57 +239,6 @@ namespace RT
 
         return volume;
     }
-
-    bool GltfLoader::isBinGltf(const std::filesystem::path& path)
-    {
-        return ".glb" == path.extension();
-    }
-
-    constexpr uint32_t GltfLoader::primitiveComponentTypeToSize(const uint32_t componentType)
-    {
-        switch (componentType)
-        {
-            case TINYGLTF_COMPONENT_TYPE_BYTE:
-            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
-                return 1;
-
-            case TINYGLTF_COMPONENT_TYPE_SHORT:
-            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
-                return 2;
-
-            case TINYGLTF_COMPONENT_TYPE_INT:
-            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
-            case TINYGLTF_COMPONENT_TYPE_FLOAT:
-                return 4;
-
-            case TINYGLTF_COMPONENT_TYPE_DOUBLE:
-                return 8;
-            }
-        RT_LOG_ERROR("Unknown componentType: {}", componentType);
-        return 0;
-    }
-
-    constexpr uint32_t GltfLoader::primitiveTypeToSize(const uint32_t type)
-    {
-        switch (type)
-        {
-            case TINYGLTF_TYPE_SCALAR: return 1;
-            case TINYGLTF_TYPE_VEC2:   return 2;
-            case TINYGLTF_TYPE_VEC3:   return 3;
-            case TINYGLTF_TYPE_VEC4:   return 4;
-        }
-        RT_LOG_ERROR("Unknown type: {}", type);
-
-        return 0;
-    }
-
-    constexpr uint32_t GltfLoader::maskPrimitiveType(const uint32_t type)
-    {
-        constexpr uint8_t bitsInByte = 8u;
-        constexpr uint8_t uintBitSize = sizeof(uint32_t) * bitsInByte;
-        constexpr uint32_t mask = ~0u;
-        return (mask >> (uintBitSize - bitsInByte * primitiveComponentTypeToSize(type)));
-    }
     
     /*
         GltfLoader impl
@@ -395,13 +397,13 @@ namespace RT
     bool MeshLoader::load(const std::filesystem::path& path)
     {
         const auto& selector = loaderSelector.find(path.extension().string());
-        if (loaderSelector.end() == selector)
+        if (loaderSelector.end() != selector)
         {
-            loader = UnknownLoader{};
+            selector->second(loader);
         }
         else
         {
-            selector->second(loader);
+            loader = UnknownLoader{};
         }
 
         return std::visit([&path](auto& loader) { return loader.load(path); }, loader);
@@ -417,4 +419,4 @@ namespace RT
         return std::visit([](const auto& loader) { return loader.buildVolume(); }, loader);
     }
 
-}
+} // namespace RT

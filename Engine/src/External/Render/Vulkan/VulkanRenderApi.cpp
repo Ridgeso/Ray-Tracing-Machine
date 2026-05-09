@@ -16,6 +16,27 @@
 
 namespace RT::Vulkan
 {
+namespace
+{
+	void flushUniforms()
+	{
+		auto& uniformsToFlush = getUniformsToFlush();
+		int32_t i = 0;
+		int32_t flashedUniformsFrom = uniformsToFlush.size();
+		while (i < uniformsToFlush.size())
+		{
+			if (not uniformsToFlush[i]->flush())
+			{
+				std::swap(uniformsToFlush[i], uniformsToFlush[--flashedUniformsFrom]);
+			}
+			else
+			{
+				i++;
+			}
+		}
+		uniformsToFlush.erase(uniformsToFlush.begin() + flashedUniformsFrom, uniformsToFlush.end());
+	}
+} // namespace
 
 	VulkanRenderApi::VulkanRenderApi()
 	{
@@ -269,26 +290,7 @@ namespace RT::Vulkan
 		cmdBuff.clear();
 	}
 
-	void VulkanRenderApi::flushUniforms()
-	{
-		auto& uniformsToFlush = getUniformsToFlush();
-		int32_t i = 0;
-		int32_t flashedUniformsFrom = uniformsToFlush.size();
-		while (i < uniformsToFlush.size())
-		{
-			if (not uniformsToFlush[i]->flush())
-			{
-				std::swap(uniformsToFlush[i], uniformsToFlush[--flashedUniformsFrom]);
-			}
-			else
-			{
-				i++;
-			}
-		}
-		uniformsToFlush.erase(uniformsToFlush.begin() + flashedUniformsFrom, uniformsToFlush.end());
-	}
-
-}
+} // namespace RT::Vulkan
 
 ///////////////////////////// Just a reminder for post processing /////////////////////////////
 

@@ -56,11 +56,6 @@ namespace RT::Vulkan
         bool compareSwapFormats(const Swapchain& swapChain) const;
         void incrementFrameCounter();
     
-        static VkSurfaceFormatKHR chooseSwapSurfaceFormat(
-            const std::vector<VkSurfaceFormatKHR>& availableFormats);
-        static VkPresentModeKHR chooseSwapPresentMode(
-            const std::vector<VkPresentModeKHR>& availablePresentModes);
-        
     private:
         VkSwapchainKHR swapChain = {};
         VkRenderPass renderPass = {};

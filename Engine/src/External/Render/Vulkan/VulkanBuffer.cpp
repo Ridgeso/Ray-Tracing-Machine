@@ -9,6 +9,35 @@
 
 namespace RT::Vulkan
 {
+namespace
+{
+	constexpr VkBufferUsageFlagBits uniformType2VkBuffBit(const UniformType uniformType)
+	{
+		switch (uniformType)
+		{
+			case UniformType::Uniform: return VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+			case UniformType::Storage: return VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+		}
+		return VkBufferUsageFlagBits{};
+	}
+
+	constexpr const char* uniformType2Str(const UniformType uniformType)
+	{
+		switch (uniformType)
+		{
+			case UniformType::Uniform: return "Uniform";
+			case UniformType::Storage: return "Storage";
+			case UniformType::Sampler: return "Sampler";
+			case UniformType::Image:   return "Image";
+		}
+		return "";
+	}
+
+	constexpr uint32_t calculateAlignedSize(const uint32_t initialSize, const uint32_t minAlignment)
+	{
+		return (initialSize + minAlignment - 1) & ~(minAlignment - 1);
+	}
+} // namespace
 
 	auto uniformsToFlush = std::vector<VulkanUniform*>();
 
@@ -215,36 +244,9 @@ namespace RT::Vulkan
 		return minAlignment;
 	}
 
-	constexpr VkBufferUsageFlagBits VulkanUniform::uniformType2VkBuffBit(const UniformType uniformType)
-	{
-		switch (uniformType)
-		{
-			case UniformType::Uniform: return VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-			case UniformType::Storage: return VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-		}
-		return VkBufferUsageFlagBits{};
-	}
-
-	constexpr const char* VulkanUniform::uniformType2Str(const UniformType uniformType)
-	{
-		switch (uniformType)
-		{
-			case UniformType::Uniform: return "Uniform";
-			case UniformType::Storage: return "Storage";
-			case UniformType::Sampler: return "Sampler";
-			case UniformType::Image:   return "Image";
-		}
-		return "";
-	}
-
-	constexpr uint32_t VulkanUniform::calculateAlignedSize(const uint32_t initialSize, const uint32_t minAlignment)
-	{
-		return (initialSize + minAlignment - 1) & ~(minAlignment - 1);
-	}
-
 	std::vector<VulkanUniform*>& getUniformsToFlush()
 	{
 		return uniformsToFlush;
 	}
 
-}
+} // namespace RT::Vulkan

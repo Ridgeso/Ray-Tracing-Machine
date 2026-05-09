@@ -30,12 +30,6 @@ namespace RT
 		LOADER_IMPL
 
 	private:
-		static bool isBinGltf(const std::filesystem::path& path);
-		static constexpr uint32_t primitiveComponentTypeToSize(const uint32_t componentType);
-		static constexpr uint32_t primitiveTypeToSize(const uint32_t type);
-		static constexpr uint32_t maskPrimitiveType(const uint32_t type);
-
-	private:
 		tinygltf::Model model = {};
 	};
 
