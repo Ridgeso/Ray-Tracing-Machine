@@ -1,6 +1,6 @@
 #pragma once
-#include <string>
 #include <functional>
+#include <string>
 
 #include "Engine/Window/Window.h"
 #include "Engine/Frame/Frame.h"
@@ -11,7 +11,7 @@ namespace RT
 	struct ApplicationSpecs
 	{
 		std::string name;
-		std::function<Local<Frame>()> startupFrameMaker;
+		std::function<std::unique_ptr<Frame>()> startupFrameMaker;
 	};
 
 	class Application final
@@ -22,7 +22,7 @@ namespace RT
 		void run();
 
 		static Application& Get() { return *MainApp; }
-		static Local<Window>& getWindow() { return Get().window; }
+		static std::unique_ptr<Window>& getWindow() { return Get().window; }
 
 		float appDuration() { return appFrameDuration; }
 
@@ -38,8 +38,8 @@ namespace RT
 		bool isRunning = true;
 		float appFrameDuration = 0.0f;
 
-		Local<Window> window = nullptr;
-		Local<Frame> frame = nullptr;
+		std::unique_ptr<Window> window = nullptr;
+		std::unique_ptr<Frame> frame = nullptr;
 
 		inline static Application* MainApp = nullptr;
 	};
@@ -47,7 +47,7 @@ namespace RT
 	#define RegisterStartupFrame(AppName, StartupFrame)											  \
 		RT::ApplicationSpecs CreateApplicationSpec()											  \
 		{																						  \
-			return RT::ApplicationSpecs{ AppName, [] { return RT::makeLocal<StartupFrame>(); } }; \
+			return RT::ApplicationSpecs{ AppName, [] { return std::make_unique<StartupFrame>(); } }; \
 		}																						  \
 
 }

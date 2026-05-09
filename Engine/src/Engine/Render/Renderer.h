@@ -1,5 +1,6 @@
 #pragma once
 #include "RenderApi.h"
+#include <memory>
 
 namespace RT
 {
@@ -35,7 +36,7 @@ namespace RT
 		}
 
 	private:
-		inline static Local<RenderApi> renderApi = nullptr;
+		inline static std::unique_ptr<RenderApi> renderApi = nullptr;
 	};
 
 }

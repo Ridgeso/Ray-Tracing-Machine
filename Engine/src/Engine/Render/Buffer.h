@@ -1,9 +1,8 @@
 #pragma once
-#include <vector>
 #include <cstdint>
-
 #include <glm/glm.hpp>
-#include <Engine/Core/Base.h>
+#include <memory>
+#include <vector>
 
 #include "Engine/Render/Texture.h"
 
@@ -27,8 +26,8 @@ namespace RT
 		virtual void setData(const uint32_t size, const void* data) const = 0;
 		virtual const int32_t getCount() const = 0;
 
-		static Local<VertexBuffer> create(const uint32_t size);
-		static Local<VertexBuffer> create(const uint32_t size, const void* data);
+		static std::unique_ptr<VertexBuffer> create(const uint32_t size);
+		static std::unique_ptr<VertexBuffer> create(const uint32_t size, const void* data);
 	};
 
 	enum class UniformType
@@ -46,7 +45,7 @@ namespace RT
 
 		virtual void setData(const void* data, const uint32_t size, const uint32_t offset = 0) = 0;
 	
-		static Local<Uniform> create(const UniformType uniformType, const uint32_t size);
+		static std::unique_ptr<Uniform> create(const UniformType uniformType, const uint32_t size);
 	};
 
 	namespace Utils

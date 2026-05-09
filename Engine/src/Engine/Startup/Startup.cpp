@@ -30,7 +30,7 @@ namespace RT
 	{
 		auto specs = CreateApplicationSpec();
 
-		auto* application = new Application(specs);
+		auto* application = new Application{ specs };
 		application->run();
 		delete application;
 	}

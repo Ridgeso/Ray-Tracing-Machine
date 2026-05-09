@@ -1,5 +1,6 @@
 #pragma once
-#include "Engine/Core/Base.h"
+#include <memory>
+
 #include "Engine/Core/Utils.h"
 
 #define SPDLOG_COMPILED_LIB
@@ -18,7 +19,7 @@ namespace RT::Core
 
 		template <spdlog::level::level_enum Level, typename... Args>
 		static void logBase(
-			const Share<spdlog::logger>& logger,
+			const std::shared_ptr<spdlog::logger>& logger,
 			const Utils::FileInfo& fileInfo,
 			fmt::format_string<Args...> msg,
 			Args&&... args)
@@ -30,12 +31,12 @@ namespace RT::Core
 
 		static void setLevel(const spdlog::level::level_enum level);
 
-		static const Share<spdlog::logger>& getEngineLogger();
-		static const Share<spdlog::logger>& getClientLogger();
+		static const std::shared_ptr<spdlog::logger>& getEngineLogger();
+		static const std::shared_ptr<spdlog::logger>& getClientLogger();
 
 	private:
-		static Share<spdlog::logger> engineLogger;
-		static Share<spdlog::logger> clientLogger;
+		static std::shared_ptr<spdlog::logger> engineLogger;
+		static std::shared_ptr<spdlog::logger> clientLogger;
 	};
 
 	#define REGISTER_FMT_FORMAT(TYPE, BASE_TYPE, ...) \

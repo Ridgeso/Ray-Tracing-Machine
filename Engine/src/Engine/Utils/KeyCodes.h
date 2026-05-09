@@ -5,7 +5,7 @@ namespace RT::Keys
 {
 
 	using KeyCode = uint16_t;
-	constexpr KeyCode maxKeyCode = 0xFFFFFF;
+	constexpr KeyCode maxKeyCode = 0xFFFF;
 
 	enum class Action : KeyCode
 	{

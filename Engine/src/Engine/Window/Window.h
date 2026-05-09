@@ -1,8 +1,8 @@
 #pragma once
-#include <string>
 #include <cstdint>
 #include <glm/glm.hpp>
-#include "Engine/Core/Base.h"
+#include <memory>
+#include <string>
 
 #include "Engine/Utils/KeyCodes.h"
 
@@ -38,7 +38,7 @@ namespace RT
 
 		virtual void* getNativWindow() = 0;
 		
-		static Local<Window> createWindow();
+		static std::unique_ptr<Window> createWindow();
 
 	private:
 		virtual void update() = 0;

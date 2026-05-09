@@ -920,21 +920,21 @@ private:
 	RT::Scene scene;
 	SceneWrapper sceneWrapper;
 
-	RT::Local<RT::Texture> accumulationTexture;
-	RT::Local<RT::Texture> outTexture;
-	RT::Local<RT::Texture> skyMap;
+	std::unique_ptr<RT::Texture> accumulationTexture;
+	std::unique_ptr<RT::Texture> outTexture;
+	std::unique_ptr<RT::Texture> skyMap;
 	RT::TextureArray textures;
 
-	RT::Local<RT::Uniform> cameraUniform;
-	RT::Local<RT::Uniform> ammountsUniform;
-	RT::Local<RT::Uniform> materialsStorage;
-	RT::Local<RT::Uniform> spheresStorage;
-	RT::Local<RT::Uniform> bvhStorage;
-	RT::Local<RT::Uniform> trianglesStorage;
-	RT::Local<RT::Uniform> meshWrappersStorage;
-	RT::Local<RT::Uniform> meshInstanceWrappersStorage;
+	std::unique_ptr<RT::Uniform> cameraUniform;
+	std::unique_ptr<RT::Uniform> ammountsUniform;
+	std::unique_ptr<RT::Uniform> materialsStorage;
+	std::unique_ptr<RT::Uniform> spheresStorage;
+	std::unique_ptr<RT::Uniform> bvhStorage;
+	std::unique_ptr<RT::Uniform> trianglesStorage;
+	std::unique_ptr<RT::Uniform> meshWrappersStorage;
+	std::unique_ptr<RT::Uniform> meshInstanceWrappersStorage;
 
-	RT::Local<RT::Pipeline> pipeline;
+	std::unique_ptr<RT::Pipeline> pipeline;
 
 	bool accumulation = false;
 	bool drawEnvironmentTranslator = false;
@@ -954,8 +954,8 @@ private:
 	} infoUniform;
 
 	// TODO: return renderPass and graphics pipeline for post processing
-	//Local<VertexBuffer> screenBuff;
-	//Share<RenderPass> renderPass;
+	//std::unique_ptr<VertexBuffer> screenBuff;
+	//std::shared_ptr<RenderPass> renderPass;
 
 	//struct Vertices
 	//{

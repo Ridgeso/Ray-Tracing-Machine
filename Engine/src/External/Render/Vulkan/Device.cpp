@@ -111,6 +111,7 @@ namespace RT::Vulkan
             }
         }
         RT_ASSERT(false, "failed to find supported format!");
+        return VK_FORMAT_UNDEFINED;
     }
 
     void Device::createBuffer(
@@ -157,6 +158,7 @@ namespace RT::Vulkan
             }
         }
         RT_ASSERT(false, "failed to find suitable memory type!");
+        return 0xFFFFFFFF;
     }
 
     void Device::createInstance()

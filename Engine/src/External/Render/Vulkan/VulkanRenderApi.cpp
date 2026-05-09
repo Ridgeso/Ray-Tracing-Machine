@@ -123,16 +123,16 @@ namespace RT::Vulkan
 		DeviceInstance.waitForIdle();
 		extent = VkExtent2D{ (uint32_t)size.x, (uint32_t)size.y };
 
-		auto oldSwapchain = Share<Swapchain>(nullptr);
+		auto oldSwapchain = std::shared_ptr<Swapchain>(nullptr);
 		if (SwapchainInstance == nullptr)
 		{
-			SwapchainInstance = makeLocal<Swapchain>(extent);
+			SwapchainInstance = std::make_unique<Swapchain>(extent);
 		}
 		else
 		{
 			// TODO: check rendepass compatibility
-			oldSwapchain = Share<Swapchain>(SwapchainInstance.release());
-			SwapchainInstance = makeLocal<Swapchain>(extent, oldSwapchain);
+			oldSwapchain = std::shared_ptr<Swapchain>(SwapchainInstance.release());
+			SwapchainInstance = std::make_unique<Swapchain>(extent, oldSwapchain);
 		}
 
 		SwapchainInstance->init();

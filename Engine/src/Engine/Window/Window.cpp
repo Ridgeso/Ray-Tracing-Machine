@@ -4,9 +4,9 @@
 namespace RT
 {
 
-	Local<Window> Window::createWindow()
+	std::unique_ptr<Window> Window::createWindow()
 	{
-		return makeLocal<GlfwWindow>();
+		return std::make_unique<GlfwWindow>();
 	}
 
 }

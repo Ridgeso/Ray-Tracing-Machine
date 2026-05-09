@@ -1,7 +1,7 @@
 #pragma once
-#include <vector>
-#include <Engine/Core/Base.h>
+#include <memory>
 #include <glm/glm.hpp>
+#include <vector>
 
 #include "Engine/Render/Texture.h"
 
@@ -22,7 +22,7 @@ namespace RT
 
 		virtual const Texture& getAttachment(const uint32_t idx = 0) const = 0;
 
-		static Share<RenderPass> create(const RenderPassSpec& spec);
+		static std::shared_ptr<RenderPass> create(const RenderPassSpec& spec);
 	};
 
 }

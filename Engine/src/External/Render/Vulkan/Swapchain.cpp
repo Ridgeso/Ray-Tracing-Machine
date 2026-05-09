@@ -4,9 +4,9 @@
 namespace RT::Vulkan
 {
 
-    Local<Swapchain> Swapchain::swapchainInstance = nullptr;
+    std::unique_ptr<Swapchain> Swapchain::swapchainInstance = nullptr;
 
-    Swapchain::Swapchain(const VkExtent2D windowExtent, const Share<Swapchain>& oldSwapchain)
+    Swapchain::Swapchain(const VkExtent2D windowExtent, const std::shared_ptr<Swapchain>& oldSwapchain)
         : windowExtent{windowExtent}, oldSwapchain{oldSwapchain}
     {
     }

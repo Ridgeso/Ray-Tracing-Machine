@@ -1,7 +1,7 @@
 #pragma once
+#include <memory>
 #include <vector>
 #include <vulkan/vulkan.h>
-#include "Engine/Core/Base.h"
 
 #include "Device.h"
 #include "utils/Utils.h"
@@ -13,7 +13,7 @@ namespace RT::Vulkan
     class Swapchain
     {
     public:
-        Swapchain(const VkExtent2D windowExtent, const Share<Swapchain>& oldSwapchain = nullptr);
+        Swapchain(const VkExtent2D windowExtent, const std::shared_ptr<Swapchain>& oldSwapchain = nullptr);
         ~Swapchain() = default;
 
         Swapchain(const Swapchain&) = delete;
@@ -21,7 +21,7 @@ namespace RT::Vulkan
         Swapchain& operator=(const Swapchain&) = delete;
         Swapchain&& operator=(Swapchain&&) = delete;
         
-        static Local<Swapchain>& getSwapchainInstance() { return swapchainInstance; }
+        static std::unique_ptr<Swapchain>& getSwapchainInstance() { return swapchainInstance; }
 
         void init();
         void shutdown();
@@ -81,9 +81,9 @@ namespace RT::Vulkan
         std::vector<VkFence> imagesInFlight = {};
         uint8_t currentFrame = 0u;
 
-        Share<Swapchain> oldSwapchain = nullptr;
+        std::shared_ptr<Swapchain> oldSwapchain = nullptr;
 
-        static Local<Swapchain> swapchainInstance;
+        static std::unique_ptr<Swapchain> swapchainInstance;
     };
 
     #define SwapchainInstance ::RT::Vulkan::Swapchain::getSwapchainInstance()

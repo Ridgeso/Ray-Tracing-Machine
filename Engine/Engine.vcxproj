@@ -55,7 +55,6 @@
     <ClInclude Include="src\Engine\Render\Texture.h" />
     <ClInclude Include="src\Engine\Startup\Startup.h" />
     <ClInclude Include="src\Engine\Core\Application.h" />
-    <ClInclude Include="src\Engine\Core\Base.h" />
     <ClInclude Include="src\Engine\Startup\EntryPoint.h" />
     <ClInclude Include="src\Engine\Core\Time.h" />
     <ClInclude Include="src\Engine\Engine.h" />

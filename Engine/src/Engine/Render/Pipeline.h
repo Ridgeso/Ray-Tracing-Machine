@@ -1,8 +1,7 @@
 #pragma once
-#include <vector>
+#include <memory>
 #include <filesystem>
-
-#include "Engine/Core/Base.h"
+#include <vector>
 
 #include "RenderPass.h"
 #include "Buffer.h"
@@ -44,7 +43,7 @@ namespace RT
 		virtual void bind() const = 0;
 		virtual void dispatch(const glm::uvec2 groups) const = 0;
 
-		static Local<Pipeline> create(PipelineSpec& spec);
+		static std::unique_ptr<Pipeline> create(PipelineSpec& spec);
 	};
 
 }

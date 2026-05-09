@@ -1,5 +1,5 @@
 #pragma once
-#include <Engine/Core/Base.h>
+#include <memory>
 
 namespace RT
 {
@@ -28,6 +28,6 @@ namespace RT
 		static Api api;
 	};
 
-	Local<RenderApi> createRenderApi();
+	std::unique_ptr<RenderApi> createRenderApi();
 
 }

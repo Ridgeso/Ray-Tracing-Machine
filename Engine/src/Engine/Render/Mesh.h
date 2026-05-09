@@ -1,9 +1,8 @@
 #pragma once
-#include "filesystem"
+#include <filesystem>
+#include <memory>
 
 #include <glm/glm.hpp>
-
-#include "Engine/Core/Base.h"
 
 namespace RT
 {

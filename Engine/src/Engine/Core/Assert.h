@@ -2,6 +2,7 @@
 #include "Engine/Core/Log.h"
 
 #define DEBUGBREAK __debugbreak()
+#define EXPEND_MACRO(MACRO) MACRO
 
 #define ASSERT_IMPL(TYPE, COND, MSG, ...) { if (!(COND)) { ##TYPE##_ERROR("`" #COND "` " MSG, __VA_ARGS__); DEBUGBREAK; } }
 

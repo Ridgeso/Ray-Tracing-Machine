@@ -1,9 +1,8 @@
 #pragma once
 #include <filesystem>
-#include <string_view>
 #include <glm/glm.hpp>
-
-#include "Engine/Core/Base.h"
+#include <memory>
+#include <string_view>
 
 #include <imgui.h>
 
@@ -28,14 +27,14 @@ namespace RT
 		virtual void transition(const Access imageAccess, const Layout imageLayout) const = 0;
 		virtual void barrier(const Access imageAccess, const Layout imageLayout) const = 0;
 
-		static Local<Texture> create(
+		static std::unique_ptr<Texture> create(
 			const std::filesystem::path& path,
 			const Filter filter = Filter::Linear,
 			const Mode mode = Mode::Repeat);
-		static Local<Texture> create(const glm::uvec2 size, const Format imageFormat);
+		static std::unique_ptr<Texture> create(const glm::uvec2 size, const Format imageFormat);
 	};
 
-	using TextureArray = std::vector<Local<Texture>>;
+	using TextureArray = std::vector<std::unique_ptr<Texture>>;
 
 	namespace Utils
 	{

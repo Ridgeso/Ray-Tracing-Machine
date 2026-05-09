@@ -7,20 +7,20 @@
 namespace RT::Core
 {
 
-	Share<spdlog::logger> Log::engineLogger = nullptr;
-	Share<spdlog::logger> Log::clientLogger = nullptr;
+	std::shared_ptr<spdlog::logger> Log::engineLogger = nullptr;
+	std::shared_ptr<spdlog::logger> Log::clientLogger = nullptr;
 
 	void Log::init()
 	{
         auto logSinks = std::array<spdlog::sink_ptr, 2>{
-            makeShare<spdlog::sinks::stdout_color_sink_mt>(),
-            makeShare<spdlog::sinks::basic_file_sink_mt>("backlog.log", true)
+            std::make_shared<spdlog::sinks::stdout_color_sink_mt>(),
+            std::make_shared<spdlog::sinks::basic_file_sink_mt>("backlog.log", true)
         };
 
         logSinks[0]->set_pattern("%^[%T:%e][%L] %n: %v%$");
         logSinks[1]->set_pattern("[%d-%m-%C %T:%e][%l] %n: %v");
 
-        engineLogger = makeShare<spdlog::logger>(
+        engineLogger = std::make_shared<spdlog::logger>(
             "ENG",
             logSinks.begin(),
             logSinks.end()
@@ -30,7 +30,7 @@ namespace RT::Core
         engineLogger->flush_on(spdlog::level::trace);
 
 
-        clientLogger = makeShare<spdlog::logger>(
+        clientLogger = std::make_shared<spdlog::logger>(
             "APP",
             logSinks.begin(),
             logSinks.end()
@@ -54,12 +54,12 @@ namespace RT::Core
         clientLogger->flush_on(level);
     }
 
-    const Share<spdlog::logger>& Log::getEngineLogger()
+    const std::shared_ptr<spdlog::logger>& Log::getEngineLogger()
     {
         return engineLogger;
     }
 
-    const Share<spdlog::logger>& Log::getClientLogger()
+    const std::shared_ptr<spdlog::logger>& Log::getClientLogger()
     {
         return clientLogger;
     }

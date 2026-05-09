@@ -7,12 +7,12 @@ namespace RT
 	
 	RenderApi::Api RenderApi::api = RenderApi::Api::Vulkan;
 
-	Local<RenderApi> createRenderApi()
+	std::unique_ptr<RenderApi> createRenderApi()
 	{
 		switch (RenderApi::api)
 		{
-			// case RenderAPI::OpenGL: return makeLocal<OpenGl::OpenGlRenderer>();
-			case RenderApi::Api::Vulkan: return makeLocal<Vulkan::VulkanRenderApi>();
+			// case RenderAPI::OpenGL: return std::make_unique<OpenGl::OpenGlRenderer>();
+			case RenderApi::Api::Vulkan: return std::make_unique<Vulkan::VulkanRenderApi>();
 		}
 		return nullptr;
 	}

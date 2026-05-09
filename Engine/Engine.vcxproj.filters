@@ -122,9 +122,6 @@
     <ClInclude Include="src\Engine\Window\Window.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Engine\Core\Base.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\Engine\Render\RenderApi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
