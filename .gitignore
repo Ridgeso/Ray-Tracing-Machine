@@ -2,9 +2,7 @@
 .vs/
 
 # bin
-**/x64
-**/Debug
-**/Release
+**/build
 
 # garbage / personal files
 garbage/
