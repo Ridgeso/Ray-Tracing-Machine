@@ -11,58 +11,59 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Engine\Render\Buffer.cpp" />
-    <ClCompile Include="src\Engine\Render\Mesh.cpp" />
-    <ClCompile Include="src\Engine\Render\Pipeline.cpp" />
-    <ClCompile Include="src\Engine\Render\RenderPass.cpp" />
-    <ClCompile Include="src\Engine\Render\Texture.cpp" />
-    <ClCompile Include="src\Engine\Startup\Startup.cpp" />
-    <ClCompile Include="src\Engine\Core\Application.cpp" />
-    <ClCompile Include="src\Engine\Render\RenderApi.cpp" />
-    <ClCompile Include="src\Engine\Window\Window.cpp" />
-    <ClCompile Include="src\Engine\Render\Camera.cpp" />
-    <ClCompile Include="src\Engine\Render\Scene.cpp" />
+    <ClCompile Include="Implementatins.cpp" />
+    <ClCompile Include="Render\Common\MeshLoader.cpp" />
+    <ClCompile Include="Render\Vulkan\Descriptors.cpp" />
+    <ClCompile Include="Render\Vulkan\Device.cpp" />
+    <ClCompile Include="Render\Vulkan\VulkanPipeline.cpp" />
+    <ClCompile Include="Render\Vulkan\VulkanRenderPass.cpp" />
+    <ClCompile Include="Render\Vulkan\Swapchain.cpp" />
+    <ClCompile Include="Render\Vulkan\Utils\Debug.cpp" />
+    <ClCompile Include="Render\Vulkan\VulkanBuffer.cpp" />
+    <ClCompile Include="Render\Vulkan\VulkanRenderApi.cpp" />
+    <ClCompile Include="Render\Vulkan\Shader.cpp" />
+    <ClCompile Include="Render\Vulkan\VulkanTexture.cpp" />
+    <ClCompile Include="Window\GlfwWindow\Utils.cpp" />
+    <ClCompile Include="Window\GlfwWindow\GlfwWindow.cpp" />
+    <ClCompile Include="Window\ImGuiImpl.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\Engine\logging\Assert.h" />
-    <ClInclude Include="src\Engine\logging\Log.h" />
-    <ClInclude Include="src\Engine\Event\AppEvents.h" />
-    <ClInclude Include="src\Engine\Event\Dispatcher.h" />
-    <ClInclude Include="src\Engine\Event\Event.h" />
-    <ClInclude Include="src\Engine\Frame\Frame.h" />
-    <ClInclude Include="src\Engine\Render\Buffer.h" />
-    <ClInclude Include="src\Engine\Render\Mesh.h" />
-    <ClInclude Include="src\Engine\Render\Pipeline.h" />
-    <ClInclude Include="src\Engine\Render\Renderer.h" />
-    <ClInclude Include="src\Engine\Render\RenderPass.h" />
-    <ClInclude Include="src\Engine\Render\Texture.h" />
-    <ClInclude Include="src\Engine\Startup\Startup.h" />
-    <ClInclude Include="src\Engine\Core\Application.h" />
-    <ClInclude Include="src\Engine\Startup\EntryPoint.h" />
-    <ClInclude Include="src\Engine\Engine.h" />
-    <ClInclude Include="src\Engine\Render\RenderApi.h" />
-    <ClInclude Include="src\Engine\Utils\KeyCodes.h" />
-    <ClInclude Include="src\Engine\Utils\LogDefinitions.h" />
-    <ClInclude Include="src\Engine\Version.h" />
-    <ClInclude Include="src\Engine\Window\Window.h" />
-    <ClInclude Include="src\Engine\Render\Camera.h" />
-    <ClInclude Include="src\Engine\Render\Scene.h" />
+    <ClInclude Include="Render\Common\MeshLoader.h" />
+    <ClInclude Include="Render\Vulkan\Context.h" />
+    <ClInclude Include="Render\Vulkan\Descriptors.h" />
+    <ClInclude Include="Render\Vulkan\Utils\Constants.h" />
+    <ClInclude Include="Render\Vulkan\VulkanPipeline.h" />
+    <ClInclude Include="Render\Vulkan\VulkanRenderPass.h" />
+    <ClInclude Include="Render\Vulkan\Swapchain.h" />
+    <ClInclude Include="Render\Vulkan\Device.h" />
+    <ClInclude Include="Render\Vulkan\Utils\Debug.h" />
+    <ClInclude Include="Render\Vulkan\Utils\Utils.h" />
+    <ClInclude Include="Render\Vulkan\VulkanBuffer.h" />
+    <ClInclude Include="Render\Vulkan\VulkanRenderApi.h" />
+    <ClInclude Include="Render\Vulkan\Shader.h" />
+    <ClInclude Include="Render\Vulkan\VulkanTexture.h" />
+    <ClInclude Include="Window\GlfwWindow\GlfwWindow.h" />
+    <ClInclude Include="Window\GlfwWindow\Utils.h" />
+    <ClInclude Include="Window\ImGuiImpl.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="src\common\Common.vcxproj">
+    <ProjectReference Include="..\common\Common.vcxproj">
       <Project>{327FE97C-0D2E-4FB9-8F70-120C120DEB92}</Project>
     </ProjectReference>
-    <ProjectReference Include="src\External\External.vcxproj">
-      <Project>{A62CD38C-F6AD-4454-B35D-6A4D15B4521E}</Project>
+    <ProjectReference Include="$(SolutionDir)Dependencies\GLFW.vcxproj">
+      <Project>{154B857C-0182-860D-AA6E-6C109684020F}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(SolutionDir)Dependencies\ImGui.vcxproj">
+      <Project>{4988c892-af06-4b15-bf14-eeac31e96fdb}</Project>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{9EFA1FF9-CC26-45BC-9FF9-FFB4A52FD5A8}</ProjectGuid>
-    <RootNamespace>Engine</RootNamespace>
+    <ProjectGuid>{A62CD38C-F6AD-4454-B35D-6A4D15B4521E}</ProjectGuid>
+    <RootNamespace>External</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>Engine</ProjectName>
+    <ProjectName>External</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -108,10 +109,10 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS;GLM_ENABLE_EXPERIMENTAL;GLFW_INCLUDE_NONE;RT_ROOT_PATH=R"($(ProjectDir)src\)";VK_DEBUG;RT_DEBUG;_DEBUG</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS;GLM_ENABLE_EXPERIMENTAL;GLFW_INCLUDE_NONE;RT_ROOT_PATH=R"($(SolutionDir)Engine\src\)";VK_DEBUG;RT_DEBUG;_DEBUG</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Engine\src;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\stb;$(SolutionDir)Dependencies\tinygltf;$(SolutionDir)Dependencies\glad\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Engine\src;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\GLFW\include;$(SolutionDir)Dependencies\ImGui;$(SolutionDir)Dependencies\stb;$(SolutionDir)Dependencies\tinygltf;$(SolutionDir)Dependencies\glad\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -131,10 +132,10 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS;GLM_ENABLE_EXPERIMENTAL;GLFW_INCLUDE_NONE;RT_ROOT_PATH=R"($(ProjectDir)src\)";NDEBUG</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS;GLM_ENABLE_EXPERIMENTAL;GLFW_INCLUDE_NONE;RT_ROOT_PATH=R"($(SolutionDir)Engine\src\)";NDEBUG</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Engine\src;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\stb;$(SolutionDir)Dependencies\tinygltf;$(SolutionDir)Dependencies\glad\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Engine\src;$(SolutionDir)Dependencies\glm;$(SolutionDir)Dependencies\GLFW\include;$(SolutionDir)Dependencies\ImGui;$(SolutionDir)Dependencies\stb;$(SolutionDir)Dependencies\tinygltf;$(SolutionDir)Dependencies\glad\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <DebugInformationFormat>None</DebugInformationFormat>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>

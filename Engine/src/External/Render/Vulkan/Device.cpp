@@ -12,7 +12,7 @@ namespace RT::Vulkan
 namespace
 {
     static constexpr std::array<const char*, 1> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
- 
+
     struct DeviceFeatrues
     {
         VkPhysicalDeviceFeatures deviceFeatures = {};

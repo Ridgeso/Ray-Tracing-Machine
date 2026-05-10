@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>
+        $(VULKAN_SDK)\include;%(AdditionalIncludeDirectories)
+      </AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>
+        $(VULKAN_SDK)\Lib\vulkan-1.lib;%(AdditionalDependencies)
+      </AdditionalDependencies>
+    </Link>
+    <Lib>
+      <AdditionalDependencies>
+        $(VULKAN_SDK)\Lib\vulkan-1.lib;%(AdditionalDependencies)
+      </AdditionalDependencies>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
+    <Link>
+      <AdditionalDependencies>
+        $(VULKAN_SDK)\Lib\shaderc_sharedd.lib;$(VULKAN_SDK)\Lib\spirv-cross-cored.lib;%(AdditionalDependencies)
+      </AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
+    <Link>
+      <AdditionalDependencies>
+        $(VULKAN_SDK)\Lib\shaderc_shared.lib;$(VULKAN_SDK)\Lib\spirv-cross-core.lib;%(AdditionalDependencies)
+      </AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+</Project>
