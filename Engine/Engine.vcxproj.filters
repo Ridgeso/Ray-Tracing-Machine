@@ -167,10 +167,10 @@
     <ClInclude Include="src\common\logging\Assert.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\logging\Log.h">
+    <ClInclude Include="src\Engine\logging\Log.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\logging\Assert.h">
+    <ClInclude Include="src\Engine\logging\Assert.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\External\Render\Vulkan\Swapchain.h">
