@@ -2,8 +2,8 @@
 
 #include <array>
 
-#include "Engine/Core/Time.h"
-#include "Engine/Core/Log.h"
+#include "logging/Log.h"
+#include "common/utils/Time.h"
 
 namespace
 {
@@ -49,14 +49,14 @@ namespace
 BVH::BVH(const RT::Mesh& mesh)
 	: mesh{mesh}
 {
-	auto buildTimer = RT::Timer{};
+	auto buildTimer = common::Timer{};
 
 	buildNodes();
 	construct();
 
 	stats.buildTime = buildTimer.Ellapsed();
 
-	LOG_DEBUG("Mesh BVH build:");
+	APP_LOG_DEBUG("Mesh BVH build:");
 	stats.print();
 }
 
@@ -251,8 +251,8 @@ void BVH::Stats::measure(const uint8_t depth, const uint32_t triangleCount, cons
 
 void BVH::Stats::print() const
 {
-	LOG_DEBUG("BVH buildTime: {} ms", buildTime);
-	LOG_DEBUG("BVH triangles = {} nodes = {} leafs = {}", triCnt, nodeCnt, leafCnt);
-	LOG_DEBUG("BVH leaf Depth: Min = {} Max = {} Mean = {}", leafDepth.x, leafDepth.y, meanDepth());
-	LOG_DEBUG("BVH leaf Tris:  Min = {} Max = {} Mean = {} SAH on leafs = {}", leafTris.x, leafTris.y, meanTris(), SAH);
+	APP_LOG_DEBUG("BVH buildTime: {} ms", buildTime);
+	APP_LOG_DEBUG("BVH triangles = {} nodes = {} leafs = {}", triCnt, nodeCnt, leafCnt);
+	APP_LOG_DEBUG("BVH leaf Depth: Min = {} Max = {} Mean = {}", leafDepth.x, leafDepth.y, meanDepth());
+	APP_LOG_DEBUG("BVH leaf Tris:  Min = {} Max = {} Mean = {} SAH on leafs = {}", leafTris.x, leafTris.y, meanTris(), SAH);
 }

@@ -2,7 +2,7 @@
 #include <functional>
 #include <vector>
 
-#include "Engine/Core/Log.h"
+#include "Engine/logging/Log.h"
 
 namespace RT::Event
 {

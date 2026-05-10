@@ -1,7 +1,7 @@
 #pragma once
 #include <chrono>
 
-namespace RT
+namespace common
 {
 
 	namespace

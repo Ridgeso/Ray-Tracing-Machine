@@ -6,6 +6,7 @@
 
 #include "Device.h"
 #include "utils/Debug.h"
+#include "Engine/logging/Log.h"
 
 namespace RT::Vulkan
 {

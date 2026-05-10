@@ -1,7 +1,7 @@
+#include "Application.h"
 #include "Engine/Version.h"
 
-#include "Application.h"
-#include "Time.h"
+#include "common/utils/Time.h"
 
 #include "Engine/Event/Event.h"
 #include "Engine/Event/AppEvents.h"
@@ -18,6 +18,8 @@ namespace RT
 		, appFrameDuration(0)
 		, window(Window::createWindow())
 	{
+		common::Log::registerLogger("ENG");
+
 		RT_LOG_INFO("APP ** {} ** running [app version __{}__]", specs.name, __RT_VERSION__);
 		MainApp = this;
 
@@ -45,7 +47,7 @@ namespace RT
 	{
 		while (isRunning)
 		{
-			auto appTimer = Timer{};
+			auto appTimer = common::Timer{};
 
 			if (window->isMinimize())
 			{

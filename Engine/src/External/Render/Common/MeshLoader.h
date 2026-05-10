@@ -5,7 +5,6 @@
 #include <unordered_map>
 #include <variant>
 
-#include "Engine/Core/Utils.h"
 #include "Engine/Render/Scene.h"
 
 #include "tiny_gltf.h"

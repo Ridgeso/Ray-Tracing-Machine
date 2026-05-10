@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Engine\Core\Log.cpp" />
+    <ClCompile Include="src\common\logging\Log.cpp" />
     <ClCompile Include="src\Engine\Render\Buffer.cpp" />
     <ClCompile Include="src\Engine\Render\Mesh.cpp" />
     <ClCompile Include="src\Engine\Render\Pipeline.cpp" />
@@ -40,9 +40,13 @@
     <ClCompile Include="src\External\Window\ImGuiImpl.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\Engine\Core\Assert.h" />
-    <ClInclude Include="src\Engine\Core\Log.h" />
-    <ClInclude Include="src\Engine\Core\Utils.h" />
+    <ClInclude Include="src\common\logging\Assert.h" />
+    <ClInclude Include="src\common\logging\Log.h" />
+    <ClInclude Include="src\common\utils\FileInfo.h" />
+    <ClInclude Include="src\common\utils\Time.h" />
+    <ClInclude Include="src\common\utils\Trait.h" />
+    <ClInclude Include="src\Engine\logging\Assert.h" />
+    <ClInclude Include="src\Engine\logging\Log.h" />
     <ClInclude Include="src\Engine\Event\AppEvents.h" />
     <ClInclude Include="src\Engine\Event\Dispatcher.h" />
     <ClInclude Include="src\Engine\Event\Event.h" />
@@ -56,7 +60,6 @@
     <ClInclude Include="src\Engine\Startup\Startup.h" />
     <ClInclude Include="src\Engine\Core\Application.h" />
     <ClInclude Include="src\Engine\Startup\EntryPoint.h" />
-    <ClInclude Include="src\Engine\Core\Time.h" />
     <ClInclude Include="src\Engine\Engine.h" />
     <ClInclude Include="src\Engine\Render\RenderApi.h" />
     <ClInclude Include="src\Engine\Utils\KeyCodes.h" />

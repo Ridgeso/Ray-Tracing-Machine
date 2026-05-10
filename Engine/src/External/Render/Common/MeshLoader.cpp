@@ -2,7 +2,7 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
-#include "Engine/Core/Log.h"
+#include "Engine/logging/Log.h"
 
 namespace RT
 {
@@ -198,7 +198,7 @@ namespace
 
         if (rtModel.empty())
         {
-            LOG_WARN("Colnd not find any Triangle primitive. No data in mesh");
+            RT_LOG_WARN("Colnd not find any Triangle primitive. No data in mesh");
         }
 
         return rtModel;

@@ -23,6 +23,8 @@
   <ItemGroup>
     <ClInclude Include="src\BVH.h" />
     <ClInclude Include="src\SceneWrapper.h" />
+    <ClInclude Include="src\logging\Log.h" />
+    <ClInclude Include="src\logging\Assert.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

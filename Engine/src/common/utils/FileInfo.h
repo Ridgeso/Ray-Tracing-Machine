@@ -11,7 +11,7 @@
 #define RT_LINE __builtin_LINE()
 #define RT_FUNCTION __builtin_FUNCTION()
 
-namespace RT::Utils
+namespace common
 {
 
 	struct FileInfo
@@ -26,20 +26,6 @@ namespace RT::Utils
 		const char* file;
 		const char* function;
 		const uint32_t line;
-	};
-
-	template <typename Derive>
-	struct Trait
-	{
-		const Derive& getImpl() const
-		{
-			return static_cast<const Derive&>(*this);
-		}
-
-		Derive& getImpl()
-		{
-			return static_cast<Derive&>(*this);
-		}
 	};
 
 }

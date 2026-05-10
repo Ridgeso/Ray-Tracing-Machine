@@ -32,5 +32,11 @@
     <ClInclude Include="src\BVH.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\logging\Log.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\logging\Assert.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

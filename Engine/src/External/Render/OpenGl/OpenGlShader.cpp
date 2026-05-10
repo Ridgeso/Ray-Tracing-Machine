@@ -6,8 +6,8 @@
 #include <vector>
 #include <unordered_set>
 
-#include "Engine/Core/Log.h"
-#include "Engine/Core/Assert.h"
+#include "Engine/logging/Log.h"
+#include "Engine/logging/Assert.h"
 
 namespace RT::OpenGl
 {

@@ -1,8 +1,9 @@
 #include <cstdlib>
 #include "Startup.h"
 
+#include "common/logging/Log.h"
+
 #include "Engine/Core/Application.h"
-#include "Engine/Core/Log.h"
 
 extern RT::ApplicationSpecs CreateApplicationSpec();
 
@@ -17,15 +18,14 @@ namespace RT
 
 	static void preInitCore(CommandLineArgs args)
 	{
-		RT::Core::Log::init();
+		common::Log::init();
 		#ifndef RT_DEBUG
-		RT::Core::Log::setLevel(spdlog::level::err);
+		common::Log::setLevel(common::Log::Level::Error);
 		#endif // RT_DEBUG
 
-		RT_LOG_DEBUG("APP CORE CREATED");
+		LOG_DEBUG("CORE", "APP CORE CREATED");
 	}
 	
-
 	static void runCore()
 	{
 		auto specs = CreateApplicationSpec();
@@ -37,9 +37,9 @@ namespace RT
 
 	static void postShutdownCore()
 	{
-		RT_LOG_DEBUG("APP CORE DESTROYED");
+		LOG_DEBUG("CORE", "APP CORE DESTROYED");
 
-		RT::Core::Log::shutdown();
+		common::Log::shutdown();
 	}
 
 	int32_t Main(int argc, char* argv[])

@@ -1,7 +1,5 @@
 #include "SceneWrapper.h"
 
-#include "Engine/Core/Log.h"
-
 SceneWrapper::SceneWrapper(RT::Scene& scene)
 	: baseScene{ scene }
 {

@@ -2,6 +2,9 @@
 #include <Engine/Startup/EntryPoint.h>
 
 #include <array>
+#include <fstream>
+
+#include <common/utils/Time.h>
 
 #include <Engine/Event/AppEvents.h>
 
@@ -28,6 +31,8 @@ public:
 		, scene{}
 		, sceneWrapper{scene}
 	{
+		common::Log::registerLogger("APP");
+
 		//screenBuff = VertexBuffer::create(sizeof(screenVertices), screenVertices);
 		//screenBuff->registerAttributes({ VertexElement::Float2, VertexElement::Float2 });
 
@@ -502,7 +507,7 @@ public:
 	{
 		updateView(RT::Application::Get().appDuration() / 1000.0f);
 
-		auto timeit = RT::Timer{};
+		auto timeit = common::Timer{};
 		RT::Renderer::beginFrame();
 
 		pipeline->bindSet(0, 0);
