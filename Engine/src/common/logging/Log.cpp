@@ -19,26 +19,16 @@ namespace
     {
         switch (level)
         {
-        case Log::Level::Trace:
-            return spdlog::level::trace;
-        case Log::Level::Debug:
-            return spdlog::level::debug;
-        case Log::Level::Info:
-            return spdlog::level::info;
-        case Log::Level::Warn:
-            return spdlog::level::warn;
-        case Log::Level::Error:
-            return spdlog::level::err;
-        case Log::Level::Critical:
-            return spdlog::level::critical;
-        case Log::Level::Off:
-            return spdlog::level::off;
-        default:
-            return spdlog::level::info;
+            case Log::Level::Trace:    return spdlog::level::trace;
+            case Log::Level::Debug:    return spdlog::level::debug;
+            case Log::Level::Info:     return spdlog::level::info;
+            case Log::Level::Warn:     return spdlog::level::warn;
+            case Log::Level::Error:    return spdlog::level::err;
+            case Log::Level::Critical: return spdlog::level::critical;
+            case Log::Level::Off:      return spdlog::level::off;
+            default:                   return spdlog::level::info;
         }
     }
-
-    using LoggerPtr = std::shared_ptr<spdlog::logger>;
 
     struct LogImpl
     {
@@ -52,11 +42,11 @@ namespace
             spdlog::shutdown();
         }
 
-        void registerLogger(const LoggerId& id)
+        void registerLogger(const LoggerId& logger)
         {
-            if (loggers.find(id) != loggers.end())
+            if (loggers.find(logger) != loggers.end())
             {
-                loggers["CORE"]->warn("Logger with id {} already exists!", id);
+                loggers["CORE"]->warn("Logger with id {} already exists!", logger);
                 return;
             }
 
@@ -68,17 +58,17 @@ namespace
             logSinks[0]->set_pattern("%^[%T:%e][%L] %n: %v%$");
             logSinks[1]->set_pattern("[%d-%m-%C %T:%e][%l] %n: %v");
 
-            loggers[id] = std::make_shared<spdlog::logger>(
-                id,
+            loggers[logger] = std::make_shared<spdlog::logger>(
+                logger,
                 logSinks.begin(),
                 logSinks.end()
             );
-            spdlog::register_logger(loggers[id]);
+            spdlog::register_logger(loggers[logger]);
 
-            setLevel(spdlog::level::trace, id);
+            setLevel(spdlog::level::trace, logger);
         }
 
-        void setLevel(const spdlog::level::level_enum level, const std::string& logger)
+        void setLevel(const spdlog::level::level_enum level, const LoggerId& logger)
         {
             if (logger.empty())
             {
@@ -95,7 +85,7 @@ namespace
             }
         }
 
-        std::unordered_map<std::string, LoggerPtr> loggers;
+        std::unordered_map<std::string, std::shared_ptr<spdlog::logger>> loggers{};
     };
 
     static LogImpl impl{};

@@ -29,7 +29,7 @@ namespace common
 		static void init();
 		static void shutdown();
 
-		static void registerLogger(const LoggerId& id);
+		static void registerLogger(const LoggerId& logger);
 
 		template <Level level, typename... Args>
 		static void logBase(
@@ -38,12 +38,11 @@ namespace common
 			fmt::format_string<Args...> msg,
 			Args&&... args)
 		{
-			const auto prefix = fmt::format("{}:{} ::: ", fileInfo.file, fileInfo.line);
 			const auto logBuf = fmt::vformat(msg, fmt::make_format_args(args...));
-			logBaseImpl<level>(logger, fmt::format("{}{}", prefix, logBuf));
+			logBaseImpl<level>(logger, fmt::format("{}:{} ::: {}", fileInfo.file, fileInfo.line, logBuf));
 		}
 
-		static void setLevel(const Level level, const std::string& logger = "");
+		static void setLevel(const Level level, const LoggerId& logger = "");
 	
 	private:
 		template <Level level>
