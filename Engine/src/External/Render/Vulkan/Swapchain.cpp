@@ -89,9 +89,13 @@ namespace
         for (size_t i = 0; i < Constants::MAX_FRAMES_IN_FLIGHT; i++)
         {
             imageAvailableSemaphores[i].destroy();
-            renderFinishedSemaphores[i].destroy();
             inFlightFences[i].destroy();
         }
+        for (auto& sem : renderFinishedSemaphores)
+        {
+            sem.destroy();
+        }
+        renderFinishedSemaphores.clear();
     }
 
     VkResult Swapchain::acquireNextImage(uint32_t& imageIndex)
@@ -126,7 +130,7 @@ namespace
         submitInfo.commandBufferCount = buffers.size();
         submitInfo.pCommandBuffers = buffers.data();
 
-        auto signalSemaphores = std::array{ renderFinishedSemaphores[currentFrame].handle() };
+        auto signalSemaphores = std::array{ renderFinishedSemaphores[imageIndex].handle() };
         submitInfo.signalSemaphoreCount = signalSemaphores.size();
         submitInfo.pSignalSemaphores = signalSemaphores.data();
 
@@ -350,8 +354,12 @@ namespace
         for (size_t i = 0; i < Constants::MAX_FRAMES_IN_FLIGHT; i++)
         {
             imageAvailableSemaphores[i].create();
-            renderFinishedSemaphores[i].create();
             inFlightFences[i].create(Fence::State::Signaled);
+        }
+        renderFinishedSemaphores.resize(imageCount);
+        for (size_t i = 0; i < renderFinishedSemaphores.size(); i++)
+        {
+            renderFinishedSemaphores[i].create();
         }
     }
 

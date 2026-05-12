@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <array>
 #include <vector>
 #include <vulkan/vulkan.h>
 
@@ -73,7 +74,7 @@ namespace RT::Vulkan
         uint32_t imageCount = 0u;
 
         std::array<Semaphore, Constants::MAX_FRAMES_IN_FLIGHT> imageAvailableSemaphores = {};
-        std::array<Semaphore, Constants::MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores = {};
+        std::vector<Semaphore> renderFinishedSemaphores = {};
         std::array<Fence, Constants::MAX_FRAMES_IN_FLIGHT> inFlightFences = {};
         uint8_t currentFrame = 0u;
 
