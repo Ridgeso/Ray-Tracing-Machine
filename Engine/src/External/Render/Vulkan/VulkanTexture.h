@@ -21,6 +21,8 @@ namespace RT::Vulkan
 		void transition(const Access imageAccess, const Layout imageLayout) const final;
 		void barrier(const Access imageAccess, const Layout imageLayout) const final;
 
+		void copyFrom(const Texture& source) final;
+
 		VkImageView getImageView() const { return imageView; }
 		VkSampler getSampler() const { return sampler; }
 

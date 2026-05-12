@@ -27,6 +27,8 @@ namespace RT
 		virtual void transition(const Access imageAccess, const Layout imageLayout) const = 0;
 		virtual void barrier(const Access imageAccess, const Layout imageLayout) const = 0;
 
+		virtual void copyFrom(const Texture& source) = 0;
+
 		static std::unique_ptr<Texture> create(
 			const std::filesystem::path& path,
 			const Filter filter = Filter::Linear,

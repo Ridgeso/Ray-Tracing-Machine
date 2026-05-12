@@ -99,6 +99,57 @@ namespace RT::Vulkan
 		currLayout = newLayout;
 	}
 
+	void VulkanTexture::copyFrom(const Texture& source)
+	{
+		DeviceInstance.execSingleCmdPass([&](const auto cmdBuffer) -> void
+		{
+			const auto& src = static_cast<const VulkanTexture&>(source);
+			const auto srcSize = glm::min(size, src.getSize());
+			const auto extent = VkExtent3D{ srcSize.x, srcSize.y, 1u };
+		
+			src.vulkanBarrier(cmdBuffer, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+			src.currAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			src.currLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+
+			vulkanBarrier(cmdBuffer, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+			currAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			currLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+
+			constexpr auto clearColor = VkClearColorValue{ { 0.0f, 0.0f, 0.0f, 1.0f } };
+			vkCmdClearColorImage(
+				cmdBuffer,
+				image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				&clearColor,
+				1, &subresourceRange);
+
+			vulkanBarrier(cmdBuffer, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+			
+			auto region = VkImageCopy{};
+			region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			region.srcSubresource.mipLevel = 0;
+			region.srcSubresource.baseArrayLayer = 0;
+			region.srcSubresource.layerCount = 1;
+			region.srcOffset = { 0, 0, 0 };
+			region.dstSubresource = region.srcSubresource;
+			region.dstOffset = { 0, 0, 0 };
+			region.extent = extent;
+
+			vkCmdCopyImage(
+				cmdBuffer,
+				src.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				1, &region);
+
+			src.vulkanBarrier(cmdBuffer, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			src.currAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			src.currLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+			vulkanBarrier(cmdBuffer, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			currAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			currLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		});
+	}
+
 	void VulkanTexture::vulkanBarrier(
 		const VkCommandBuffer cmdBuff,
 		const VkAccessFlags dstAccessMask,
@@ -231,9 +282,14 @@ namespace RT::Vulkan
 		else
 		{
 			imageCreateInfo.format = imageFormat2VulkanFormat(format);
-			imageCreateInfo.usage = isFromMemory ?
-				VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT :
-				VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+			imageCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+			if (not isFromMemory)
+			{
+				imageCreateInfo.usage |= VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+			}
+			// imageCreateInfo.usage = isFromMemory ?
+			// 	VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT :
+			// 	VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
 				//VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
 				//VK_IMAGE_USAGE_TRANSFER_SRC_BIT |

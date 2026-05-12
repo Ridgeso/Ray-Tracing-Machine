@@ -62,6 +62,7 @@ public:
 
 		accumulationTexture.reset();
 		outTexture.reset();
+		previewTexture.reset();
 		skyMap.reset();
 		textures.clear();
 
@@ -83,7 +84,7 @@ public:
 			ImGui::Text("CPU time: %.3fms", RT::Application::Get().appDuration() - lastFrameDuration);
 			ImGui::Text("Frames: %d", infoUniform.frameIndex);
 
-			infoUniform.frameIndex = accumulation ? infoUniform.frameIndex + 1 : 1;
+			infoUniform.frameIndex = (not previewTexture and accumulation) ? infoUniform.frameIndex + 1 : 1;
 
 			if (ImGui::SliderInt("Bounces Limit", (int32_t*)&infoUniform.maxBounces, 1, 15))
 			{
@@ -103,6 +104,21 @@ public:
 			{
 				infoUniform.drawEnvironment = drawEnvironmentTranslator;
 				ammountsUniform->setData(&infoUniform.drawEnvironment, sizeof(float), offsetof(InfoUniform, drawEnvironment));
+			}
+
+			if (not previewTexture and ImGui::Button("Take Snapshot"))
+			{
+				previewTexture = RT::Texture::create(outTexture->getSize(), RT::Texture::Format::RGBA8);
+				previewTexture->copyFrom(*outTexture);
+			}
+			else if (previewTexture)
+			{
+				if (ImGui::Button("Show Live View"))
+				{
+					previewTexture.reset();
+				}
+				ImGui::SameLine();
+				ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.2f, 1.0f), "Live render paused (snapshot mode)");
 			}
 
 			static auto prevSceneLabel = fmt::format("Scene: {}", selectedScene);
@@ -489,12 +505,10 @@ public:
 				pipeline->updateSet(0, 0, 1, *outTexture);
 			}
 
-			ImGui::Image(
-				outTexture->getTexId(),
-				viewportSize,
-				ImVec2(0, 1),
-				ImVec2(1, 0)
-			);
+			const auto texId = previewTexture
+				? previewTexture->getTexId()
+				: outTexture->getTexId();
+			ImGui::Image(texId, viewportSize, ImVec2(0, 1), ImVec2(1, 0));
 		}
 		ImGui::End();
 		ImGui::PopStyleVar();
@@ -510,14 +524,17 @@ public:
 		auto timeit = common::Timer{};
 		RT::Renderer::beginFrame();
 
-		pipeline->bindSet(0, 0);
-		pipeline->bindSet(1, 0);
+		if (not previewTexture)
+		{
+			pipeline->bindSet(0, 0);
+			pipeline->bindSet(1, 0);
 
-		outTexture->barrier(RT::Texture::Access::Write, RT::Texture::Layout::General);
+			outTexture->barrier(RT::Texture::Access::Write, RT::Texture::Layout::General);
 
-		pipeline->dispatch(outTexture->getSize());
+			pipeline->dispatch(outTexture->getSize());
 
-		outTexture->barrier(RT::Texture::Access::Read, RT::Texture::Layout::ShaderRead);
+			outTexture->barrier(RT::Texture::Access::Read, RT::Texture::Layout::ShaderRead);
+		}
 
 		RT::Renderer::endFrame();
 		lastFrameDuration = timeit.Ellapsed();
@@ -927,6 +944,7 @@ private:
 
 	std::unique_ptr<RT::Texture> accumulationTexture;
 	std::unique_ptr<RT::Texture> outTexture;
+	std::unique_ptr<RT::Texture> previewTexture;
 	std::unique_ptr<RT::Texture> skyMap;
 	RT::TextureArray textures;
 
