@@ -29,8 +29,8 @@ namespace RT::Vulkan
         void init();
         void shutdown();
 
-        VkResult acquireNextImage(uint32_t& imageIndex);
-        VkResult submitCommandBuffers(const VkCommandBuffer& frameBuffer, const VkCommandBuffer& guiBuffer, uint32_t& imageIndex);
+        VkResult acquireNextImage(uint32_t& imageIndex, const uint8_t slotIdx);
+        VkResult submitCommandBuffers(const VkCommandBuffer& frameBuffer, const VkCommandBuffer& guiBuffer, uint32_t& imageIndex, const uint8_t slotIdx);
         bool compareFormats(const Swapchain& other) const;
         static VkFormat findDepthFormat();
 
@@ -44,8 +44,6 @@ namespace RT::Vulkan
         const std::vector<VkImageView>& getSwapChainImageViews() const { return swapChainImageViews; }
         VkFormat getImageFormat() const { return swapChainImageFormat; }
 
-        uint8_t getCurrentFrame() const { return currentFrame; }
-
         static constexpr uint32_t minImageCount() { return 2; }
 
     private:
@@ -57,7 +55,6 @@ namespace RT::Vulkan
 
         VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) const;
         bool compareSwapFormats(const Swapchain& swapChain) const;
-        void incrementFrameCounter();
     
     private:
         VkSwapchainKHR swapChain = {};
@@ -76,7 +73,6 @@ namespace RT::Vulkan
         std::array<Semaphore, Constants::MAX_FRAMES_IN_FLIGHT> imageAvailableSemaphores = {};
         std::vector<Semaphore> renderFinishedSemaphores = {};
         std::array<Fence, Constants::MAX_FRAMES_IN_FLIGHT> inFlightFences = {};
-        uint8_t currentFrame = 0u;
 
         std::shared_ptr<Swapchain> oldSwapchain = nullptr;
 

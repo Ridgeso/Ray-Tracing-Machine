@@ -98,58 +98,56 @@ namespace
         renderFinishedSemaphores.clear();
     }
 
-    VkResult Swapchain::acquireNextImage(uint32_t& imageIndex)
+    VkResult Swapchain::acquireNextImage(uint32_t& imageIndex, const uint8_t slotIdx)
     {
-        const auto device = DeviceInstance.getDevice();
-        inFlightFences[currentFrame].wait();
+        inFlightFences[slotIdx].wait();
         return vkAcquireNextImageKHR(
-            device,
+            DeviceInstance.getDevice(),
             swapChain,
             std::numeric_limits<uint64_t>::max(),
-            imageAvailableSemaphores[currentFrame].handle(),
+            imageAvailableSemaphores[slotIdx].handle(),
             VK_NULL_HANDLE,
             &imageIndex);
     }
 
-    VkResult Swapchain::submitCommandBuffers(const VkCommandBuffer& frameBuffer, const VkCommandBuffer& guiBuffer, uint32_t& imageIndex)
+    VkResult Swapchain::submitCommandBuffers(const VkCommandBuffer& frameBuffer, const VkCommandBuffer& guiBuffer, uint32_t& imageIndex, const uint8_t slotIdx)
     {
         const auto& deviceInstance = DeviceInstance;
 
-        inFlightFences[currentFrame].reset();
-        
+        inFlightFences[slotIdx].reset();
+
         auto submitInfo = VkSubmitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
         constexpr auto waitStages = std::array<VkPipelineStageFlags, 1>{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-        auto waitStagesSemaphores = std::array{ imageAvailableSemaphores[currentFrame].handle() };
-        submitInfo.waitSemaphoreCount = waitStagesSemaphores.size();
-        submitInfo.pWaitSemaphores = waitStagesSemaphores.data();
+        const auto waitSemaphoreHandles = std::array{ imageAvailableSemaphores[slotIdx].handle() };
+        submitInfo.waitSemaphoreCount = waitSemaphoreHandles.size();
+        submitInfo.pWaitSemaphores = waitSemaphoreHandles.data();
         submitInfo.pWaitDstStageMask = waitStages.data();
 
         const auto buffers = std::array{ frameBuffer, guiBuffer };
         submitInfo.commandBufferCount = buffers.size();
         submitInfo.pCommandBuffers = buffers.data();
 
-        auto signalSemaphores = std::array{ renderFinishedSemaphores[imageIndex].handle() };
-        submitInfo.signalSemaphoreCount = signalSemaphores.size();
-        submitInfo.pSignalSemaphores = signalSemaphores.data();
+        const auto signalSemaphoreHandles = std::array{ renderFinishedSemaphores[slotIdx].handle() };
+        submitInfo.signalSemaphoreCount = signalSemaphoreHandles.size();
+        submitInfo.pSignalSemaphores = signalSemaphoreHandles.data();
 
         CHECK_VK(
-            vkQueueSubmit(deviceInstance.getGraphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame].handle()),
+            deviceInstance.queueSubmit(deviceInstance.getGraphicsQueue(), 1, &submitInfo, inFlightFences[slotIdx].handle()),
             "failed to submit draw command buffer!");
 
         auto presentInfo = VkPresentInfoKHR{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
-        presentInfo.waitSemaphoreCount = signalSemaphores.size();
-        presentInfo.pWaitSemaphores = signalSemaphores.data();
+        presentInfo.waitSemaphoreCount = signalSemaphoreHandles.size();
+        presentInfo.pWaitSemaphores = signalSemaphoreHandles.data();
 
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = &swapChain;
         presentInfo.pImageIndices = &imageIndex;
 
-        incrementFrameCounter();
-        return vkQueuePresentKHR(deviceInstance.getPresentQueue(), &presentInfo);
+        return deviceInstance.queuePresent(deviceInstance.getPresentQueue(), &presentInfo);
     }
 
     bool Swapchain::compareFormats(const Swapchain& other) const
@@ -386,11 +384,6 @@ namespace
     {
         return swapChain.swapChainDepthFormat == swapChainDepthFormat &&
             swapChain.swapChainImageFormat == swapChainImageFormat;
-    }
-
-    void Swapchain::incrementFrameCounter()
-    {
-        currentFrame = (currentFrame + 1) % Constants::MAX_FRAMES_IN_FLIGHT;
     }
 
 } // namespace RT::Vulkan

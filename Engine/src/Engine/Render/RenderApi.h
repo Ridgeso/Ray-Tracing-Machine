@@ -26,6 +26,8 @@ namespace RT
 		virtual void beginFrame() = 0;
 		virtual void endFrame() = 0;
 
+		virtual void waitForFrameReady() = 0;
+
 	public:
 		static Api api;
 	};

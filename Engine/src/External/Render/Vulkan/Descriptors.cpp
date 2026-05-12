@@ -129,7 +129,7 @@ namespace RT::Vulkan
 
 	VkDescriptorSet Descriptors::currFrameSet(const uint32_t layout, const uint32_t set) const
 	{
-		return layoutSets[layout][set][SwapchainInstance->getCurrentFrame()];
+		return layoutSets[layout][set][Context::slotIdx];
 	}
 
 	void Descriptors::createLayout(const UniformLayouts& uniformLayouts)

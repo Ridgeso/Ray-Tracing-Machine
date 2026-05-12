@@ -18,14 +18,14 @@ namespace RT::Vulkan
 {
 namespace
 {
-	void flushUniforms()
+	void flushUniforms(const uint8_t slotIdx)
 	{
 		auto& uniformsToFlush = getUniformsToFlush();
 		int32_t i = 0;
 		int32_t flashedUniformsFrom = uniformsToFlush.size();
-		while (i < uniformsToFlush.size())
+		while (i < flashedUniformsFrom)
 		{
-			if (not uniformsToFlush[i]->flush())
+			if (not uniformsToFlush[i]->flush(slotIdx))
 			{
 				std::swap(uniformsToFlush[i], uniformsToFlush[--flashedUniformsFrom]);
 			}
@@ -50,7 +50,7 @@ namespace
 
 		DeviceInstance.init();
 		recreateSwapchain();
-		
+
 		initImGui();
 
 		allocateCmdBuffers(cmdBuffers);
@@ -65,46 +65,47 @@ namespace
 
 			this->recreateSwapchain();
 		});
+
+		renderThread.start(cmdBuffers.data(), imGuiCmdBuffers.data());
 	}
 
 	void VulkanRenderApi::shutdown()
 	{
-		DeviceInstance.waitForIdle();
+		renderThread.stop();
+
 		auto& deviceInstance = DeviceInstance;
+		
+		deviceInstance.waitForIdle();
 
 		ImGui_ImplVulkan_Shutdown();
 		vkDestroyDescriptorPool(deviceInstance.getDevice(), descriptorPool, nullptr);
 
 		freeCmdBuffers(cmdBuffers);
 		freeCmdBuffers(imGuiCmdBuffers);
-		
+
 		SwapchainInstance->shutdown();
 		deviceInstance.shutdown();
 	}
 
 	void VulkanRenderApi::stop()
 	{
+		renderThread.stop();
 		DeviceInstance.waitForIdle();
+	}
+
+	void VulkanRenderApi::waitForFrameReady()
+	{
+		renderThread.waitImGuiConsumed();
 	}
 
 	void VulkanRenderApi::beginFrame()
 	{
-		uint32_t imgIdx = 0u;
-		auto result = SwapchainInstance->acquireNextImage(imgIdx);
+		RT_ASSERT(currentSlot == nullptr, "VulkanRenderApi::beginFrame called twice without endFrame");
 
-		flushUniforms();
+		currentSlot = renderThread.acquireFreeSlot();
 
-		// Probably not needed as it is handled by WindowResize event callback, but keept for safty
-		if (VK_ERROR_OUT_OF_DATE_KHR == result)
-		{
-			recreateSwapchain();
-			result = SwapchainInstance->acquireNextImage(imgIdx);
-		}
-
-		RT_ASSERT(VK_SUCCESS == result || VK_SUBOPTIMAL_KHR == result, "failte to acquire swap chain image!");
-
-		Context::imgIdx = imgIdx;
-		Context::frameCmd = cmdBuffers[imgIdx];
+		Context::frameCmd = currentSlot->mainCmdBuff;
+		Context::slotIdx = currentSlot->slotIdx;
 
 		auto beginInfo = VkCommandBufferBeginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -114,23 +115,18 @@ namespace
 
 	void VulkanRenderApi::endFrame()
 	{
+		RT_ASSERT(currentSlot != nullptr, "VulkanRenderApi::endFrame called without beginFrame");
+
 		CHECK_VK(vkEndCommandBuffer(Context::frameCmd), "failed to record command buffer");
 
-		recordGuiCommandbuffer(Context::imgIdx);
+		flushUniforms(currentSlot->slotIdx);
 
-		auto result = SwapchainInstance->submitCommandBuffers(cmdBuffers[Context::imgIdx], imGuiCmdBuffers[Context::imgIdx], Context::imgIdx);
-
-		// Probably not needed as it is handled by WindowResize event callback, but keept for safty
-		if (VK_ERROR_OUT_OF_DATE_KHR == result || VK_SUBOPTIMAL_KHR == result)
-		{
-			recreateSwapchain();
-			return;
-		}
-
-		RT_ASSERT(VK_SUCCESS == result, "failte to present swap chain image!");
-
-		Context::imgIdx = invalidImgIdx;
+		auto* slot = currentSlot;
+		currentSlot = nullptr;
 		Context::frameCmd = VK_NULL_HANDLE;
+		Context::slotIdx = invalidSlotIdx;
+
+		renderThread.submitSlot(slot);
 	}
 
 	void VulkanRenderApi::recreateSwapchain()
@@ -141,6 +137,7 @@ namespace
 			return;
 		}
 
+		renderThread.drainAndPause();
 		DeviceInstance.waitForIdle();
 		extent = VkExtent2D{ (uint32_t)size.x, (uint32_t)size.y };
 
@@ -163,54 +160,6 @@ namespace
 			RT_ASSERT(SwapchainInstance->compareFormats(*oldSwapchain), "swapchain image/depth formats has changed");
 			oldSwapchain->shutdown();
 		}
-	}
-
-	void VulkanRenderApi::recordGuiCommandbuffer(const uint32_t imIdx)
-	{
-		auto currCmdBuff = imGuiCmdBuffers[imIdx];
-
-		auto beginInfo = VkCommandBufferBeginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-		vkResetCommandBuffer(currCmdBuff, 0);
-		CHECK_VK(vkBeginCommandBuffer(currCmdBuff, &beginInfo), "failed to begin command buffer!");
-
-		VkRenderPassBeginInfo renderPassInfo{};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		
-		renderPassInfo.renderPass = SwapchainInstance->getRenderPass();
-		renderPassInfo.framebuffer = SwapchainInstance->getFramebuffers()[imIdx];
-
-		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = SwapchainInstance->getWindowExtent();
-
-		constexpr auto clearValues = std::array<VkClearValue, 1>{
-			VkClearValue{ { 0.1f, 0.1f, 0.1f, 1.0f } }, // color
-		};
-		renderPassInfo.clearValueCount = clearValues.size();
-		renderPassInfo.pClearValues = clearValues.data();
-
-		vkCmdBeginRenderPass(currCmdBuff, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-		auto viewport = VkViewport{};
-		viewport.x = 0;
-		viewport.y = 0;
-		viewport.width = SwapchainInstance->getSwapchainExtent().width;
-		viewport.height = SwapchainInstance->getSwapchainExtent().height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		auto scissor = VkRect2D{};
-		scissor.offset = { 0, 0 };
-		scissor.extent = SwapchainInstance->getSwapchainExtent();
-		vkCmdSetViewport(currCmdBuff, 0, 1, &viewport);
-		vkCmdSetScissor(currCmdBuff, 0, 1, &scissor);
-
-		auto* drawData = ImGui::GetDrawData();
-		ImGui_ImplVulkan_RenderDrawData(drawData, currCmdBuff);
-
-		vkCmdEndRenderPass(currCmdBuff);
-
-		CHECK_VK(vkEndCommandBuffer(currCmdBuff), "failed to record command buffer");
 	}
 
 	void VulkanRenderApi::initImGui()
@@ -265,10 +214,8 @@ namespace
 		RT_ASSERT(result, "ImGui not initialized");
 	}
 
-	void VulkanRenderApi::allocateCmdBuffers(std::vector<VkCommandBuffer>& cmdBuff)
+	void VulkanRenderApi::allocateCmdBuffers(std::array<VkCommandBuffer, Constants::MAX_FRAMES_IN_FLIGHT>& cmdBuff)
 	{
-		cmdBuff.resize(SwapchainInstance->getSwapChainImages().size());
-
 		auto allocInfo = VkCommandBufferAllocateInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -280,14 +227,14 @@ namespace
 			"failed to allocate command buffers!");
 	}
 
-	void VulkanRenderApi::freeCmdBuffers(std::vector<VkCommandBuffer>& cmdBuff)
+	void VulkanRenderApi::freeCmdBuffers(std::array<VkCommandBuffer, Constants::MAX_FRAMES_IN_FLIGHT>& cmdBuff)
 	{
 		vkFreeCommandBuffers(
 			DeviceInstance.getDevice(),
 			DeviceInstance.getCommandPool(),
 			static_cast<uint32_t>(cmdBuff.size()),
 			cmdBuff.data());
-		cmdBuff.clear();
+		cmdBuff.fill(VK_NULL_HANDLE);
 	}
 
 } // namespace RT::Vulkan

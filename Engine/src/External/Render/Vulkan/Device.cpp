@@ -90,7 +90,26 @@ namespace
 
     void Device::waitForIdle() const
     {
+        auto lock = std::lock_guard<std::mutex>{ queueMutex };
         vkDeviceWaitIdle(device);
+    }
+
+    VkResult Device::queueSubmit(VkQueue queue, const uint32_t submitCount, const VkSubmitInfo* submits, const VkFence fence) const
+    {
+        auto lock = std::lock_guard<std::mutex>{ queueMutex };
+        return vkQueueSubmit(queue, submitCount, submits, fence);
+    }
+
+    VkResult Device::queuePresent(VkQueue queue, const VkPresentInfoKHR* presentInfo) const
+    {
+        auto lock = std::lock_guard<std::mutex>{ queueMutex };
+        return vkQueuePresentKHR(queue, presentInfo);
+    }
+
+    void Device::queueWaitIdle(VkQueue queue) const
+    {
+        auto lock = std::lock_guard<std::mutex>{ queueMutex };
+        vkQueueWaitIdle(queue);
     }
 
     void Device::createImageWithInfo(
@@ -415,8 +434,8 @@ namespace
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &cmdBuffer;
 
-        vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-        vkQueueWaitIdle(graphicsQueue);
+        queueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+        queueWaitIdle(graphicsQueue);
 
         vkFreeCommandBuffers(device, commandPool, 1, &cmdBuffer);
     }

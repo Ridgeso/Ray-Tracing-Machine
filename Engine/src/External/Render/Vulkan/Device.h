@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include <mutex>
 #include <vector>
 
 #include <vulkan/vulkan.h>
@@ -25,6 +26,10 @@ namespace RT::Vulkan
         void shutdown();
 
         void waitForIdle() const;
+
+        VkResult queueSubmit(VkQueue queue, const uint32_t submitCount, const VkSubmitInfo* submits, const VkFence fence) const;
+        VkResult queuePresent(VkQueue queue, const VkPresentInfoKHR* presentInfo) const;
+        void queueWaitIdle(VkQueue queue) const;
 
         void createImageWithInfo(
             const VkImageCreateInfo& imageInfo,
@@ -94,6 +99,8 @@ namespace RT::Vulkan
 
         Utils::SwapChainSupportDetails swapChainSupportDetails = {};
         Utils::QueueFamilyIndices queueFamilyIndices = {};
+
+        mutable std::mutex queueMutex = {};
 
         static Device deviceInstance;
     };

@@ -55,6 +55,8 @@ namespace RT
 				continue;
 			}
 
+			Renderer::waitForFrameReady();
+
 			window->beginUI();
 			frame->layout();
 			window->endUI();

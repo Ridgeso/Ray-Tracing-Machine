@@ -64,7 +64,7 @@ namespace RT::Vulkan
 
 		void setData(const void* data, const uint32_t size, const uint32_t offset = 0u) final;
 
-		bool flush() const;
+		bool flush(const uint8_t slotIdx) const;
 		const VkDescriptorBufferInfo* getWriteBufferInfo(const uint32_t buffNr) const
 		{
 			return descriptorInfo.data() + buffNr;

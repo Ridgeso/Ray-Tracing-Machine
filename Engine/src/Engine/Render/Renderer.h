@@ -25,6 +25,11 @@ namespace RT
 			renderApi->stop();
 		}
 
+		static void waitForFrameReady()
+		{
+			renderApi->waitForFrameReady();
+		}
+
 		static void beginFrame()
 		{
 			renderApi->beginFrame();

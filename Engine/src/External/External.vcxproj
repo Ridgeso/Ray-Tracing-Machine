@@ -16,6 +16,7 @@
     <ClCompile Include="Render\Vulkan\Descriptors.cpp" />
     <ClCompile Include="Render\Vulkan\Device.cpp" />
     <ClCompile Include="Render\Vulkan\Fence.cpp" />
+    <ClCompile Include="Render\Vulkan\RenderThread.cpp" />
     <ClCompile Include="Render\Vulkan\Semaphore.cpp" />
     <ClCompile Include="Render\Vulkan\VulkanPipeline.cpp" />
     <ClCompile Include="Render\Vulkan\VulkanRenderPass.cpp" />
@@ -39,6 +40,7 @@
     <ClInclude Include="Render\Vulkan\Swapchain.h" />
     <ClInclude Include="Render\Vulkan\Device.h" />
     <ClInclude Include="Render\Vulkan\Fence.h" />
+    <ClInclude Include="Render\Vulkan\RenderThread.h" />
     <ClInclude Include="Render\Vulkan\Semaphore.h" />
     <ClInclude Include="Render\Vulkan\Utils\Debug.h" />
     <ClInclude Include="Render\Vulkan\Utils\Utils.h" />

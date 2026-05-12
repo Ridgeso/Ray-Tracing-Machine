@@ -199,26 +199,23 @@ namespace
 		std::fill(flashInThisFrame.begin(), flashInThisFrame.end(), true);
 	}
 
-	bool VulkanUniform::flush() const
+	bool VulkanUniform::flush(const uint8_t slotIdx) const
 	{
-		const auto currFrame = SwapchainInstance->getCurrentFrame();
-		if (not flashInThisFrame[currFrame])
+		if (flashInThisFrame[slotIdx])
 		{
-			return true;
+			copyToRegionBuff(slotIdx);
+
+			auto memRange = VkMappedMemoryRange{};
+			memRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+			memRange.memory = uniMemory;
+			memRange.offset = alignedSize * slotIdx;
+			memRange.size = alignedSize;
+			CHECK_VK(
+				vkFlushMappedMemoryRanges(DeviceInstance.getDevice(), 1, &memRange),
+				"Failed to flush uniform buffer!");
+
+			flashInThisFrame[slotIdx] = false;
 		}
-
-		copyToRegionBuff(currFrame);
-
-		auto memRange = VkMappedMemoryRange{};
-		memRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-		memRange.memory = uniMemory;
-		memRange.offset = alignedSize * currFrame;
-		memRange.size = alignedSize;
-		CHECK_VK(
-			vkFlushMappedMemoryRanges(DeviceInstance.getDevice(), 1, &memRange),
-			"Failed to flush uniform buffer!");
-		
-		flashInThisFrame[currFrame] = false;
 		return stillNeedFlush();
 	}
 
