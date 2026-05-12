@@ -38,6 +38,12 @@
     <ClCompile Include="Render\Vulkan\Device.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Render\Vulkan\Fence.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Vulkan\Semaphore.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="Render\Vulkan\VulkanPipeline.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -95,6 +101,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Render\Vulkan\Device.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\Vulkan\Fence.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\Vulkan\Semaphore.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Render\Vulkan\Utils\Debug.h">

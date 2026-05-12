@@ -15,6 +15,8 @@
     <ClCompile Include="Render\Common\MeshLoader.cpp" />
     <ClCompile Include="Render\Vulkan\Descriptors.cpp" />
     <ClCompile Include="Render\Vulkan\Device.cpp" />
+    <ClCompile Include="Render\Vulkan\Fence.cpp" />
+    <ClCompile Include="Render\Vulkan\Semaphore.cpp" />
     <ClCompile Include="Render\Vulkan\VulkanPipeline.cpp" />
     <ClCompile Include="Render\Vulkan\VulkanRenderPass.cpp" />
     <ClCompile Include="Render\Vulkan\Swapchain.cpp" />
@@ -36,6 +38,8 @@
     <ClInclude Include="Render\Vulkan\VulkanRenderPass.h" />
     <ClInclude Include="Render\Vulkan\Swapchain.h" />
     <ClInclude Include="Render\Vulkan\Device.h" />
+    <ClInclude Include="Render\Vulkan\Fence.h" />
+    <ClInclude Include="Render\Vulkan\Semaphore.h" />
     <ClInclude Include="Render\Vulkan\Utils\Debug.h" />
     <ClInclude Include="Render\Vulkan\Utils\Utils.h" />
     <ClInclude Include="Render\Vulkan\VulkanBuffer.h" />
