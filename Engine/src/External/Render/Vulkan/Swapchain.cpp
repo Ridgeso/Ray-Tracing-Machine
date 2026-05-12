@@ -88,27 +88,21 @@ namespace
 
         for (size_t i = 0; i < Constants::MAX_FRAMES_IN_FLIGHT; i++)
         {
-            vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
-            vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
-            vkDestroyFence(device, inFlightFences[i], nullptr);
+            imageAvailableSemaphores[i].destroy();
+            renderFinishedSemaphores[i].destroy();
+            inFlightFences[i].destroy();
         }
     }
 
     VkResult Swapchain::acquireNextImage(uint32_t& imageIndex)
     {
         const auto device = DeviceInstance.getDevice();
-        vkWaitForFences(
-            device,
-            1,
-            &inFlightFences[currentFrame],
-            VK_TRUE,
-            std::numeric_limits<uint64_t>::max());
-
+        inFlightFences[currentFrame].wait();
         return vkAcquireNextImageKHR(
             device,
             swapChain,
             std::numeric_limits<uint64_t>::max(),
-            imageAvailableSemaphores[currentFrame],
+            imageAvailableSemaphores[currentFrame].handle(),
             VK_NULL_HANDLE,
             &imageIndex);
     }
@@ -117,13 +111,13 @@ namespace
     {
         const auto& deviceInstance = DeviceInstance;
 
-        vkResetFences(deviceInstance.getDevice(), 1, &inFlightFences[currentFrame]);
+        inFlightFences[currentFrame].reset();
         
         auto submitInfo = VkSubmitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
         constexpr auto waitStages = std::array<VkPipelineStageFlags, 1>{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-        auto waitStagesSemaphores = std::array{ imageAvailableSemaphores[currentFrame] };
+        auto waitStagesSemaphores = std::array{ imageAvailableSemaphores[currentFrame].handle() };
         submitInfo.waitSemaphoreCount = waitStagesSemaphores.size();
         submitInfo.pWaitSemaphores = waitStagesSemaphores.data();
         submitInfo.pWaitDstStageMask = waitStages.data();
@@ -132,12 +126,12 @@ namespace
         submitInfo.commandBufferCount = buffers.size();
         submitInfo.pCommandBuffers = buffers.data();
 
-        auto signalSemaphores = std::array{ renderFinishedSemaphores[currentFrame] };
+        auto signalSemaphores = std::array{ renderFinishedSemaphores[currentFrame].handle() };
         submitInfo.signalSemaphoreCount = signalSemaphores.size();
         submitInfo.pSignalSemaphores = signalSemaphores.data();
 
         CHECK_VK(
-            vkQueueSubmit(deviceInstance.getGraphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame]),
+            vkQueueSubmit(deviceInstance.getGraphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame].handle()),
             "failed to submit draw command buffer!");
 
         auto presentInfo = VkPresentInfoKHR{};
@@ -353,26 +347,11 @@ namespace
 
     void Swapchain::createSyncObjects()
     {
-        imagesInFlight.resize(swapChainImages.size(), VK_NULL_HANDLE);
-
-        auto semaphoreInfo = VkSemaphoreCreateInfo{};
-        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-        auto fenceInfo = VkFenceCreateInfo{};
-        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
         for (size_t i = 0; i < Constants::MAX_FRAMES_IN_FLIGHT; i++)
         {
-            CHECK_VK(
-                vkCreateSemaphore(DeviceInstance.getDevice(), &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]),
-                "failed to create render available synchronization objects for a frame!");
-            CHECK_VK(
-                vkCreateSemaphore(DeviceInstance.getDevice(), &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]),
-                "failed to create render finish synchronization objects for a frame!");
-            CHECK_VK(
-                vkCreateFence(DeviceInstance.getDevice(), &fenceInfo, nullptr, &inFlightFences[i]),
-                "failed to create render fence synchronization objects for a frame!");
+            imageAvailableSemaphores[i].create();
+            renderFinishedSemaphores[i].create();
+            inFlightFences[i].create(Fence::State::Signaled);
         }
     }
 

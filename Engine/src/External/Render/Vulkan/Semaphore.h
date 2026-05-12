@@ -22,6 +22,7 @@ namespace RT::Vulkan
 
         static constexpr uint64_t noTimeout = std::numeric_limits<uint64_t>::max();
 
+        Semaphore() noexcept = default;
         explicit Semaphore(const Kind kind, const uint64_t initialValue = 0u);
         ~Semaphore() noexcept;
 

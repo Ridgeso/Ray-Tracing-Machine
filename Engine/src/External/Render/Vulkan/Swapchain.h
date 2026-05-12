@@ -4,6 +4,8 @@
 #include <vulkan/vulkan.h>
 
 #include "Device.h"
+#include "Fence.h"
+#include "Semaphore.h"
 #include "utils/Utils.h"
 #include "utils/Constants.h"
 
@@ -70,10 +72,9 @@ namespace RT::Vulkan
         std::vector<VkImageView> swapChainImageViews = {};
         uint32_t imageCount = 0u;
 
-        std::array<VkSemaphore, Constants::MAX_FRAMES_IN_FLIGHT> imageAvailableSemaphores = {};
-        std::array<VkSemaphore, Constants::MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores = {};
-        std::array<VkFence, Constants::MAX_FRAMES_IN_FLIGHT> inFlightFences = {};
-        std::vector<VkFence> imagesInFlight = {};
+        std::array<Semaphore, Constants::MAX_FRAMES_IN_FLIGHT> imageAvailableSemaphores = {};
+        std::array<Semaphore, Constants::MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores = {};
+        std::array<Fence, Constants::MAX_FRAMES_IN_FLIGHT> inFlightFences = {};
         uint8_t currentFrame = 0u;
 
         std::shared_ptr<Swapchain> oldSwapchain = nullptr;
