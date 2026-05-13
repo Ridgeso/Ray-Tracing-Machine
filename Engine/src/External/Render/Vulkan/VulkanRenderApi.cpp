@@ -25,14 +25,12 @@ namespace
 		int32_t flashedUniformsFrom = uniformsToFlush.size();
 		while (i < flashedUniformsFrom)
 		{
-			if (not uniformsToFlush[i]->flush(slotIdx))
-			{
-				std::swap(uniformsToFlush[i], uniformsToFlush[--flashedUniformsFrom]);
-			}
-			else
+			if (uniformsToFlush[i]->flush(slotIdx))
 			{
 				i++;
+				continue;
 			}
+			std::swap(uniformsToFlush[i], uniformsToFlush[--flashedUniformsFrom]);
 		}
 		uniformsToFlush.erase(uniformsToFlush.begin() + flashedUniformsFrom, uniformsToFlush.end());
 	}
@@ -106,6 +104,8 @@ namespace
 
 		Context::frameCmd = currentSlot->mainCmdBuff;
 		Context::slotIdx = currentSlot->slotIdx;
+
+		SwapchainInstance->waitSlotFence(currentSlot->slotIdx);
 
 		auto beginInfo = VkCommandBufferBeginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -214,7 +214,7 @@ namespace
 		RT_ASSERT(result, "ImGui not initialized");
 	}
 
-	void VulkanRenderApi::allocateCmdBuffers(std::array<VkCommandBuffer, Constants::MAX_FRAMES_IN_FLIGHT>& cmdBuff)
+	void VulkanRenderApi::allocateCmdBuffers(CommandBuffers& cmdBuff)
 	{
 		auto allocInfo = VkCommandBufferAllocateInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -227,7 +227,7 @@ namespace
 			"failed to allocate command buffers!");
 	}
 
-	void VulkanRenderApi::freeCmdBuffers(std::array<VkCommandBuffer, Constants::MAX_FRAMES_IN_FLIGHT>& cmdBuff)
+	void VulkanRenderApi::freeCmdBuffers(CommandBuffers& cmdBuff)
 	{
 		vkFreeCommandBuffers(
 			DeviceInstance.getDevice(),

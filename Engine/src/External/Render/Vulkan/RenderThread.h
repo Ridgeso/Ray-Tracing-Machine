@@ -25,6 +25,8 @@ namespace RT::Vulkan
 
     class RenderThread
     {
+        using Slots = std::queue<FrameSlot*>;
+
     public:
         RenderThread() = default;
         ~RenderThread();
@@ -52,11 +54,11 @@ namespace RT::Vulkan
 
         std::mutex freeMtx = {};
         std::condition_variable freeCv = {};
-        std::queue<FrameSlot*> freeSlots = {};
+        Slots freeSlots = {};
 
         std::mutex readyMtx = {};
         std::condition_variable readyCv = {};
-        std::queue<FrameSlot*> readySlots = {};
+        Slots readySlots = {};
 
         std::mutex imguiMtx = {};
         std::condition_variable imguiCv = {};

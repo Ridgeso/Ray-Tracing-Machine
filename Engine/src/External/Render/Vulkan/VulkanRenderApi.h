@@ -13,6 +13,8 @@ namespace RT::Vulkan
 
 	class VulkanRenderApi final : public RenderApi
 	{
+		using CommandBuffers = std::array<VkCommandBuffer, Constants::MAX_FRAMES_IN_FLIGHT>;
+
 	public:
 		VulkanRenderApi();
 		~VulkanRenderApi() = default;
@@ -35,12 +37,12 @@ namespace RT::Vulkan
 
 	private:
 		void initImGui();
-		void allocateCmdBuffers(std::array<VkCommandBuffer, Constants::MAX_FRAMES_IN_FLIGHT>& cmdBuff);
-		void freeCmdBuffers(std::array<VkCommandBuffer, Constants::MAX_FRAMES_IN_FLIGHT>& cmdBuff);
+		void allocateCmdBuffers(CommandBuffers& cmdBuff);
+		void freeCmdBuffers(CommandBuffers& cmdBuff);
 
 	private:
-		std::array<VkCommandBuffer, Constants::MAX_FRAMES_IN_FLIGHT> cmdBuffers = {};
-		std::array<VkCommandBuffer, Constants::MAX_FRAMES_IN_FLIGHT> imGuiCmdBuffers = {};
+		CommandBuffers cmdBuffers = {};
+		CommandBuffers imGuiCmdBuffers = {};
 
 		FrameSlot* currentSlot = nullptr;
 

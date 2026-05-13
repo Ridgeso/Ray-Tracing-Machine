@@ -101,8 +101,8 @@ namespace
 
         worker.join();
 
-        std::queue<FrameSlot*>{}.swap(freeSlots);
-        std::queue<FrameSlot*>{}.swap(readySlots);
+        Slots{}.swap(freeSlots);
+        Slots{}.swap(readySlots);
         imguiOutstanding = false;
     }
 
@@ -115,7 +115,7 @@ namespace
     FrameSlot* RenderThread::acquireFreeSlot()
     {
         auto lock = std::unique_lock<std::mutex>{ freeMtx };
-        freeCv.wait(lock, [&]{ return not freeSlots.empty(); });
+        freeCv.wait(lock, [&freeSlots=freeSlots]{ return not freeSlots.empty(); });
         auto* slot = freeSlots.front();
         freeSlots.pop();
         return slot;
@@ -128,7 +128,7 @@ namespace
             return;
         }
         auto lock = std::unique_lock<std::mutex>{ freeMtx };
-        freeCv.wait(lock, [size=freeSlots.size()]{ return size == Constants::MAX_FRAMES_IN_FLIGHT; });
+        freeCv.wait(lock, [&freeSlots=freeSlots]{ return freeSlots.size() == Constants::MAX_FRAMES_IN_FLIGHT; });
     }
 
     void RenderThread::submitSlot(FrameSlot* slot)

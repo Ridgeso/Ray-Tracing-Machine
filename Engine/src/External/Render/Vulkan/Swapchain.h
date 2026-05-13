@@ -31,6 +31,8 @@ namespace RT::Vulkan
 
         VkResult acquireNextImage(uint32_t& imageIndex, const uint8_t slotIdx);
         VkResult submitCommandBuffers(const VkCommandBuffer& frameBuffer, const VkCommandBuffer& guiBuffer, uint32_t& imageIndex, const uint8_t slotIdx);
+
+        void waitSlotFence(const uint8_t slotIdx) const { inFlightFences[slotIdx].wait(); }
         bool compareFormats(const Swapchain& other) const;
         static VkFormat findDepthFormat();
 

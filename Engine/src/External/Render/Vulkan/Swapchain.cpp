@@ -120,18 +120,18 @@ namespace
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
         constexpr auto waitStages = std::array<VkPipelineStageFlags, 1>{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-        const auto waitSemaphoreHandles = std::array{ imageAvailableSemaphores[slotIdx].handle() };
-        submitInfo.waitSemaphoreCount = waitSemaphoreHandles.size();
-        submitInfo.pWaitSemaphores = waitSemaphoreHandles.data();
+        const auto waitStagesSemaphores = std::array{ imageAvailableSemaphores[slotIdx].handle() };
+        submitInfo.waitSemaphoreCount = waitStagesSemaphores.size();
+        submitInfo.pWaitSemaphores = waitStagesSemaphores.data();
         submitInfo.pWaitDstStageMask = waitStages.data();
 
         const auto buffers = std::array{ frameBuffer, guiBuffer };
         submitInfo.commandBufferCount = buffers.size();
         submitInfo.pCommandBuffers = buffers.data();
 
-        const auto signalSemaphoreHandles = std::array{ renderFinishedSemaphores[slotIdx].handle() };
-        submitInfo.signalSemaphoreCount = signalSemaphoreHandles.size();
-        submitInfo.pSignalSemaphores = signalSemaphoreHandles.data();
+        const auto signalSemaphores = std::array{ renderFinishedSemaphores[imageIndex].handle() };
+        submitInfo.signalSemaphoreCount = signalSemaphores.size();
+        submitInfo.pSignalSemaphores = signalSemaphores.data();
 
         CHECK_VK(
             deviceInstance.queueSubmit(deviceInstance.getGraphicsQueue(), 1, &submitInfo, inFlightFences[slotIdx].handle()),
@@ -140,8 +140,8 @@ namespace
         auto presentInfo = VkPresentInfoKHR{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
-        presentInfo.waitSemaphoreCount = signalSemaphoreHandles.size();
-        presentInfo.pWaitSemaphores = signalSemaphoreHandles.data();
+        presentInfo.waitSemaphoreCount = signalSemaphores.size();
+        presentInfo.pWaitSemaphores = signalSemaphores.data();
 
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = &swapChain;
