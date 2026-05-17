@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 #include <vulkan/vulkan.h>
@@ -7,12 +8,19 @@
 namespace RT::Vulkan::Utils
 {
 
+    struct QueueFamily
+    {
+        uint32_t index;
+        uint32_t count;
+        float priority;
+    };
+
     struct QueueFamilyIndices
     {
-        uint32_t graphicsFamily;
-        uint32_t presentFamily;
-        bool graphicsFamilyHasValue = false;
-        bool presentFamilyHasValue = false;
+        std::optional<QueueFamily> graphics;
+        std::optional<QueueFamily> present;
+        std::optional<QueueFamily> compute;
+        bool dedicatedComputeFamily = false;
     };
 
     struct SwapChainSupportDetails

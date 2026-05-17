@@ -1,6 +1,7 @@
 #pragma once
 #include <array>
 #include <mutex>
+#include <unordered_map>
 #include <vector>
 
 #include <vulkan/vulkan.h>
@@ -61,8 +62,11 @@ namespace RT::Vulkan
         VkPhysicalDevice getPhysicalDevice() const { return physicalDevice; }
         VkSurfaceKHR getSurface() const { return surface; }
         VkQueue getGraphicsQueue() const { return graphicsQueue; }
+        VkQueue getImGuiQueue() const { return imGuiQueue; }
         VkQueue getPresentQueue() const { return presentQueue; }
+        VkQueue getComputeQueue() const { return computeQueue; }
         VkCommandPool getCommandPool() const { return commandPool; }
+        VkCommandPool getComputeCommandPool() const { return computeCommandPool; }
 
         const VkPhysicalDeviceLimits& getLimits() const { return deviceProperties.limits; }
         
@@ -86,6 +90,8 @@ namespace RT::Vulkan
         VkCommandBuffer startSingleCmdBuff() const;
         void flushSingleCmdBuff(const VkCommandBuffer commandBuffer) const;
 
+        uint32_t getQueueIdx(const uint32_t queueFamilyIndex);
+
     private:
         VkDevice device = {};
         VkInstance instance = {};
@@ -93,14 +99,21 @@ namespace RT::Vulkan
         VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 
         VkQueue graphicsQueue = {};
+        VkQueue imGuiQueue = {};
         VkQueue presentQueue = {};
+        VkQueue computeQueue = {};
+
         VkCommandPool commandPool = {};
+        VkCommandPool computeCommandPool = {};
+        
         VkPhysicalDeviceProperties deviceProperties = {};
 
         Utils::SwapChainSupportDetails swapChainSupportDetails = {};
         Utils::QueueFamilyIndices queueFamilyIndices = {};
 
         mutable std::mutex queueMutex = {};
+
+        std::unordered_map<uint32_t, std::vector<uint32_t>> queueOccupancy = {};
 
         static Device deviceInstance;
     };

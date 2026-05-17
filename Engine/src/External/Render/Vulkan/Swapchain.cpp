@@ -195,13 +195,16 @@ namespace
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
         auto indices = deviceInstance.getQueueFamilyIndices();
-        auto queueFamilyIndices = std::vector<uint32_t>{ indices.graphicsFamily, indices.presentFamily };
+        auto queueFamilyIndices = std::unordered_set<uint32_t>{ indices.graphics->index, indices.compute->index, indices.present->index };
 
-        if (indices.graphicsFamily != indices.presentFamily)
+        auto queueFamilyIndicesBuf = std::vector<uint32_t>{};
+        if (queueFamilyIndices.size() > 1)
         {
             createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-            createInfo.queueFamilyIndexCount = 2;
-            createInfo.pQueueFamilyIndices = queueFamilyIndices.data();
+            createInfo.queueFamilyIndexCount = queueFamilyIndices.size();
+
+            queueFamilyIndicesBuf = std::vector<uint32_t>(queueFamilyIndices.begin(), queueFamilyIndices.end());
+            createInfo.pQueueFamilyIndices = queueFamilyIndicesBuf.data();
         }
         else
         {

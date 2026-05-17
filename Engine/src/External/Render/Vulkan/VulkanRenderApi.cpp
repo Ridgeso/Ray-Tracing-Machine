@@ -199,8 +199,8 @@ namespace
 		vkInfo.Instance = device.getInstance();
 		vkInfo.PhysicalDevice = device.getPhysicalDevice();
 		vkInfo.Device = device.getDevice();
-		vkInfo.QueueFamily = device.getQueueFamilyIndices().graphicsFamily;
-		vkInfo.Queue = device.getGraphicsQueue();
+		vkInfo.QueueFamily = device.getQueueFamilyIndices().graphics->index;
+		vkInfo.Queue = device.getImGuiQueue();
 		vkInfo.PipelineCache = pipelineCache;
 		vkInfo.DescriptorPool = descriptorPool;
 		vkInfo.RenderPass = SwapchainInstance->getRenderPass();
