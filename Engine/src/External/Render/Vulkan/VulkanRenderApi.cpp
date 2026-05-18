@@ -51,9 +51,9 @@ namespace
 
 		initImGui();
 
-		allocateCmdBuffers(graphicsCmdBuffers, DeviceInstance.getCommandPool());
-		allocateCmdBuffers(computeCmdBuffers, DeviceInstance.getComputeCommandPool());
-		allocateCmdBuffers(uiCmdBuffers, DeviceInstance.getCommandPool());
+		graphicsCmdBuffer = DeviceInstance.createCommandBuffer(DeviceInstance.getCommandPool());
+		computeCmdBuffer = DeviceInstance.createCommandBuffer(DeviceInstance.getComputeCommandPool());
+		uiCmdBuffer = DeviceInstance.createCommandBuffer(DeviceInstance.getCommandPool());
 
 		for (auto& fence : computeFences)
 		{
@@ -82,7 +82,7 @@ namespace
 			this->recreateSwapchain();
 		});
 
-		renderThread.start(uiCmdBuffers);
+		renderThread.start(uiCmdBuffer);
 	}
 
 	void VulkanRenderApi::shutdown()
@@ -96,9 +96,9 @@ namespace
 		ImGui_ImplVulkan_Shutdown();
 		vkDestroyDescriptorPool(deviceInstance.getDevice(), descriptorPool, nullptr);
 
-		freeCmdBuffers(graphicsCmdBuffers, DeviceInstance.getCommandPool());
-		freeCmdBuffers(computeCmdBuffers, DeviceInstance.getComputeCommandPool());
-		freeCmdBuffers(uiCmdBuffers, DeviceInstance.getCommandPool());
+		graphicsCmdBuffer.destroy();
+		computeCmdBuffer.destroy();
+		uiCmdBuffer.destroy();
 
 		for (auto& fence : computeFences)
 		{
@@ -139,27 +139,25 @@ namespace
 		graphicsFences[graphicsSlotIdx].wait();
 		graphicsFences[graphicsSlotIdx].reset();
 
-		Context::frameCmd = graphicsCmdBuffers[graphicsSlotIdx];
+		Context::frameCmd = graphicsCmdBuffer.handle(graphicsSlotIdx);
 		Context::slotIdx = graphicsSlotIdx;
-
-		auto beginInfo = VkCommandBufferBeginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		vkResetCommandBuffer(Context::frameCmd, 0);
-		CHECK_VK(vkBeginCommandBuffer(Context::frameCmd, &beginInfo), "failed to begin user-graphics command buffer!");
+		graphicsCmdBuffer.begin(graphicsSlotIdx);
 	}
 
 	void VulkanRenderApi::endFrame()
 	{
 		RT_ASSERT(Context::frameCmd != VK_NULL_HANDLE, "VulkanRenderApi::endFrame called without beginFrame");
 
-		CHECK_VK(vkEndCommandBuffer(Context::frameCmd), "failed to record user-graphics command buffer");
+		graphicsCmdBuffer.end(graphicsSlotIdx);
 
 		flushUniforms(graphicsSlotIdx);
+
+		const auto cmdHandle = graphicsCmdBuffer.handle(graphicsSlotIdx);
 
 		auto submitInfo = VkSubmitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submitInfo.commandBufferCount = 1u;
-		submitInfo.pCommandBuffers = &graphicsCmdBuffers[graphicsSlotIdx];
+		submitInfo.pCommandBuffers = &cmdHandle;
 
 		const auto signalSemaphores = std::array{ graphicsFinishedSemaphores[graphicsSlotIdx].handle() };
 		submitInfo.signalSemaphoreCount = signalSemaphores.size();
@@ -182,23 +180,16 @@ namespace
 	{
 		currentSlot = renderThread.acquireFreeSlot();
 
-		Context::frameCmd = currentSlot->mainCmdBuff;
-		Context::slotIdx = currentSlot->slotIdx;
+		const auto slotIdx = currentSlot->slotIdx;
+		SwapchainInstance->waitSlotFence(slotIdx);
 
-		SwapchainInstance->waitSlotFence(currentSlot->slotIdx);
+		uiCmdBuffer.begin(slotIdx);
+		uiCmdBuffer.end(slotIdx);
 
-		auto beginInfo = VkCommandBufferBeginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		vkResetCommandBuffer(Context::frameCmd, 0);
-		CHECK_VK(vkBeginCommandBuffer(Context::frameCmd, &beginInfo), "failed to begin UI main command buffer!");
-		CHECK_VK(vkEndCommandBuffer(Context::frameCmd), "failed to end UI main command buffer!");
-
-		flushUniforms(currentSlot->slotIdx);
+		flushUniforms(slotIdx);
 
 		auto* slot = currentSlot;
 		currentSlot = nullptr;
-		Context::frameCmd = VK_NULL_HANDLE;
-		Context::slotIdx = invalidSlotIdx;
 
 		const auto computeSem = pendingComputeSemaphore;
 		pendingComputeSemaphore = VK_NULL_HANDLE;
@@ -215,27 +206,25 @@ namespace
 		computeFences[computeSlotIdx].wait();
 		computeFences[computeSlotIdx].reset();
 
-		Context::frameCmd = computeCmdBuffers[computeSlotIdx];
+		Context::frameCmd = computeCmdBuffer.handle(computeSlotIdx);
 		Context::slotIdx = computeSlotIdx;
-
-		auto beginInfo = VkCommandBufferBeginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		vkResetCommandBuffer(Context::frameCmd, 0);
-		CHECK_VK(vkBeginCommandBuffer(Context::frameCmd, &beginInfo), "failed to begin compute command buffer!");
+		computeCmdBuffer.begin(computeSlotIdx);
 	}
 
 	void VulkanRenderApi::endCompute()
 	{
 		RT_ASSERT(Context::frameCmd != VK_NULL_HANDLE, "VulkanRenderApi::endCompute called without beginCompute");
 
-		CHECK_VK(vkEndCommandBuffer(Context::frameCmd), "failed to record compute command buffer");
+		computeCmdBuffer.end(computeSlotIdx);
 
 		flushUniforms(computeSlotIdx);
+
+		const auto cmdHandle = computeCmdBuffer.handle(computeSlotIdx);
 
 		auto submitInfo = VkSubmitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submitInfo.commandBufferCount = 1u;
-		submitInfo.pCommandBuffers = &computeCmdBuffers[computeSlotIdx];
+		submitInfo.pCommandBuffers = &cmdHandle;
 
 		const auto signalSemaphores = std::array{ computeFinishedSemaphores[computeSlotIdx].handle() };
 		submitInfo.signalSemaphoreCount = signalSemaphores.size();
@@ -337,29 +326,6 @@ namespace
 		vkInfo.CheckVkResultFn = checkVkResultCallback;
 		result = ImGui_ImplVulkan_Init(&vkInfo);
 		RT_ASSERT(result, "ImGui not initialized");
-	}
-
-	void VulkanRenderApi::allocateCmdBuffers(CommandBuffers& cmdBuff, const VkCommandPool commandPool)
-	{
-		auto allocInfo = VkCommandBufferAllocateInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandPool = commandPool;
-		allocInfo.commandBufferCount = static_cast<uint32_t>(cmdBuff.size());
-
-		CHECK_VK(
-			vkAllocateCommandBuffers(DeviceInstance.getDevice(), &allocInfo, cmdBuff.data()),
-			"failed to allocate command buffers!");
-	}
-
-	void VulkanRenderApi::freeCmdBuffers(CommandBuffers& cmdBuff, const VkCommandPool commandPool)
-	{
-		vkFreeCommandBuffers(
-			DeviceInstance.getDevice(),
-			commandPool,
-			static_cast<uint32_t>(cmdBuff.size()),
-			cmdBuff.data());
-		cmdBuff.fill(VK_NULL_HANDLE);
 	}
 
 } // namespace RT::Vulkan

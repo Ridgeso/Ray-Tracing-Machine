@@ -134,6 +134,13 @@ namespace
         CHECK_VK(vkBindImageMemory(device, image, imageMemory, 0), "failed to bind image memory!");
     }
 
+    CommandBuffer Device::createCommandBuffer(const VkCommandPool commandPool, const VkCommandBufferLevel level) const
+    {
+        auto commandBuffer = CommandBuffer{};
+        commandBuffer.create(commandPool, level);
+        return commandBuffer;
+    }
+
     VkFormat Device::findSupportedFormat(
         const std::vector<VkFormat>& candidates,
         const VkImageTiling tiling,

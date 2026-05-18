@@ -14,7 +14,7 @@
     <ClCompile Include="Implementatins.cpp" />
     <ClCompile Include="Render\Common\MeshLoader.cpp" />
     <ClCompile Include="Render\Vulkan\Descriptors.cpp" />
-    <ClInclude Include="Render\Vulkan\CommandBuffer.cpp" />
+    <ClCompile Include="Render\Vulkan\CommandBuffer.cpp" />
     <ClCompile Include="Render\Vulkan\Device.cpp" />
     <ClCompile Include="Render\Vulkan\Fence.cpp" />
     <ClCompile Include="Render\Vulkan\RenderThread.cpp" />

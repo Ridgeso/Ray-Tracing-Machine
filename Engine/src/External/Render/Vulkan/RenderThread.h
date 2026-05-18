@@ -37,7 +37,7 @@ namespace RT::Vulkan
         RenderThread& operator=(const RenderThread&) = delete;
         RenderThread& operator=(RenderThread&&) = delete;
 
-        void start(const CommandBuffers& mainCmdBuffs);
+        void start(const CommandBuffer& mainCmdBuffs);
 
         void stop();
 

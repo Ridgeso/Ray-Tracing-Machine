@@ -69,14 +69,14 @@ namespace
         }
     }
 
-    void RenderThread::start(const CommandBuffers& mainCmdBuffs)
+    void RenderThread::start(const CommandBuffer& mainCmdBuffs)
     {
         RT_ASSERT(not worker.joinable(), "RenderThread::start called twice");
 
         for (uint8_t i = 0; i < Constants::MAX_FRAMES_IN_FLIGHT; ++i)
         {
             slots[i].slotIdx = i;
-            slots[i].mainCmdBuff = mainCmdBuffs[i];
+            slots[i].mainCmdBuff = mainCmdBuffs.handle(i);
             slots[i].imgIdx = 0u;
             freeSlots.push(&slots[i]);
         }

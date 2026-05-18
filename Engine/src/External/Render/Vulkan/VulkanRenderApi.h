@@ -42,13 +42,11 @@ namespace RT::Vulkan
 
 	private:
 		void initImGui();
-		void allocateCmdBuffers(CommandBuffers& cmdBuff, const VkCommandPool commandPool);
-		void freeCmdBuffers(CommandBuffers& cmdBuff, const VkCommandPool commandPool);
 
 	private:
-		CommandBuffers graphicsCmdBuffers = {};
-		CommandBuffers computeCmdBuffers = {};
-		CommandBuffers uiCmdBuffers = {};
+		CommandBuffer graphicsCmdBuffer = {};
+		CommandBuffer computeCmdBuffer = {};
+		CommandBuffer uiCmdBuffer = {};
 
 		FrameSlot* currentSlot = nullptr;
 

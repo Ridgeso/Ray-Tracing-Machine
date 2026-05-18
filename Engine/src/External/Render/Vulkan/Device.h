@@ -6,6 +6,7 @@
 
 #include <vulkan/vulkan.h>
 
+#include "CommandBuffer.h"
 #include "utils/Utils.h"
 
 namespace RT::Vulkan
@@ -47,6 +48,7 @@ namespace RT::Vulkan
             const VkMemoryPropertyFlags properties,
             VkBuffer& buffer,
             VkDeviceMemory& bufferMemory) const;
+        CommandBuffer createCommandBuffer(VkCommandPool commandPool, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY) const;
         uint32_t findMemoryType(const uint32_t typeFilter, const VkMemoryPropertyFlags properties) const;
 
         template <typename Proc>
