@@ -40,6 +40,16 @@ namespace RT
 			renderApi->endFrame();
 		}
 
+		static void beginCompute()
+		{
+			renderApi->beginCompute();
+		}
+
+		static void endCompute()
+		{
+			renderApi->endCompute();
+		}
+
 	private:
 		inline static std::unique_ptr<RenderApi> renderApi = nullptr;
 	};

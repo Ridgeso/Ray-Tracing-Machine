@@ -522,10 +522,11 @@ public:
 		updateView(RT::Application::Get().appDuration() / 1000.0f);
 
 		auto timeit = common::Timer{};
-		RT::Renderer::beginFrame();
 
 		if (not previewTexture)
 		{
+			RT::Renderer::beginCompute();
+
 			pipeline->bindSet(0, 0);
 			pipeline->bindSet(1, 0);
 
@@ -534,9 +535,13 @@ public:
 			pipeline->dispatch(outTexture->getSize());
 
 			outTexture->barrier(RT::Texture::Access::Read, RT::Texture::Layout::ShaderRead);
+
+			RT::Renderer::endCompute();
 		}
 
+		RT::Renderer::beginFrame();
 		RT::Renderer::endFrame();
+
 		lastFrameDuration = timeit.Ellapsed();
 	}
 

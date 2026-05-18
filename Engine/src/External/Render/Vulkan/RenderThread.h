@@ -10,7 +10,7 @@
 
 #include <vulkan/vulkan.h>
 
-#include "utils/Constants.h"
+#include "CommandBuffer.h"
 
 namespace RT::Vulkan
 {
@@ -21,6 +21,7 @@ namespace RT::Vulkan
         VkCommandBuffer mainCmdBuff = VK_NULL_HANDLE;
         VkCommandBuffer guiCmdBuff = VK_NULL_HANDLE;
         uint32_t imgIdx = 0u;
+        VkSemaphore extraWaitSem = VK_NULL_HANDLE;
     };
 
     class RenderThread
@@ -36,13 +37,13 @@ namespace RT::Vulkan
         RenderThread& operator=(const RenderThread&) = delete;
         RenderThread& operator=(RenderThread&&) = delete;
 
-        void start(const VkCommandBuffer* mainCmdBuffs, const VkCommandBuffer* guiCmdBuffs);
+        void start(const CommandBuffers& mainCmdBuffs, const CommandBuffers& guiCmdBuffs);
 
         void stop();
 
         void waitImGuiConsumed();
         FrameSlot* acquireFreeSlot();
-        void submitSlot(FrameSlot* slot);
+        void submitSlot(FrameSlot* slot, VkSemaphore extraWaitSem = VK_NULL_HANDLE);
 
         void drainAndPause();
 

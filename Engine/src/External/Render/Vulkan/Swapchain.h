@@ -30,7 +30,7 @@ namespace RT::Vulkan
         void shutdown();
 
         VkResult acquireNextImage(uint32_t& imageIndex, const uint8_t slotIdx);
-        VkResult submitCommandBuffers(const VkCommandBuffer& frameBuffer, const VkCommandBuffer& guiBuffer, uint32_t& imageIndex, const uint8_t slotIdx);
+        VkResult submitCommandBuffers(const VkCommandBuffer& frameBuffer, const VkCommandBuffer& guiBuffer, uint32_t& imageIndex, const uint8_t slotIdx, VkSemaphore extraWaitSem = VK_NULL_HANDLE);
 
         void waitSlotFence(const uint8_t slotIdx) const { inFlightFences[slotIdx].wait(); }
         bool compareFormats(const Swapchain& other) const;
@@ -72,9 +72,9 @@ namespace RT::Vulkan
         std::vector<VkImageView> swapChainImageViews = {};
         uint32_t imageCount = 0u;
 
-        std::array<Semaphore, Constants::MAX_FRAMES_IN_FLIGHT> imageAvailableSemaphores = {};
+        Semaphores imageAvailableSemaphores = {};
         std::vector<Semaphore> renderFinishedSemaphores = {};
-        std::array<Fence, Constants::MAX_FRAMES_IN_FLIGHT> inFlightFences = {};
+        Fences inFlightFences = {};
 
         std::shared_ptr<Swapchain> oldSwapchain = nullptr;
 

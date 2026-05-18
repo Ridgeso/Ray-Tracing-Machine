@@ -1,4 +1,6 @@
 #include "Swapchain.h"
+#include <unordered_set>
+
 #include "utils/Debug.h"
 
 namespace RT::Vulkan
@@ -110,7 +112,7 @@ namespace
             &imageIndex);
     }
 
-    VkResult Swapchain::submitCommandBuffers(const VkCommandBuffer& frameBuffer, const VkCommandBuffer& guiBuffer, uint32_t& imageIndex, const uint8_t slotIdx)
+    VkResult Swapchain::submitCommandBuffers(const VkCommandBuffer& frameBuffer, const VkCommandBuffer& guiBuffer, uint32_t& imageIndex, const uint8_t slotIdx, VkSemaphore extraWaitSem)
     {
         const auto& deviceInstance = DeviceInstance;
 
@@ -119,10 +121,16 @@ namespace
         auto submitInfo = VkSubmitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-        constexpr auto waitStages = std::array<VkPipelineStageFlags, 1>{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-        const auto waitStagesSemaphores = std::array{ imageAvailableSemaphores[slotIdx].handle() };
-        submitInfo.waitSemaphoreCount = waitStagesSemaphores.size();
-        submitInfo.pWaitSemaphores = waitStagesSemaphores.data();
+        constexpr auto waitStages = std::array<VkPipelineStageFlags, 2>{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT };
+        auto waitSemaphores = std::array<VkSemaphore, 2>{ imageAvailableSemaphores[slotIdx].handle(), VK_NULL_HANDLE };
+        uint32_t waitCount = 1u;
+        if (extraWaitSem != VK_NULL_HANDLE)
+        {
+            waitSemaphores[waitCount] = extraWaitSem;
+            waitCount++;
+        }
+        submitInfo.waitSemaphoreCount = waitCount;
+        submitInfo.pWaitSemaphores = waitSemaphores.data();
         submitInfo.pWaitDstStageMask = waitStages.data();
 
         const auto buffers = std::array{ frameBuffer, guiBuffer };

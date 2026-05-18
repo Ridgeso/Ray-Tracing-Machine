@@ -9,6 +9,8 @@
 
 #include <vulkan/vulkan.h>
 
+#include "Utils/Constants.h"
+
 namespace RT::Vulkan
 {
     class Fence
@@ -48,5 +50,7 @@ namespace RT::Vulkan
     private:
         VkFence fence = VK_NULL_HANDLE;
     };
+
+    using Fences = std::array<Fence, Constants::MAX_FRAMES_IN_FLIGHT>;
 
 }

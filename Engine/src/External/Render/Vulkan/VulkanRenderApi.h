@@ -3,8 +3,10 @@
 
 #include "Engine/Render/RenderApi.h"
 
+#include "CommandBuffer.h"
+#include "Fence.h"
 #include "RenderThread.h"
-#include "utils/Constants.h"
+#include "Semaphore.h"
 
 #include <vulkan/vulkan.h>
 
@@ -13,8 +15,6 @@ namespace RT::Vulkan
 
 	class VulkanRenderApi final : public RenderApi
 	{
-		using CommandBuffers = std::array<VkCommandBuffer, Constants::MAX_FRAMES_IN_FLIGHT>;
-
 	public:
 		VulkanRenderApi();
 		~VulkanRenderApi() = default;
@@ -31,22 +31,31 @@ namespace RT::Vulkan
 		void beginFrame() final;
 		void endFrame() final;
 
-		void waitForFrameReady();
+		void beginCompute() final;
+		void endCompute() final;
+
+		void waitForFrameReady() final;
 
 		void recreateSwapchain();
 
 	private:
 		void initImGui();
-		void allocateCmdBuffers(CommandBuffers& cmdBuff);
-		void freeCmdBuffers(CommandBuffers& cmdBuff);
+		void allocateCmdBuffers(CommandBuffers& cmdBuff, const VkCommandPool commandPool);
+		void freeCmdBuffers(CommandBuffers& cmdBuff, const VkCommandPool commandPool);
 
 	private:
 		CommandBuffers cmdBuffers = {};
+		CommandBuffers computeCmdBuffers = {};
 		CommandBuffers imGuiCmdBuffers = {};
 
 		FrameSlot* currentSlot = nullptr;
 
 		RenderThread renderThread = {};
+
+		Fences computeFences = {};
+		Semaphores computeFinishedSemaphores = {};
+		uint8_t computeSlotIdx = 0u;
+		VkSemaphore pendingComputeSemaphore = VK_NULL_HANDLE;
 
 		VkExtent2D extent = {};
 

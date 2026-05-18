@@ -296,6 +296,15 @@ namespace RT::Vulkan
 				//VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 		}
 
+		const auto indices = DeviceInstance.getQueueFamilyIndices();
+		const auto sharedFamilies = std::array<uint32_t, 2>{ indices.graphics->index, indices.compute->index };
+		if (not isFromMemory and Format::Depth != format and indices.dedicatedComputeFamily)
+		{
+			imageCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+			imageCreateInfo.queueFamilyIndexCount = static_cast<uint32_t>(sharedFamilies.size());
+			imageCreateInfo.pQueueFamilyIndices = sharedFamilies.data();
+		}
+
 		CHECK_VK(
 			vkCreateImage(DeviceInstance.getDevice(), &imageCreateInfo, nullptr, &image),
 			"failed to create texture image!");

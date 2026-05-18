@@ -9,6 +9,8 @@
 
 #include <vulkan/vulkan.h>
 
+#include "Utils/Constants.h"
+
 namespace RT::Vulkan
 {
     class Semaphore
@@ -48,5 +50,7 @@ namespace RT::Vulkan
         VkSemaphore sem = VK_NULL_HANDLE;
         Kind semKind = Kind::Binary;
     };
+
+    using Semaphores = std::array<Semaphore, Constants::MAX_FRAMES_IN_FLIGHT>;
 
 }

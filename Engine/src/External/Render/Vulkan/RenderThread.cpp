@@ -69,10 +69,9 @@ namespace
         }
     }
 
-    void RenderThread::start(const VkCommandBuffer* mainCmdBuffs, const VkCommandBuffer* guiCmdBuffs)
+    void RenderThread::start(const CommandBuffers& mainCmdBuffs, const CommandBuffers& guiCmdBuffs)
     {
         RT_ASSERT(not worker.joinable(), "RenderThread::start called twice");
-        RT_ASSERT(mainCmdBuffs != nullptr and guiCmdBuffs != nullptr, "RenderThread::start with null cmd buffer pointers");
 
         for (uint8_t i = 0; i < Constants::MAX_FRAMES_IN_FLIGHT; ++i)
         {
@@ -131,9 +130,11 @@ namespace
         freeCv.wait(lock, [&freeSlots=freeSlots]{ return freeSlots.size() == Constants::MAX_FRAMES_IN_FLIGHT; });
     }
 
-    void RenderThread::submitSlot(FrameSlot* slot)
+    void RenderThread::submitSlot(FrameSlot* slot, VkSemaphore extraWaitSem)
     {
         RT_ASSERT(slot != nullptr, "RenderThread::submitSlot with null slot");
+
+        slot->extraWaitSem = extraWaitSem;
 
         {
             auto lock = std::unique_lock<std::mutex>{ imguiMtx };
@@ -197,7 +198,10 @@ namespace
         }
         imguiCv.notify_one();
 
-        const auto presentResult = SwapchainInstance->submitCommandBuffers(slot->mainCmdBuff, slot->guiCmdBuff, slot->imgIdx, slotIdx);
+        const auto extraWaitSem = slot->extraWaitSem;
+        slot->extraWaitSem = VK_NULL_HANDLE;
+
+        const auto presentResult = SwapchainInstance->submitCommandBuffers(slot->mainCmdBuff, slot->guiCmdBuff, slot->imgIdx, slotIdx, extraWaitSem);
         RT_ASSERT(presentResult == VK_SUCCESS or presentResult == VK_ERROR_OUT_OF_DATE_KHR or presentResult == VK_SUBOPTIMAL_KHR, "failed to present swap chain image");
     }
 

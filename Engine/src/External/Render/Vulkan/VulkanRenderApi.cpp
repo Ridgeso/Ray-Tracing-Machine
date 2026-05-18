@@ -51,8 +51,18 @@ namespace
 
 		initImGui();
 
-		allocateCmdBuffers(cmdBuffers);
-		allocateCmdBuffers(imGuiCmdBuffers);
+		allocateCmdBuffers(cmdBuffers, DeviceInstance.getCommandPool());
+		allocateCmdBuffers(imGuiCmdBuffers, DeviceInstance.getCommandPool());
+		allocateCmdBuffers(computeCmdBuffers, DeviceInstance.getComputeCommandPool());
+
+		for (auto& fence : computeFences)
+		{
+			fence.create(Fence::State::Signaled);
+		}
+		for (auto& sem : computeFinishedSemaphores)
+		{
+			sem.create(Semaphore::Kind::Binary);
+		}
 
 		Event::Event<Event::WindowResize>::registerCallback([this](const auto& event)
 		{
@@ -64,7 +74,7 @@ namespace
 			this->recreateSwapchain();
 		});
 
-		renderThread.start(cmdBuffers.data(), imGuiCmdBuffers.data());
+		renderThread.start(cmdBuffers, imGuiCmdBuffers);
 	}
 
 	void VulkanRenderApi::shutdown()
@@ -78,8 +88,18 @@ namespace
 		ImGui_ImplVulkan_Shutdown();
 		vkDestroyDescriptorPool(deviceInstance.getDevice(), descriptorPool, nullptr);
 
-		freeCmdBuffers(cmdBuffers);
-		freeCmdBuffers(imGuiCmdBuffers);
+		freeCmdBuffers(cmdBuffers, DeviceInstance.getCommandPool());
+		freeCmdBuffers(imGuiCmdBuffers, DeviceInstance.getCommandPool());
+		freeCmdBuffers(computeCmdBuffers, DeviceInstance.getComputeCommandPool());
+
+		for (auto& fence : computeFences)
+		{
+			fence.destroy();
+		}
+		for (auto& sem : computeFinishedSemaphores)
+		{
+			sem.destroy();
+		}
 
 		SwapchainInstance->shutdown();
 		deviceInstance.shutdown();
@@ -126,7 +146,56 @@ namespace
 		Context::frameCmd = VK_NULL_HANDLE;
 		Context::slotIdx = invalidSlotIdx;
 
-		renderThread.submitSlot(slot);
+		const auto computeSem = pendingComputeSemaphore;
+		pendingComputeSemaphore = VK_NULL_HANDLE;
+
+		renderThread.submitSlot(slot, computeSem);
+	}
+
+	void VulkanRenderApi::beginCompute()
+	{
+		RT_ASSERT(Context::frameCmd == VK_NULL_HANDLE, "VulkanRenderApi::beginCompute called twice without endCompute");
+
+		computeFences[computeSlotIdx].wait();
+		computeFences[computeSlotIdx].reset();
+
+		Context::frameCmd = computeCmdBuffers[computeSlotIdx];
+		Context::slotIdx = computeSlotIdx;
+
+		auto beginInfo = VkCommandBufferBeginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		vkResetCommandBuffer(Context::frameCmd, 0);
+		CHECK_VK(vkBeginCommandBuffer(Context::frameCmd, &beginInfo), "failed to begin compute command buffer!");
+	}
+
+	void VulkanRenderApi::endCompute()
+	{
+		RT_ASSERT(Context::frameCmd != VK_NULL_HANDLE, "VulkanRenderApi::endCompute called without beginCompute");
+
+		CHECK_VK(vkEndCommandBuffer(Context::frameCmd), "failed to record compute command buffer");
+
+		flushUniforms(computeSlotIdx);
+
+		auto submitInfo = VkSubmitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1u;
+		submitInfo.pCommandBuffers = &computeCmdBuffers[computeSlotIdx];
+
+		const auto signalSemaphores = std::array{ computeFinishedSemaphores[computeSlotIdx].handle() };
+		submitInfo.signalSemaphoreCount = signalSemaphores.size();
+		submitInfo.pSignalSemaphores = signalSemaphores.data();
+
+		const auto& deviceInstance = DeviceInstance;
+		CHECK_VK(
+			deviceInstance.queueSubmit(deviceInstance.getComputeQueue(), 1, &submitInfo, computeFences[computeSlotIdx].handle()),
+			"failed to submit compute command buffer!");
+
+		pendingComputeSemaphore = computeFinishedSemaphores[computeSlotIdx].handle();
+
+		Context::frameCmd = VK_NULL_HANDLE;
+		Context::slotIdx = invalidSlotIdx;
+
+		computeSlotIdx = (computeSlotIdx + 1u) % Constants::MAX_FRAMES_IN_FLIGHT;
 	}
 
 	void VulkanRenderApi::recreateSwapchain()
@@ -214,12 +283,12 @@ namespace
 		RT_ASSERT(result, "ImGui not initialized");
 	}
 
-	void VulkanRenderApi::allocateCmdBuffers(CommandBuffers& cmdBuff)
+	void VulkanRenderApi::allocateCmdBuffers(CommandBuffers& cmdBuff, const VkCommandPool commandPool)
 	{
 		auto allocInfo = VkCommandBufferAllocateInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandPool = DeviceInstance.getCommandPool();
+		allocInfo.commandPool = commandPool;
 		allocInfo.commandBufferCount = static_cast<uint32_t>(cmdBuff.size());
 
 		CHECK_VK(
@@ -227,11 +296,11 @@ namespace
 			"failed to allocate command buffers!");
 	}
 
-	void VulkanRenderApi::freeCmdBuffers(CommandBuffers& cmdBuff)
+	void VulkanRenderApi::freeCmdBuffers(CommandBuffers& cmdBuff, const VkCommandPool commandPool)
 	{
 		vkFreeCommandBuffers(
 			DeviceInstance.getDevice(),
-			DeviceInstance.getCommandPool(),
+			commandPool,
 			static_cast<uint32_t>(cmdBuff.size()),
 			cmdBuff.data());
 		cmdBuff.fill(VK_NULL_HANDLE);

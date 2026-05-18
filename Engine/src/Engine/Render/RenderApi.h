@@ -26,6 +26,9 @@ namespace RT
 		virtual void beginFrame() = 0;
 		virtual void endFrame() = 0;
 
+		virtual void beginCompute() = 0;
+		virtual void endCompute() = 0;
+
 		virtual void waitForFrameReady() = 0;
 
 	public:
