@@ -51,15 +51,23 @@ namespace
 
 		initImGui();
 
-		allocateCmdBuffers(cmdBuffers, DeviceInstance.getCommandPool());
-		allocateCmdBuffers(imGuiCmdBuffers, DeviceInstance.getCommandPool());
+		allocateCmdBuffers(graphicsCmdBuffers, DeviceInstance.getCommandPool());
 		allocateCmdBuffers(computeCmdBuffers, DeviceInstance.getComputeCommandPool());
+		allocateCmdBuffers(uiCmdBuffers, DeviceInstance.getCommandPool());
 
 		for (auto& fence : computeFences)
 		{
 			fence.create(Fence::State::Signaled);
 		}
 		for (auto& sem : computeFinishedSemaphores)
+		{
+			sem.create(Semaphore::Kind::Binary);
+		}
+		for (auto& fence : graphicsFences)
+		{
+			fence.create(Fence::State::Signaled);
+		}
+		for (auto& sem : graphicsFinishedSemaphores)
 		{
 			sem.create(Semaphore::Kind::Binary);
 		}
@@ -74,7 +82,7 @@ namespace
 			this->recreateSwapchain();
 		});
 
-		renderThread.start(cmdBuffers, imGuiCmdBuffers);
+		renderThread.start(uiCmdBuffers);
 	}
 
 	void VulkanRenderApi::shutdown()
@@ -88,15 +96,23 @@ namespace
 		ImGui_ImplVulkan_Shutdown();
 		vkDestroyDescriptorPool(deviceInstance.getDevice(), descriptorPool, nullptr);
 
-		freeCmdBuffers(cmdBuffers, DeviceInstance.getCommandPool());
-		freeCmdBuffers(imGuiCmdBuffers, DeviceInstance.getCommandPool());
+		freeCmdBuffers(graphicsCmdBuffers, DeviceInstance.getCommandPool());
 		freeCmdBuffers(computeCmdBuffers, DeviceInstance.getComputeCommandPool());
+		freeCmdBuffers(uiCmdBuffers, DeviceInstance.getCommandPool());
 
 		for (auto& fence : computeFences)
 		{
 			fence.destroy();
 		}
 		for (auto& sem : computeFinishedSemaphores)
+		{
+			sem.destroy();
+		}
+		for (auto& fence : graphicsFences)
+		{
+			fence.destroy();
+		}
+		for (auto& sem : graphicsFinishedSemaphores)
 		{
 			sem.destroy();
 		}
@@ -118,8 +134,52 @@ namespace
 
 	void VulkanRenderApi::beginFrame()
 	{
-		RT_ASSERT(currentSlot == nullptr, "VulkanRenderApi::beginFrame called twice without endFrame");
+		RT_ASSERT(Context::frameCmd == VK_NULL_HANDLE, "VulkanRenderApi::beginFrame called while a command buffer is already recording");
 
+		graphicsFences[graphicsSlotIdx].wait();
+		graphicsFences[graphicsSlotIdx].reset();
+
+		Context::frameCmd = graphicsCmdBuffers[graphicsSlotIdx];
+		Context::slotIdx = graphicsSlotIdx;
+
+		auto beginInfo = VkCommandBufferBeginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		vkResetCommandBuffer(Context::frameCmd, 0);
+		CHECK_VK(vkBeginCommandBuffer(Context::frameCmd, &beginInfo), "failed to begin user-graphics command buffer!");
+	}
+
+	void VulkanRenderApi::endFrame()
+	{
+		RT_ASSERT(Context::frameCmd != VK_NULL_HANDLE, "VulkanRenderApi::endFrame called without beginFrame");
+
+		CHECK_VK(vkEndCommandBuffer(Context::frameCmd), "failed to record user-graphics command buffer");
+
+		flushUniforms(graphicsSlotIdx);
+
+		auto submitInfo = VkSubmitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1u;
+		submitInfo.pCommandBuffers = &graphicsCmdBuffers[graphicsSlotIdx];
+
+		const auto signalSemaphores = std::array{ graphicsFinishedSemaphores[graphicsSlotIdx].handle() };
+		submitInfo.signalSemaphoreCount = signalSemaphores.size();
+		submitInfo.pSignalSemaphores = signalSemaphores.data();
+
+		const auto& deviceInstance = DeviceInstance;
+		CHECK_VK(
+			deviceInstance.queueSubmit(deviceInstance.getGraphicsQueue(), 1, &submitInfo, graphicsFences[graphicsSlotIdx].handle()),
+			"failed to submit user-graphics command buffer!");
+
+		pendingGraphicsSemaphore = graphicsFinishedSemaphores[graphicsSlotIdx].handle();
+
+		Context::frameCmd = VK_NULL_HANDLE;
+		Context::slotIdx = invalidSlotIdx;
+
+		graphicsSlotIdx = (graphicsSlotIdx + 1u) % Constants::MAX_FRAMES_IN_FLIGHT;
+	}
+
+	void VulkanRenderApi::submitUI()
+	{
 		currentSlot = renderThread.acquireFreeSlot();
 
 		Context::frameCmd = currentSlot->mainCmdBuff;
@@ -130,14 +190,8 @@ namespace
 		auto beginInfo = VkCommandBufferBeginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		vkResetCommandBuffer(Context::frameCmd, 0);
-		CHECK_VK(vkBeginCommandBuffer(Context::frameCmd, &beginInfo), "failed to begin command buffer!");
-	}
-
-	void VulkanRenderApi::endFrame()
-	{
-		RT_ASSERT(currentSlot != nullptr, "VulkanRenderApi::endFrame called without beginFrame");
-
-		CHECK_VK(vkEndCommandBuffer(Context::frameCmd), "failed to record command buffer");
+		CHECK_VK(vkBeginCommandBuffer(Context::frameCmd, &beginInfo), "failed to begin UI main command buffer!");
+		CHECK_VK(vkEndCommandBuffer(Context::frameCmd), "failed to end UI main command buffer!");
 
 		flushUniforms(currentSlot->slotIdx);
 
@@ -148,8 +202,10 @@ namespace
 
 		const auto computeSem = pendingComputeSemaphore;
 		pendingComputeSemaphore = VK_NULL_HANDLE;
+		const auto graphicsSem = pendingGraphicsSemaphore;
+		pendingGraphicsSemaphore = VK_NULL_HANDLE;
 
-		renderThread.submitSlot(slot, computeSem);
+		renderThread.submitSlot(slot, computeSem, graphicsSem);
 	}
 
 	void VulkanRenderApi::beginCompute()

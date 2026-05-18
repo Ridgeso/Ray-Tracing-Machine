@@ -34,6 +34,8 @@ namespace RT::Vulkan
 		void beginCompute() final;
 		void endCompute() final;
 
+		void submitUI() final;
+
 		void waitForFrameReady() final;
 
 		void recreateSwapchain();
@@ -44,9 +46,9 @@ namespace RT::Vulkan
 		void freeCmdBuffers(CommandBuffers& cmdBuff, const VkCommandPool commandPool);
 
 	private:
-		CommandBuffers cmdBuffers = {};
+		CommandBuffers graphicsCmdBuffers = {};
 		CommandBuffers computeCmdBuffers = {};
-		CommandBuffers imGuiCmdBuffers = {};
+		CommandBuffers uiCmdBuffers = {};
 
 		FrameSlot* currentSlot = nullptr;
 
@@ -56,6 +58,11 @@ namespace RT::Vulkan
 		Semaphores computeFinishedSemaphores = {};
 		uint8_t computeSlotIdx = 0u;
 		VkSemaphore pendingComputeSemaphore = VK_NULL_HANDLE;
+
+		Fences graphicsFences = {};
+		Semaphores graphicsFinishedSemaphores = {};
+		uint8_t graphicsSlotIdx = 0u;
+		VkSemaphore pendingGraphicsSemaphore = VK_NULL_HANDLE;
 
 		VkExtent2D extent = {};
 

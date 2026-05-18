@@ -19,9 +19,9 @@ namespace RT::Vulkan
     {
         uint8_t slotIdx = 0u;
         VkCommandBuffer mainCmdBuff = VK_NULL_HANDLE;
-        VkCommandBuffer guiCmdBuff = VK_NULL_HANDLE;
         uint32_t imgIdx = 0u;
-        VkSemaphore extraWaitSem = VK_NULL_HANDLE;
+        VkSemaphore extraWaitSem  = VK_NULL_HANDLE;
+        VkSemaphore extraWaitSem2 = VK_NULL_HANDLE;
     };
 
     class RenderThread
@@ -37,13 +37,13 @@ namespace RT::Vulkan
         RenderThread& operator=(const RenderThread&) = delete;
         RenderThread& operator=(RenderThread&&) = delete;
 
-        void start(const CommandBuffers& mainCmdBuffs, const CommandBuffers& guiCmdBuffs);
+        void start(const CommandBuffers& mainCmdBuffs);
 
         void stop();
 
         void waitImGuiConsumed();
         FrameSlot* acquireFreeSlot();
-        void submitSlot(FrameSlot* slot, VkSemaphore extraWaitSem = VK_NULL_HANDLE);
+        void submitSlot(FrameSlot* slot, VkSemaphore extraWaitSem = VK_NULL_HANDLE, VkSemaphore extraWaitSem2 = VK_NULL_HANDLE);
 
         void drainAndPause();
 

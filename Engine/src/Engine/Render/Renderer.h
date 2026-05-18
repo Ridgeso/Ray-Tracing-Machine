@@ -50,6 +50,11 @@ namespace RT
 			renderApi->endCompute();
 		}
 
+		static void submitUI()
+		{
+			renderApi->submitUI();
+		}
+
 	private:
 		inline static std::unique_ptr<RenderApi> renderApi = nullptr;
 	};

@@ -112,7 +112,12 @@ namespace
             &imageIndex);
     }
 
-    VkResult Swapchain::submitCommandBuffers(const VkCommandBuffer& frameBuffer, const VkCommandBuffer& guiBuffer, uint32_t& imageIndex, const uint8_t slotIdx, VkSemaphore extraWaitSem)
+    VkResult Swapchain::submitCommandBuffers(
+        const VkCommandBuffer& frameBuffer,
+        uint32_t& imageIndex,
+        const uint8_t slotIdx,
+        VkSemaphore extraWaitSem,
+        VkSemaphore extraWaitSem2)
     {
         const auto& deviceInstance = DeviceInstance;
 
@@ -121,19 +126,22 @@ namespace
         auto submitInfo = VkSubmitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-        constexpr auto waitStages = std::array<VkPipelineStageFlags, 2>{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT };
-        auto waitSemaphores = std::array<VkSemaphore, 2>{ imageAvailableSemaphores[slotIdx].handle(), VK_NULL_HANDLE };
+        auto waitSemaphores = std::array<VkSemaphore, 3>{ imageAvailableSemaphores[slotIdx].handle(), VK_NULL_HANDLE, VK_NULL_HANDLE };
+        auto waitStages = std::array<VkPipelineStageFlags, 3>{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT };
         uint32_t waitCount = 1u;
         if (extraWaitSem != VK_NULL_HANDLE)
         {
-            waitSemaphores[waitCount] = extraWaitSem;
-            waitCount++;
+            waitSemaphores[waitCount++] = extraWaitSem;
+        }
+        if (extraWaitSem2 != VK_NULL_HANDLE)
+        {
+            waitSemaphores[waitCount++] = extraWaitSem2;
         }
         submitInfo.waitSemaphoreCount = waitCount;
         submitInfo.pWaitSemaphores = waitSemaphores.data();
         submitInfo.pWaitDstStageMask = waitStages.data();
 
-        const auto buffers = std::array{ frameBuffer, guiBuffer };
+        const auto buffers = std::array{ frameBuffer };
         submitInfo.commandBufferCount = buffers.size();
         submitInfo.pCommandBuffers = buffers.data();
 

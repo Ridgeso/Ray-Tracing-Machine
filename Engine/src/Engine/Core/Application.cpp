@@ -63,6 +63,8 @@ namespace RT
 
 			frame->update(appFrameDuration);
 
+			Renderer::submitUI();
+
 			window->update();
 
 			appFrameDuration = appTimer.Ellapsed();

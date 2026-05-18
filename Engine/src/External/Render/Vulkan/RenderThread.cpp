@@ -69,7 +69,7 @@ namespace
         }
     }
 
-    void RenderThread::start(const CommandBuffers& mainCmdBuffs, const CommandBuffers& guiCmdBuffs)
+    void RenderThread::start(const CommandBuffers& mainCmdBuffs)
     {
         RT_ASSERT(not worker.joinable(), "RenderThread::start called twice");
 
@@ -77,7 +77,6 @@ namespace
         {
             slots[i].slotIdx = i;
             slots[i].mainCmdBuff = mainCmdBuffs[i];
-            slots[i].guiCmdBuff = guiCmdBuffs[i];
             slots[i].imgIdx = 0u;
             freeSlots.push(&slots[i]);
         }
@@ -130,11 +129,12 @@ namespace
         freeCv.wait(lock, [&freeSlots=freeSlots]{ return freeSlots.size() == Constants::MAX_FRAMES_IN_FLIGHT; });
     }
 
-    void RenderThread::submitSlot(FrameSlot* slot, VkSemaphore extraWaitSem)
+    void RenderThread::submitSlot(FrameSlot* slot, VkSemaphore extraWaitSem, VkSemaphore extraWaitSem2)
     {
         RT_ASSERT(slot != nullptr, "RenderThread::submitSlot with null slot");
 
-        slot->extraWaitSem = extraWaitSem;
+        slot->extraWaitSem  = extraWaitSem;
+        slot->extraWaitSem2 = extraWaitSem2;
 
         {
             auto lock = std::unique_lock<std::mutex>{ imguiMtx };
@@ -190,7 +190,7 @@ namespace
         }
         RT_ASSERT(acquireResult == VK_SUCCESS or acquireResult == VK_SUBOPTIMAL_KHR, "failed to acquire swap chain image");
 
-        recordGuiCmdBuffer(slot->guiCmdBuff, slot->imgIdx);
+        recordGuiCmdBuffer(slot->mainCmdBuff, slot->imgIdx);
 
         {
             auto lock = std::unique_lock<std::mutex>{ imguiMtx };
@@ -198,10 +198,12 @@ namespace
         }
         imguiCv.notify_one();
 
-        const auto extraWaitSem = slot->extraWaitSem;
-        slot->extraWaitSem = VK_NULL_HANDLE;
+        const auto extraWaitSem  = slot->extraWaitSem;
+        const auto extraWaitSem2 = slot->extraWaitSem2;
+        slot->extraWaitSem  = VK_NULL_HANDLE;
+        slot->extraWaitSem2 = VK_NULL_HANDLE;
 
-        const auto presentResult = SwapchainInstance->submitCommandBuffers(slot->mainCmdBuff, slot->guiCmdBuff, slot->imgIdx, slotIdx, extraWaitSem);
+        const auto presentResult = SwapchainInstance->submitCommandBuffers(slot->mainCmdBuff, slot->imgIdx, slotIdx, extraWaitSem, extraWaitSem2);
         RT_ASSERT(presentResult == VK_SUCCESS or presentResult == VK_ERROR_OUT_OF_DATE_KHR or presentResult == VK_SUBOPTIMAL_KHR, "failed to present swap chain image");
     }
 

@@ -539,9 +539,6 @@ public:
 			RT::Renderer::endCompute();
 		}
 
-		RT::Renderer::beginFrame();
-		RT::Renderer::endFrame();
-
 		lastFrameDuration = timeit.Ellapsed();
 	}
 

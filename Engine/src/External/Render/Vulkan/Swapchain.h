@@ -30,7 +30,7 @@ namespace RT::Vulkan
         void shutdown();
 
         VkResult acquireNextImage(uint32_t& imageIndex, const uint8_t slotIdx);
-        VkResult submitCommandBuffers(const VkCommandBuffer& frameBuffer, const VkCommandBuffer& guiBuffer, uint32_t& imageIndex, const uint8_t slotIdx, VkSemaphore extraWaitSem = VK_NULL_HANDLE);
+        VkResult submitCommandBuffers(const VkCommandBuffer& frameBuffer, uint32_t& imageIndex, const uint8_t slotIdx, VkSemaphore extraWaitSem = VK_NULL_HANDLE, VkSemaphore extraWaitSem2 = VK_NULL_HANDLE);
 
         void waitSlotFence(const uint8_t slotIdx) const { inFlightFences[slotIdx].wait(); }
         bool compareFormats(const Swapchain& other) const;
