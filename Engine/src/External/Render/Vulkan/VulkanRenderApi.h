@@ -7,6 +7,7 @@
 #include "Fence.h"
 #include "RenderThread.h"
 #include "Semaphore.h"
+#include "External/Render/Vulkan/rendering/RenderRecorder.h"
 
 #include <vulkan/vulkan.h>
 
@@ -44,23 +45,16 @@ namespace RT::Vulkan
 		void initImGui();
 
 	private:
-		CommandBuffer graphicsCmdBuffer = {};
-		CommandBuffer computeCmdBuffer = {};
 		CommandBuffer uiCmdBuffer = {};
 
 		FrameSlot* currentSlot = nullptr;
 
 		RenderThread renderThread = {};
 
-		Fences computeFences = {};
-		Semaphores computeFinishedSemaphores = {};
-		uint8_t computeSlotIdx = 0u;
-		VkSemaphore pendingComputeSemaphore = VK_NULL_HANDLE;
-
-		Fences graphicsFences = {};
-		Semaphores graphicsFinishedSemaphores = {};
-		uint8_t graphicsSlotIdx = 0u;
+		RenderRecorder graphicsRecorder = {};
+		RenderRecorder computeRecorder = {};
 		VkSemaphore pendingGraphicsSemaphore = VK_NULL_HANDLE;
+		VkSemaphore pendingComputeSemaphore = VK_NULL_HANDLE;
 
 		VkExtent2D extent = {};
 

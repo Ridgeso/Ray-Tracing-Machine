@@ -51,26 +51,10 @@ namespace
 
 		initImGui();
 
-		graphicsCmdBuffer = DeviceInstance.createCommandBuffer(DeviceInstance.getCommandPool());
-		computeCmdBuffer = DeviceInstance.createCommandBuffer(DeviceInstance.getComputeCommandPool());
 		uiCmdBuffer = DeviceInstance.createCommandBuffer(DeviceInstance.getCommandPool());
 
-		for (auto& fence : computeFences)
-		{
-			fence.create(Fence::State::Signaled);
-		}
-		for (auto& sem : computeFinishedSemaphores)
-		{
-			sem.create(Semaphore::Kind::Binary);
-		}
-		for (auto& fence : graphicsFences)
-		{
-			fence.create(Fence::State::Signaled);
-		}
-		for (auto& sem : graphicsFinishedSemaphores)
-		{
-			sem.create(Semaphore::Kind::Binary);
-		}
+		graphicsRecorder.init(DeviceInstance.getCommandPool());
+		computeRecorder.init(DeviceInstance.getComputeCommandPool());
 
 		Event::Event<Event::WindowResize>::registerCallback([this](const auto& event)
 		{
@@ -96,26 +80,10 @@ namespace
 		ImGui_ImplVulkan_Shutdown();
 		vkDestroyDescriptorPool(deviceInstance.getDevice(), descriptorPool, nullptr);
 
-		graphicsCmdBuffer.destroy();
-		computeCmdBuffer.destroy();
 		uiCmdBuffer.destroy();
 
-		for (auto& fence : computeFences)
-		{
-			fence.destroy();
-		}
-		for (auto& sem : computeFinishedSemaphores)
-		{
-			sem.destroy();
-		}
-		for (auto& fence : graphicsFences)
-		{
-			fence.destroy();
-		}
-		for (auto& sem : graphicsFinishedSemaphores)
-		{
-			sem.destroy();
-		}
+		graphicsRecorder.shutdown();
+		computeRecorder.shutdown();
 
 		SwapchainInstance->shutdown();
 		deviceInstance.shutdown();
@@ -134,46 +102,14 @@ namespace
 
 	void VulkanRenderApi::beginFrame()
 	{
-		RT_ASSERT(Context::frameCmd == VK_NULL_HANDLE, "VulkanRenderApi::beginFrame called while a command buffer is already recording");
-
-		graphicsFences[graphicsSlotIdx].wait();
-		graphicsFences[graphicsSlotIdx].reset();
-
-		Context::frameCmd = graphicsCmdBuffer.handle(graphicsSlotIdx);
-		Context::slotIdx = graphicsSlotIdx;
-		graphicsCmdBuffer.begin(graphicsSlotIdx);
+		graphicsRecorder.begin();
 	}
 
 	void VulkanRenderApi::endFrame()
 	{
-		RT_ASSERT(Context::frameCmd != VK_NULL_HANDLE, "VulkanRenderApi::endFrame called without beginFrame");
-
-		graphicsCmdBuffer.end(graphicsSlotIdx);
-
-		flushUniforms(graphicsSlotIdx);
-
-		const auto cmdHandle = graphicsCmdBuffer.handle(graphicsSlotIdx);
-
-		auto submitInfo = VkSubmitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.commandBufferCount = 1u;
-		submitInfo.pCommandBuffers = &cmdHandle;
-
-		const auto signalSemaphores = std::array{ graphicsFinishedSemaphores[graphicsSlotIdx].handle() };
-		submitInfo.signalSemaphoreCount = signalSemaphores.size();
-		submitInfo.pSignalSemaphores = signalSemaphores.data();
-
-		const auto& deviceInstance = DeviceInstance;
-		CHECK_VK(
-			deviceInstance.queueSubmit(deviceInstance.getGraphicsQueue(), 1, &submitInfo, graphicsFences[graphicsSlotIdx].handle()),
-			"failed to submit user-graphics command buffer!");
-
-		pendingGraphicsSemaphore = graphicsFinishedSemaphores[graphicsSlotIdx].handle();
-
-		Context::frameCmd = VK_NULL_HANDLE;
-		Context::slotIdx = invalidSlotIdx;
-
-		graphicsSlotIdx = (graphicsSlotIdx + 1u) % Constants::MAX_FRAMES_IN_FLIGHT;
+		graphicsRecorder.end();
+		flushUniforms(Context::slotIdx);
+		pendingGraphicsSemaphore = graphicsRecorder.submit();
 	}
 
 	void VulkanRenderApi::submitUI()
@@ -201,46 +137,14 @@ namespace
 
 	void VulkanRenderApi::beginCompute()
 	{
-		RT_ASSERT(Context::frameCmd == VK_NULL_HANDLE, "VulkanRenderApi::beginCompute called twice without endCompute");
-
-		computeFences[computeSlotIdx].wait();
-		computeFences[computeSlotIdx].reset();
-
-		Context::frameCmd = computeCmdBuffer.handle(computeSlotIdx);
-		Context::slotIdx = computeSlotIdx;
-		computeCmdBuffer.begin(computeSlotIdx);
+		computeRecorder.begin();
 	}
 
 	void VulkanRenderApi::endCompute()
 	{
-		RT_ASSERT(Context::frameCmd != VK_NULL_HANDLE, "VulkanRenderApi::endCompute called without beginCompute");
-
-		computeCmdBuffer.end(computeSlotIdx);
-
-		flushUniforms(computeSlotIdx);
-
-		const auto cmdHandle = computeCmdBuffer.handle(computeSlotIdx);
-
-		auto submitInfo = VkSubmitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.commandBufferCount = 1u;
-		submitInfo.pCommandBuffers = &cmdHandle;
-
-		const auto signalSemaphores = std::array{ computeFinishedSemaphores[computeSlotIdx].handle() };
-		submitInfo.signalSemaphoreCount = signalSemaphores.size();
-		submitInfo.pSignalSemaphores = signalSemaphores.data();
-
-		const auto& deviceInstance = DeviceInstance;
-		CHECK_VK(
-			deviceInstance.queueSubmit(deviceInstance.getComputeQueue(), 1, &submitInfo, computeFences[computeSlotIdx].handle()),
-			"failed to submit compute command buffer!");
-
-		pendingComputeSemaphore = computeFinishedSemaphores[computeSlotIdx].handle();
-
-		Context::frameCmd = VK_NULL_HANDLE;
-		Context::slotIdx = invalidSlotIdx;
-
-		computeSlotIdx = (computeSlotIdx + 1u) % Constants::MAX_FRAMES_IN_FLIGHT;
+		computeRecorder.end();
+		flushUniforms(Context::slotIdx);
+		pendingComputeSemaphore = computeRecorder.submit();
 	}
 
 	void VulkanRenderApi::recreateSwapchain()

@@ -25,6 +25,7 @@
     <ClCompile Include="Render\Vulkan\Utils\Debug.cpp" />
     <ClCompile Include="Render\Vulkan\VulkanBuffer.cpp" />
     <ClCompile Include="Render\Vulkan\VulkanRenderApi.cpp" />
+    <ClCompile Include="Render\Vulkan\rendering\RenderRecorder.cpp" />
     <ClCompile Include="Render\Vulkan\Shader.cpp" />
     <ClCompile Include="Render\Vulkan\VulkanTexture.cpp" />
     <ClCompile Include="Window\GlfwWindow\Utils.cpp" />
@@ -45,6 +46,7 @@
     <ClInclude Include="Render\Vulkan\RenderThread.h" />
     <ClInclude Include="Render\Vulkan\Semaphore.h" />
     <ClInclude Include="Render\Vulkan\Utils\Debug.h" />
+    <ClInclude Include="Render\Vulkan\rendering\RenderRecorder.h" />
     <ClInclude Include="Render\Vulkan\Utils\Utils.h" />
     <ClInclude Include="Render\Vulkan\VulkanBuffer.h" />
     <ClInclude Include="Render\Vulkan\VulkanRenderApi.h" />
