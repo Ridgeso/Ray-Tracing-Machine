@@ -53,13 +53,15 @@ namespace
 
     bool Fence::isSignaled() const
     {
-        if (fence == VK_NULL_HANDLE)
+        const auto status = vkGetFenceStatus(DeviceInstance.getDevice(), fence);
+        if (status == VK_SUCCESS)
+        {
+            return true;
+        }
+        if (status == VK_NOT_READY)
         {
             return false;
         }
-        const auto status = vkGetFenceStatus(DeviceInstance.getDevice(), fence);
-        if (status == VK_SUCCESS)   return true;
-        if (status == VK_NOT_READY) return false;
         RT_ASSERT(false, "vkGetFenceStatus failed");
         return false;
     }
@@ -68,8 +70,14 @@ namespace
     {
         RT_ASSERT(fence != VK_NULL_HANDLE, "Fence::wait on invalid fence");
         const auto result = vkWaitForFences(DeviceInstance.getDevice(), 1, &fence, VK_TRUE, timeoutNs);
-        if (result == VK_SUCCESS) return true;
-        if (result == VK_TIMEOUT) return false;
+        if (result == VK_SUCCESS)
+        {
+            return true;
+        }
+        if (result == VK_TIMEOUT)
+        {
+            return false;
+        }
         RT_ASSERT(false, "vkWaitForFences failed");
         return false;
     }
@@ -81,8 +89,14 @@ namespace
             return true;
         }
         const auto result = vkWaitForFences(DeviceInstance.getDevice(), count, handles, allSignaled, timeoutNs);
-        if (result == VK_SUCCESS) return true;
-        if (result == VK_TIMEOUT) return false;
+        if (result == VK_SUCCESS)
+        {
+            return true;
+        }
+        if (result == VK_TIMEOUT)
+        {
+            return false;
+        }
         RT_ASSERT(false, "vkWaitForFences ({}) failed", allSignaled ? "allSignaled" : "anySignaled");
         return false;
     }

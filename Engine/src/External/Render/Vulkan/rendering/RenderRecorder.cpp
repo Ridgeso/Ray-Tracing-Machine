@@ -8,10 +8,10 @@
 namespace RT::Vulkan
 {
 
-    void RenderRecorder::init(VkCommandPool commandPool)
+    void RenderRecorder::init(VkQueue queue_, VkCommandPool commandPool)
     {
-        auto& deviceInstance = DeviceInstance;
-        cmdBuffer = deviceInstance.createCommandBuffer(commandPool);
+        queue = queue_;
+        cmdBuffer = DeviceInstance.createCommandBuffer(commandPool);
         for (int32_t i = 0; i < Constants::MAX_FRAMES_IN_FLIGHT; i++)
         {
             fences[i].create(Fence::State::Signaled);
@@ -64,7 +64,7 @@ namespace RT::Vulkan
 
 		const auto& deviceInstance = DeviceInstance;
 		CHECK_VK(
-			deviceInstance.queueSubmit(deviceInstance.getGraphicsQueue(), 1, &submitInfo, fences[slotIdx].handle()),
+			deviceInstance.queueSubmit(queue, 1, &submitInfo, fences[slotIdx].handle()),
 			"failed to submit user-graphics command buffer!");
 
 		Context::frameCmd = VK_NULL_HANDLE;

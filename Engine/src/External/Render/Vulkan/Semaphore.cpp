@@ -67,8 +67,14 @@ namespace
         waitInfo.pValues = &value;
 
         const auto result = vkWaitSemaphores(DeviceInstance.getDevice(), &waitInfo, timeoutNs);
-        if (result == VK_SUCCESS) return true;
-        if (result == VK_TIMEOUT) return false;
+        if (result == VK_SUCCESS)
+        {
+            return true;
+        }
+        if (result == VK_TIMEOUT)
+        {
+            return false;
+        }
         RT_ASSERT(false, "vkWaitSemaphores failed");
         return false;
     }
@@ -111,8 +117,14 @@ namespace
         info.pValues = values;
 
         const auto result = vkWaitSemaphores(DeviceInstance.getDevice(), &info, timeoutNs);
-        if (result == VK_SUCCESS) return true;
-        if (result == VK_TIMEOUT) return false;
+        if (result == VK_SUCCESS)
+        {
+            return true;
+        }
+        if (result == VK_TIMEOUT)
+        {
+            return false;
+        }
         RT_ASSERT(false, "vkWaitSemaphores (waitBatch) failed");
         return false;
     }

@@ -13,7 +13,7 @@ namespace RT::Vulkan
         RenderRecorder() noexcept = default;
         ~RenderRecorder() noexcept = default;
 
-		void init(VkCommandPool commandPool);
+		void init(VkQueue queue_, VkCommandPool commandPool);
 		void shutdown();
 
         void begin();
@@ -21,6 +21,8 @@ namespace RT::Vulkan
         VkSemaphore submit();
 
     private:
+        VkQueue queue = {};
+
 		CommandBuffer cmdBuffer = {};
         
 		Fences fences = {};

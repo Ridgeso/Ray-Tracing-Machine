@@ -46,15 +46,17 @@ namespace
 		auto size = Application::getWindow()->getSize();
 		extent = VkExtent2D{ (uint32_t)size.x, (uint32_t)size.y };
 
-		DeviceInstance.init();
+		auto& device = DeviceInstance;
+
+		device.init();
 		recreateSwapchain();
 
 		initImGui();
 
-		uiCmdBuffer = DeviceInstance.createCommandBuffer(DeviceInstance.getCommandPool());
+		uiCmdBuffer = device.createCommandBuffer(device.getCommandPool());
 
-		graphicsRecorder.init(DeviceInstance.getCommandPool());
-		computeRecorder.init(DeviceInstance.getComputeCommandPool());
+		graphicsRecorder.init(device.getGraphicsQueue(), device.getCommandPool());
+		computeRecorder.init(device.getComputeQueue(), device.getComputeCommandPool());
 
 		Event::Event<Event::WindowResize>::registerCallback([this](const auto& event)
 		{
