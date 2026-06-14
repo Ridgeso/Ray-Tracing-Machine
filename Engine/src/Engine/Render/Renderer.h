@@ -40,9 +40,9 @@ namespace RT
 			renderApi->endFrame();
 		}
 
-		static void beginCompute()
+		static bool beginCompute()
 		{
-			renderApi->beginCompute();
+			return renderApi->beginCompute();
 		}
 
 		static void endCompute()

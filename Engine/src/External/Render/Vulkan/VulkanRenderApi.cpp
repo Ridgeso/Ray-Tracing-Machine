@@ -97,11 +97,6 @@ namespace
 		DeviceInstance.waitForIdle();
 	}
 
-	void VulkanRenderApi::waitForFrameReady()
-	{
-		renderThread.waitImGuiConsumed();
-	}
-
 	void VulkanRenderApi::beginFrame()
 	{
 		graphicsRecorder.begin();
@@ -112,6 +107,18 @@ namespace
 		graphicsRecorder.end();
 		flushUniforms(Context::slotIdx);
 		pendingGraphicsSemaphore = graphicsRecorder.submit();
+	}
+
+	bool VulkanRenderApi::beginCompute()
+	{
+		return computeRecorder.begin();
+	}
+
+	void VulkanRenderApi::endCompute()
+	{
+		computeRecorder.end();
+		flushUniforms(Context::slotIdx);
+		pendingComputeSemaphore = computeRecorder.submit();
 	}
 
 	void VulkanRenderApi::submitUI()
@@ -137,16 +144,9 @@ namespace
 		renderThread.submitSlot(slot, computeSem, graphicsSem);
 	}
 
-	void VulkanRenderApi::beginCompute()
+	void VulkanRenderApi::waitForFrameReady()
 	{
-		computeRecorder.begin();
-	}
-
-	void VulkanRenderApi::endCompute()
-	{
-		computeRecorder.end();
-		flushUniforms(Context::slotIdx);
-		pendingComputeSemaphore = computeRecorder.submit();
+		renderThread.waitImGuiConsumed();
 	}
 
 	void VulkanRenderApi::recreateSwapchain()

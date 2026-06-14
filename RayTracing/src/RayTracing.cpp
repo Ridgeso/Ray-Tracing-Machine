@@ -523,10 +523,8 @@ public:
 
 		auto timeit = common::Timer{};
 
-		if (not previewTexture)
+		if (not previewTexture and RT::Renderer::beginCompute())
 		{
-			RT::Renderer::beginCompute();
-
 			pipeline->bindSet(0, 0);
 			pipeline->bindSet(1, 0);
 

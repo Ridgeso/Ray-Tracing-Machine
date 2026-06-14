@@ -32,7 +32,7 @@ namespace RT::Vulkan
 		void beginFrame() final;
 		void endFrame() final;
 
-		void beginCompute() final;
+		bool beginCompute() final;
 		void endCompute() final;
 
 		void submitUI() final;

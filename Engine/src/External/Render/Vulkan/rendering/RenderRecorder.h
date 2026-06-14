@@ -16,7 +16,7 @@ namespace RT::Vulkan
 		void init(VkQueue queue_, VkCommandPool commandPool);
 		void shutdown();
 
-        void begin();
+        bool begin();
 		void end();
         VkSemaphore submit();
 

@@ -30,12 +30,18 @@ namespace RT::Vulkan
         }
     }
 
-    void RenderRecorder::begin()
+    bool RenderRecorder::begin()
     {
 		RT_ASSERT(Context::frameCmd == VK_NULL_HANDLE, "VulkanRenderApi::beginFrame called while a command buffer is already recording");
 
-        fences[slotIdx].wait();
+        if (not fences[slotIdx].isSignaled())
+        {
+            return false;
+        }
         fences[slotIdx].reset();
+
+        // fences[slotIdx].wait();
+        // fences[slotIdx].reset();
 
 		Context::frameCmd = cmdBuffer.handle(slotIdx);
 		Context::slotIdx = slotIdx;
