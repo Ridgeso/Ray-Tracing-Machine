@@ -4,8 +4,8 @@
 #include <array>
 #include <glm/glm.hpp>
 
-#include "Engine/logging/Log.h"
-#include "Engine/logging/Assert.h"
+#include "common/logging/Log.h"
+#include "common/logging/Assert.h"
 
 #include <vulkan/vulkan.h>
 
@@ -59,7 +59,7 @@ namespace RT::Vulkan
     #define BEGIN_VK_DEBUG_LABEL(CMD_BUFF, LABEL_NAME, COLOR)                ::RT::Vulkan::beginDebugLabel(CMD_BUFF, LABEL_NAME, COLOR)
     #define END_VK_DEBUG_LABEL(CMD_BUFF)                                     ::RT::Vulkan::endDebugLabel(CMD_BUFF)
 
-    #define CHECK_VK(EXPR, MSG) { VkResult result = EXPR; if (VK_SUCCESS != result) { RT_LOG_CRITICAL("Result id = {}: " MSG, string_VkResult(result)); DEBUGBREAK; } }
+    #define CHECK_VK(EXPR, MSG) { VkResult result = EXPR; if (VK_SUCCESS != result) { LOG_CRITICAL("VULKAN", "Result id = {}: " MSG, string_VkResult(result)); DEBUGBREAK; } }
 #else
     #define SET_VK_DEBUG_NAME()
     #define SET_VK_DEBUG_TAG()

@@ -43,10 +43,10 @@ namespace
 
 	VulkanVertexBuffer::VulkanVertexBuffer(const uint32_t size)
 	{
-		RT_LOG_INFO("Creating VertexBuffer: {{ size = {} }}", size);
+		LOG_INFO("VULKAN", "Creating VertexBuffer: {{ size = {} }}", size);
 		auto vertices = std::vector<Vertex>(size);
 		createVertexBuffers(vertices);
-		RT_LOG_INFO("VertexBuffer created");
+		LOG_INFO("VULKAN", "VertexBuffer created");
 	}
 
 	VulkanVertexBuffer::VulkanVertexBuffer(const uint32_t size, const void* data)
@@ -96,7 +96,7 @@ namespace
 		vertexCount = static_cast<uint32_t>(vertices.size());
 		if (vertexCount < 3)
 		{
-			RT_LOG_ERROR("Vertex count must be at least 3: vertexCount = {}", vertexCount);
+			LOG_ERROR("VULKAN", "Vertex count must be at least 3: vertexCount = {}", vertexCount);
 		}
 
 		auto bufferSize = static_cast<VkDeviceSize>(sizeof(Vertex) * vertexCount);
@@ -135,7 +135,7 @@ namespace
 	VulkanUniform::VulkanUniform(const UniformType uniformType, const uint32_t instanceSize)
 		: uniformType{uniformType}
 	{
-		RT_LOG_INFO("Creating Uniform: {{ type = {}, size = {} }}", RT::Utils::uniformType2Str(uniformType), instanceSize);
+		LOG_INFO("VULKAN", "Creating Uniform: {{ type = {}, size = {} }}", RT::Utils::uniformType2Str(uniformType), instanceSize);
 
 		alignedSize = calculateAlignedSize(instanceSize, getMinOffsetAlignment());
 
@@ -158,7 +158,7 @@ namespace
 			bufferInfo.range = alignedSize;
 			bufferInfo.buffer = uniBuffer;
 		}
-		RT_LOG_INFO("Uniform created");
+		LOG_INFO("VULKAN", "Uniform created");
 	}
 
 	VulkanUniform::~VulkanUniform()
@@ -180,7 +180,9 @@ namespace
 	{
 		if (size > alignedSize - offset)
 		{
-			RT_LOG_ERROR("Trying to set {} buffer region by offset = {} with requested size = {} [buffer size = {}]",
+			LOG_ERROR(
+				"VULKAN",
+				"Trying to set {} buffer region by offset = {} with requested size = {} [buffer size = {}]",
 				uniformType2Str(uniformType),
 				offset,
 				size,

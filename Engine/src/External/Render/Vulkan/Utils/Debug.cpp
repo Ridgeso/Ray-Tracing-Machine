@@ -1,8 +1,6 @@
 #include "Debug.h"
 #include <unordered_set>
 
-#include "Engine/logging/Log.h"
-
 #include "External/Render/Vulkan/Device.h"
 #include "External/Window/GlfwWindow/Utils.h"
 
@@ -22,7 +20,7 @@ namespace
 		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
 		void* pUserData)
 	{
-		RT_LOG_ERROR("[Vulkan] ERR: {}", pCallbackData->pMessage);
+		LOG_ERROR("VULKAN", "{}", pCallbackData->pMessage);
 		return VK_FALSE;
 	}
 
@@ -69,7 +67,7 @@ namespace
 		auto requiredExtensions = RT::Vulkan::getRequiredExtensions();
 		for (const auto& required : requiredExtensions)
 		{
-			RT_ASSERT(available.find(required) != available.end(), "Missing required extention: {}", required);
+			ASSERT("VULKAN", available.find(required) != available.end(), "Missing required extention: {}", required);
 		}
 	}
 
@@ -177,7 +175,7 @@ namespace RT::Vulkan
 
 	void checkVkResultCallback(const VkResult result)
 	{
-		RT_ASSERT(VK_SUCCESS == result, "[Vulkan] Required immediate abort VkResult = {}", (uint32_t)result);
+		ASSERT("VULKAN", VK_SUCCESS == result, "Required immediate abort VkResult = {}", (uint32_t)result);
 	}
 
 	std::vector<const char*> getRequiredExtensions()
@@ -217,7 +215,7 @@ namespace RT::Vulkan
 			loadMissingDebugFunctions();
 
 			auto createInfo = populateDebugMessengerCreateInfo();
-			RT_ASSERT(createDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &GlobDebugMessenger) == VK_SUCCESS, "failed to set up debug messenger!");
+			ASSERT("VULKAN", createDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &GlobDebugMessenger) == VK_SUCCESS, "failed to set up debug messenger!");
 		}
 	}
 

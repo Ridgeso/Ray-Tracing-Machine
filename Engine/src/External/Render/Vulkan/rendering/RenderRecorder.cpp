@@ -32,7 +32,7 @@ namespace RT::Vulkan
 
     bool RenderRecorder::begin()
     {
-		RT_ASSERT(Context::frameCmd == VK_NULL_HANDLE, "VulkanRenderApi::beginFrame called while a command buffer is already recording");
+		ASSERT("VULKAN", Context::frameCmd == VK_NULL_HANDLE, "VulkanRenderApi::beginFrame called while a command buffer is already recording");
 
         if (not fences[slotIdx].isSignaled())
         {
@@ -50,7 +50,7 @@ namespace RT::Vulkan
 
     void RenderRecorder::end()
     {
-        RT_ASSERT(Context::frameCmd != VK_NULL_HANDLE, "VulkanRenderApi::endFrame called without beginFrame");
+        ASSERT("VULKAN", Context::frameCmd != VK_NULL_HANDLE, "VulkanRenderApi::endFrame called without beginFrame");
 
 		cmdBuffer.end(slotIdx);
     }

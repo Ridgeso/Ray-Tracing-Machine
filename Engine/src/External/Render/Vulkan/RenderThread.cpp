@@ -71,7 +71,7 @@ namespace
 
     void RenderThread::start(const CommandBuffer& mainCmdBuffs)
     {
-        RT_ASSERT(not worker.joinable(), "RenderThread::start called twice");
+        ASSERT("VULKAN", not worker.joinable(), "RenderThread::start called twice");
 
         for (uint8_t i = 0; i < Constants::MAX_FRAMES_IN_FLIGHT; ++i)
         {
@@ -131,7 +131,7 @@ namespace
 
     void RenderThread::submitSlot(FrameSlot* slot, VkSemaphore extraWaitSem, VkSemaphore extraWaitSem2)
     {
-        RT_ASSERT(slot != nullptr, "RenderThread::submitSlot with null slot");
+        ASSERT("VULKAN", slot != nullptr, "RenderThread::submitSlot with null slot");
 
         slot->extraWaitSem  = extraWaitSem;
         slot->extraWaitSem2 = extraWaitSem2;
@@ -188,7 +188,7 @@ namespace
             imguiCv.notify_one();
             return;
         }
-        RT_ASSERT(acquireResult == VK_SUCCESS or acquireResult == VK_SUBOPTIMAL_KHR, "failed to acquire swap chain image");
+        ASSERT("VULKAN", acquireResult == VK_SUCCESS or acquireResult == VK_SUBOPTIMAL_KHR, "failed to acquire swap chain image");
 
         recordGuiCmdBuffer(slot->mainCmdBuff, slot->imgIdx);
 
@@ -204,7 +204,7 @@ namespace
         slot->extraWaitSem2 = VK_NULL_HANDLE;
 
         const auto presentResult = SwapchainInstance->submitCommandBuffers(slot->mainCmdBuff, slot->imgIdx, slotIdx, extraWaitSem, extraWaitSem2);
-        RT_ASSERT(presentResult == VK_SUCCESS or presentResult == VK_ERROR_OUT_OF_DATE_KHR or presentResult == VK_SUBOPTIMAL_KHR, "failed to present swap chain image");
+        ASSERT("VULKAN", presentResult == VK_SUCCESS or presentResult == VK_ERROR_OUT_OF_DATE_KHR or presentResult == VK_SUBOPTIMAL_KHR, "failed to present swap chain image");
     }
 
 }

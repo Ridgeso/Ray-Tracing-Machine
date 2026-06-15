@@ -38,7 +38,7 @@ namespace
 
 	VulkanRenderApi::VulkanRenderApi()
 	{
-		RT_ASSERT(checkValidationLayerSupport(), "validation layers requested, but not available!");
+		ASSERT("VULKAN", checkValidationLayerSupport(), "validation layers requested, but not available!");
 	}
 
 	void VulkanRenderApi::init()
@@ -177,7 +177,7 @@ namespace
 
 		if (oldSwapchain)
 		{
-			RT_ASSERT(SwapchainInstance->compareFormats(*oldSwapchain), "swapchain image/depth formats has changed");
+			ASSERT("VULKAN", SwapchainInstance->compareFormats(*oldSwapchain), "swapchain image/depth formats has changed");
 			oldSwapchain->shutdown();
 		}
 	}
@@ -212,7 +212,7 @@ namespace
 			"failed to create descriptor pool!");
 
 		auto result = ImGui_ImplGlfw_InitForVulkan((GLFWwindow*)Application::getWindow()->getNativWindow(), true);
-		RT_ASSERT(result, "ImGui not implemented");
+		ASSERT("VULKAN", result, "ImGui not implemented");
 
 		// init ImGui for vulkan
 		auto vkInfo = ImGui_ImplVulkan_InitInfo{};
@@ -231,7 +231,7 @@ namespace
 		vkInfo.Allocator = nullptr;
 		vkInfo.CheckVkResultFn = checkVkResultCallback;
 		result = ImGui_ImplVulkan_Init(&vkInfo);
-		RT_ASSERT(result, "ImGui not initialized");
+		ASSERT("VULKAN", result, "ImGui not initialized");
 	}
 
 } // namespace RT::Vulkan

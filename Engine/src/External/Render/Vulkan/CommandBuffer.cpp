@@ -29,7 +29,7 @@ namespace RT::Vulkan
 
     void CommandBuffer::begin(uint32_t slotIdx, VkCommandBufferUsageFlags flags) const
     {
-        RT_ASSERT(cmdBuffers[slotIdx] != VK_NULL_HANDLE, "CommandBuffer::begin on invalid buffer");
+        ASSERT("VULKAN", cmdBuffers[slotIdx] != VK_NULL_HANDLE, "CommandBuffer::begin on invalid buffer");
 
         vkResetCommandBuffer(cmdBuffers[slotIdx], 0);
 
@@ -42,7 +42,7 @@ namespace RT::Vulkan
 
     void CommandBuffer::end(uint32_t slotIdx) const
     {
-        RT_ASSERT(cmdBuffers[slotIdx] != VK_NULL_HANDLE, "CommandBuffer::end on invalid buffer");
+        ASSERT("VULKAN", cmdBuffers[slotIdx] != VK_NULL_HANDLE, "CommandBuffer::end on invalid buffer");
         CHECK_VK(vkEndCommandBuffer(cmdBuffers[slotIdx]), "failed to end command buffer!");
     }
 

@@ -25,7 +25,7 @@ namespace
 
     void Fence::create(const State initial)
     {
-        RT_ASSERT(fence == VK_NULL_HANDLE, "Fence::create called on already-created fence");
+        ASSERT("VULKAN", fence == VK_NULL_HANDLE, "Fence::create called on already-created fence");
 
         auto info = VkFenceCreateInfo{};
         info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
@@ -47,7 +47,7 @@ namespace
 
     void Fence::reset()
     {
-        RT_ASSERT(fence != VK_NULL_HANDLE, "Fence::reset on invalid fence");
+        ASSERT("VULKAN", fence != VK_NULL_HANDLE, "Fence::reset on invalid fence");
         CHECK_VK(vkResetFences(DeviceInstance.getDevice(), 1, &fence), "failed to reset fence!");
     }
 
@@ -62,13 +62,13 @@ namespace
         {
             return false;
         }
-        RT_ASSERT(false, "vkGetFenceStatus failed");
+        ASSERT("VULKAN", false, "vkGetFenceStatus failed");
         return false;
     }
 
     bool Fence::wait(const uint64_t timeoutNs) const
     {
-        RT_ASSERT(fence != VK_NULL_HANDLE, "Fence::wait on invalid fence");
+        ASSERT("VULKAN", fence != VK_NULL_HANDLE, "Fence::wait on invalid fence");
         const auto result = vkWaitForFences(DeviceInstance.getDevice(), 1, &fence, VK_TRUE, timeoutNs);
         if (result == VK_SUCCESS)
         {
@@ -78,7 +78,7 @@ namespace
         {
             return false;
         }
-        RT_ASSERT(false, "vkWaitForFences failed");
+        ASSERT("VULKAN", false, "vkWaitForFences failed");
         return false;
     }
 
@@ -97,7 +97,7 @@ namespace
         {
             return false;
         }
-        RT_ASSERT(false, "vkWaitForFences ({}) failed", allSignaled ? "allSignaled" : "anySignaled");
+        ASSERT("VULKAN", false, "vkWaitForFences ({}) failed", allSignaled ? "allSignaled" : "anySignaled");
         return false;
     }
 

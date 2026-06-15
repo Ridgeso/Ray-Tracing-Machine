@@ -84,12 +84,12 @@ namespace
 
 	void Shader::load(const Path& shaderName)
 	{
-        RT_LOG_INFO("Loading Shader: {{ path = {} }}", shaderName);
+        LOG_INFO("VULKAN", "Loading Shader: {{ path = {} }}", shaderName);
         //shaderPath = Path{""} / shaderDir / shaderName;
         shaderPath = shaderName;
 
 		auto shadersSources = readSources();
-        RT_ASSERT(shadersSources.size() != 0, "Failed to find source code!");
+        ASSERT("VULKAN", shadersSources.size() != 0, "Failed to find source code!");
         auto compiledSources = compileSources(shadersSources);
 
         shaderModules.reserve(compiledSources.size());
@@ -122,7 +122,7 @@ namespace
         //{
         //    reflect(stage, data);
         //}
-        RT_LOG_INFO("Shader loaded");
+        LOG_INFO("VULKAN", "Shader loaded");
     }
 
     Shader::SourceMap<std::stringstream> Shader::readSources() const
@@ -171,7 +171,7 @@ namespace
     {
         auto file = std::ifstream(shaderPath, std::ios::ate | std::ios::binary);
 
-        RT_ASSERT(file.is_open(), "failed to open shader binary: {}", shaderPath);
+        ASSERT("VULKAN", file.is_open(), "failed to open shader binary: {}", shaderPath);
 
         auto fileSize = static_cast<size_t>(file.tellg());
         auto buffer = std::vector<char>(fileSize);
@@ -208,7 +208,8 @@ namespace
                 "main",
                 options);
             
-            RT_ASSERT(
+            ASSERT(
+                "VULKAN", 
                 shaderModule.GetCompilationStatus() == shaderc_compilation_status_success,
                 "Compilation Errors:\n{}",
                 shaderModule.GetErrorMessage().c_str());
@@ -224,11 +225,11 @@ namespace
         auto compiler = spirv_cross::Compiler(shaderData);
         auto resources = compiler.get_shader_resources();
 
-        RT_LOG_TRACE("Shader Reflect [{}]: {}", shaderType2String(type), shaderPath);
-        RT_LOG_TRACE("-   {} - uniform buffers", resources.uniform_buffers.size());
-        RT_LOG_TRACE("-   {} - resources", resources.sampled_images.size());
+        LOG_TRACE("VULKAN", "Shader Reflect [{}]: {}", shaderType2String(type), shaderPath);
+        LOG_TRACE("VULKAN", "-   {} - uniform buffers", resources.uniform_buffers.size());
+        LOG_TRACE("VULKAN", "-   {} - resources", resources.sampled_images.size());
 
-        RT_LOG_TRACE("Uniform buffers:");
+        LOG_TRACE("VULKAN", "Uniform buffers:");
         for (const auto& resource : resources.uniform_buffers)
         {
             const auto& bufferType = compiler.get_type(resource.base_type_id);
@@ -236,10 +237,10 @@ namespace
             uint32_t binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
             int32_t memberCount = bufferType.member_types.size();
 
-            RT_LOG_TRACE("- {}", resource.name);
-            RT_LOG_TRACE("-   Size = {}", bufferSize);
-            RT_LOG_TRACE("-   Binding = {}", binding);
-            RT_LOG_TRACE("-   Members = {}", memberCount);
+            LOG_TRACE("VULKAN", "- {}", resource.name);
+            LOG_TRACE("VULKAN", "-   Size = {}", bufferSize);
+            LOG_TRACE("VULKAN", "-   Binding = {}", binding);
+            LOG_TRACE("VULKAN", "-   Members = {}", memberCount);
         }
     }
 

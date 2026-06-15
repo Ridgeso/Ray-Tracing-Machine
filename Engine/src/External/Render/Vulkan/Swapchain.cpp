@@ -27,7 +27,7 @@ namespace
         {
            if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
            {
-               RT_LOG_WARN("Present mode: Mailbox");
+               LOG_WARN("VULKAN", "Present mode: Mailbox");
                return availablePresentMode;
            }
         }
@@ -36,12 +36,12 @@ namespace
         {
            if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)
            {
-               RT_LOG_WARN("Present mode: Immediate");
+               LOG_WARN("VULKAN", "Present mode: Immediate");
                return availablePresentMode;
            }
         }
 
-        RT_LOG_INFO("Present mode: V-Sync");
+        LOG_INFO("VULKAN", "Present mode: V-Sync");
         return VK_PRESENT_MODE_FIFO_KHR;
     }
 } // namespace
@@ -55,7 +55,7 @@ namespace
 
     void Swapchain::init()
     {
-        RT_LOG_DEBUG("Initializing Swapchain");
+        LOG_DEBUG("VULKAN", "Initializing Swapchain");
         createSwapChain();
         createImageViews();
         createRenderPass();
@@ -248,7 +248,9 @@ namespace
         swapChainImageFormat = surfaceFormat.format;
         swapChainExtent = extent;
 
-        RT_LOG_DEBUG("Swapchain created: {{ buffering = {}, extent = [{}, {}], V-Sync = {} }}",
+        LOG_DEBUG(
+            "VULKAN",
+            "Swapchain created: {{ buffering = {}, extent = [{}, {}], V-Sync = {} }}",
             imageCount,
             extent.width, extent.height,
             VK_PRESENT_MODE_FIFO_KHR == presentMode);

@@ -111,15 +111,15 @@ namespace RT::Vulkan
         auto shader = Shader(spec.shaderPath);
         if (shader.isCompute())
         {
-            RT_LOG_INFO("Creating Pipeline: {{ mode = compute }}");
+            LOG_INFO("VULKAN", "Creating Pipeline: {{ mode = compute }}");
             createComputePipeline(pipelineConfigInfo, shader);
         }
         else
         {
-            RT_LOG_INFO("Creating Pipeline: {{ mode = graphics }}");
+            LOG_INFO("VULKAN", "Creating Pipeline: {{ mode = graphics }}");
             createGraphicsPipeline(pipelineConfigInfo, shader, spec.attachmentFormats);
         }
-        RT_LOG_INFO("Pipeline created");
+        LOG_INFO("VULKAN", "Pipeline created");
     }
 
     VulkanPipeline::~VulkanPipeline()

@@ -69,7 +69,7 @@ namespace
 
     void Device::init()
     {
-        RT_LOG_DEBUG("Device Instantiation");
+        LOG_DEBUG("VULKAN", "Device Instantiation");
         createInstance();
         createSurface();
         pickPhysicalDevice();
@@ -157,7 +157,7 @@ namespace
                 return format;
             }
         }
-        RT_ASSERT(false, "failed to find supported format!");
+        ASSERT("VULKAN", false, "failed to find supported format!");
         return VK_FORMAT_UNDEFINED;
     }
 
@@ -204,7 +204,7 @@ namespace
                 return memType;
             }
         }
-        RT_ASSERT(false, "failed to find suitable memory type!");
+        ASSERT("VULKAN", false, "failed to find suitable memory type!");
         return 0xFFFFFFFF;
     }
 
@@ -232,7 +232,7 @@ namespace
         enableDebugingForCreateInfo(createInfo, &debugCreateInfo);
 
         CHECK_VK(vkCreateInstance(&createInfo, nullptr, &instance), "failed to create Vulkan Instance");
-        RT_LOG_DEBUG("Vulkan Instance created: {{ apiVersion = {}.{}.{}.{} }}",
+        LOG_DEBUG("VULKAN", "Instance created: {{ apiVersion = {}.{}.{}.{} }}",
             apiVersion >> 29,
             (apiVersion >> 22) & 0b1111111,
             (apiVersion >> 12) & 0b1111111111,
@@ -257,18 +257,17 @@ namespace
         uint32_t deviceCount = 0u;
         vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
         
-        RT_ASSERT(deviceCount != 0, "Failed to find any GPU supporting Vulkan");
+        ASSERT("VULKAN", deviceCount != 0, "Failed to find any GPU supporting Vulkan");
 
         auto devices = std::vector<VkPhysicalDevice>(deviceCount);
         vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
         auto phiDev = std::find_if(devices.begin(), devices.end(), [this](auto dev) { return isDeviceSuitable(dev); });
-        RT_ASSERT(phiDev != devices.end(), "Failed to find any suitable GPU");
+        ASSERT("VULKAN", phiDev != devices.end(), "Failed to find any suitable GPU");
         physicalDevice = *phiDev;
 
         vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
-        RT_LOG_DEBUG(
-            "Found device: {}", deviceProperties.deviceName);
+        LOG_DEBUG("VULKAN", "Found device: {}", deviceProperties.deviceName);
     }
 
     void Device::createLogicalDevice()
@@ -330,7 +329,8 @@ namespace
         vkGetDeviceQueue(device, queueFamilyIndices.present->index, getQueueIdx(queueFamilyIndices.present->index), &presentQueue);
         vkGetDeviceQueue(device, queueFamilyIndices.compute->index, getQueueIdx(queueFamilyIndices.compute->index), &computeQueue);
 
-        RT_LOG_DEBUG(
+        LOG_DEBUG(
+            "VULKAN", 
             "Queue families: {{ graphics = {}, present = {}, compute = {}{} }}",
             queueFamilyIndices.graphics->index,
             queueFamilyIndices.present->index,

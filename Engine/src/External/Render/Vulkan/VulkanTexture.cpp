@@ -21,13 +21,13 @@ namespace RT::Vulkan
 		, filter{filter}
 	{
 		stbi_set_flip_vertically_on_load(1);
-		RT_LOG_INFO("Loading Texture: {{ path = {} }}", path);
+		LOG_INFO("VULKAN", "Loading Texture: {{ path = {} }}", path);
 
 		int32_t bytesPerPixel = 0;
 		auto* data = stbi_load(path.string().c_str(), (int32_t*)&size.x, (int32_t*)&size.y, &bytesPerPixel, STBI_rgb_alpha);
 		if (data == nullptr)
 		{
-			RT_LOG_WARN("Couldn't load texture");
+			LOG_WARN("VULKAN", "Couldn't load texture");
 			return;
 		}
 		
@@ -36,7 +36,7 @@ namespace RT::Vulkan
 		initVulkanImage(true);
 		setBuffer(data);
 
-		RT_LOG_INFO("Texture loaded: {{ size = {}, imageFormat = {} }}", size, RT::Utils::imageFormat2Str(format));
+		LOG_INFO("VULKAN", "Texture loaded: {{ size = {}, imageFormat = {} }}", size, RT::Utils::imageFormat2Str(format));
 		stbi_image_free(data);
 	}
 	
@@ -47,9 +47,9 @@ namespace RT::Vulkan
 		, mode{Mode::ClampToBorder}
 		, imSize{calcImSize()}
 	{
-		RT_LOG_INFO("Creating Texture: {{ size = {}, imageFormat = {} }}", size, RT::Utils::imageFormat2Str(format));
+		LOG_INFO("VULKAN", "Creating Texture: {{ size = {}, imageFormat = {} }}", size, RT::Utils::imageFormat2Str(format));
 		initVulkanImage(false);
-		RT_LOG_INFO("Texture Created");
+		LOG_INFO("VULKAN", "Texture Created");
 	}
 
 	VulkanTexture::~VulkanTexture()
