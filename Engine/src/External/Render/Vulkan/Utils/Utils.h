@@ -11,6 +11,7 @@ namespace RT::Vulkan::Utils
     struct QueueFamily
     {
         uint32_t index;
+        uint32_t offset;
         uint32_t count;
         float priority;
     };

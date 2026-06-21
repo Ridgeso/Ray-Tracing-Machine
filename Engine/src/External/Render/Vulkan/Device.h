@@ -3,6 +3,7 @@
 #include <mutex>
 #include <unordered_map>
 #include <vector>
+#include <span>
 
 #include <vulkan/vulkan.h>
 
@@ -92,6 +93,7 @@ namespace RT::Vulkan
         VkCommandBuffer startSingleCmdBuff() const;
         void flushSingleCmdBuff(const VkCommandBuffer commandBuffer) const;
 
+        void setupQueues();
         uint32_t getQueueIdx(const uint32_t queueFamilyIndex);
 
     private:
@@ -115,7 +117,8 @@ namespace RT::Vulkan
 
         mutable std::mutex queueMutex = {};
 
-        std::unordered_map<uint32_t, std::vector<uint32_t>> queueOccupancy = {};
+        std::vector<std::vector<uint32_t>> queueOccupancy = {};
+        std::unordered_map<uint32_t, std::span<uint32_t>> queueOccupancyMapping = {};
 
         static Device deviceInstance;
     };
