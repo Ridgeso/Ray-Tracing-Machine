@@ -84,8 +84,6 @@ public:
 			ImGui::Text("CPU time: %.3fms", RT::Application::Get().appDuration() - lastFrameDuration);
 			ImGui::Text("Frames: %d", infoUniform.frameIndex);
 
-			infoUniform.frameIndex = (not previewTexture and accumulation) ? infoUniform.frameIndex + 1 : 1;
-
 			if (ImGui::SliderInt("Bounces Limit", (int32_t*)&infoUniform.maxBounces, 1, 15))
 			{
 				ammountsUniform->setData(&infoUniform.maxBounces, sizeof(uint32_t), offsetof(InfoUniform, maxBounces));
@@ -525,6 +523,8 @@ public:
 
 		if (not previewTexture and RT::Renderer::beginCompute())
 		{
+			infoUniform.frameIndex = (not previewTexture and accumulation) ? infoUniform.frameIndex + 1 : 1;
+			
 			pipeline->bindSet(0, 0);
 			pipeline->bindSet(1, 0);
 

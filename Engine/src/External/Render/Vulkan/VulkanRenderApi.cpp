@@ -56,7 +56,7 @@ namespace
 		uiCmdBuffer = device.createCommandBuffer(device.getCommandPool());
 
 		graphicsRecorder.init(device.getGraphicsQueue(), device.getCommandPool());
-		computeRecorder.init(device.getComputeQueue(), device.getComputeCommandPool());
+		computeRecorder.init(device.getComputeQueue(), device.getComputeCommandPool(), true);
 
 		Event::Event<Event::WindowResize>::registerCallback([this](const auto& event)
 		{
@@ -106,7 +106,7 @@ namespace
 	{
 		graphicsRecorder.end();
 		flushUniforms(Context::slotIdx);
-		pendingGraphicsSemaphore = graphicsRecorder.submit();
+		graphicsRecorder.submit();
 	}
 
 	bool VulkanRenderApi::beginCompute()
@@ -118,7 +118,7 @@ namespace
 	{
 		computeRecorder.end();
 		flushUniforms(Context::slotIdx);
-		pendingComputeSemaphore = computeRecorder.submit();
+		computeRecorder.submit();
 	}
 
 	void VulkanRenderApi::submitUI()
@@ -136,10 +136,8 @@ namespace
 		auto* slot = currentSlot;
 		currentSlot = nullptr;
 
-		const auto computeSem = pendingComputeSemaphore;
-		pendingComputeSemaphore = VK_NULL_HANDLE;
-		const auto graphicsSem = pendingGraphicsSemaphore;
-		pendingGraphicsSemaphore = VK_NULL_HANDLE;
+		const auto computeSem = computeRecorder.getWaitSemaphore();
+		const auto graphicsSem = graphicsRecorder.getWaitSemaphore();
 
 		renderThread.submitSlot(slot, computeSem, graphicsSem);
 	}

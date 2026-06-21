@@ -53,8 +53,6 @@ namespace RT::Vulkan
 
 		RenderRecorder graphicsRecorder = {};
 		RenderRecorder computeRecorder = {};
-		VkSemaphore pendingGraphicsSemaphore = VK_NULL_HANDLE;
-		VkSemaphore pendingComputeSemaphore = VK_NULL_HANDLE;
 
 		VkExtent2D extent = {};
 
