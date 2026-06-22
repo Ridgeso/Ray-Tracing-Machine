@@ -43,6 +43,8 @@ namespace
 
 	void VulkanRenderApi::init()
 	{
+		common::Log::registerLogger("VULKAN");
+
 		auto size = Application::getWindow()->getSize();
 		extent = VkExtent2D{ (uint32_t)size.x, (uint32_t)size.y };
 

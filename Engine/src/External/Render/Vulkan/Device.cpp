@@ -335,7 +335,8 @@ namespace
 
         setupQueues();
         
-        RT_LOG_DEBUG(
+        LOG_DEBUG(
+            "VULKAN",
             "Queue families: {{ graphics = {}, present = {}, compute = {}{} }}",
             queueFamilyIndices.graphics->index,
             queueFamilyIndices.present->index,

@@ -48,6 +48,8 @@ namespace RT::Vulkan
 		Context::frameCmd = cmdBuffer.handle(slotIdx);
 		Context::slotIdx = slotIdx;
 		cmdBuffer.begin(slotIdx);
+
+        return true;
     }
 
     void RenderRecorder::end()
