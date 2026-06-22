@@ -8,7 +8,7 @@
 namespace RT::Vulkan
 {
 
-    void RenderRecorder::init(VkQueue queue_, VkCommandPool commandPool)
+    void RenderRecorder::init(VkQueue queue_, VkCommandPool commandPool, bool isInternal_)
     {
         queue = queue_;
         cmdBuffer = DeviceInstance.createCommandBuffer(commandPool);
@@ -18,6 +18,8 @@ namespace RT::Vulkan
             finishedSemaphores[i].create(Semaphore::Kind::Binary);
         }
         slotIdx = 0u;
+
+        isInternal = isInternal_;
     }
 
     void RenderRecorder::shutdown()
@@ -55,7 +57,7 @@ namespace RT::Vulkan
 		cmdBuffer.end(slotIdx);
     }
 
-    VkSemaphore RenderRecorder::submit()
+    void RenderRecorder::submit()
     {
 		const auto cmdHandle = cmdBuffer.handle(slotIdx);
 
@@ -68,19 +70,32 @@ namespace RT::Vulkan
 		submitInfo.signalSemaphoreCount = signalSemaphores.size();
 		submitInfo.pSignalSemaphores = signalSemaphores.data();
 
-		const auto& deviceInstance = DeviceInstance;
+        auto waitSemaphores = std::array{ (VkSemaphore)VK_NULL_HANDLE };
+        auto waitStages = std::array<VkPipelineStageFlags, 1>{ VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT };
+        if (isInternal and waitSemaphore != VK_NULL_HANDLE)
+        {
+            uint32_t waitCount = 0u;
+            waitSemaphores[waitCount++] = waitSemaphore;
+            submitInfo.waitSemaphoreCount = waitCount;
+            submitInfo.pWaitSemaphores = waitSemaphores.data();
+            submitInfo.pWaitDstStageMask = waitStages.data();
+        }
+
 		CHECK_VK(
-			deviceInstance.queueSubmit(queue, 1, &submitInfo, fences[slotIdx].handle()),
+			DeviceInstance.queueSubmit(queue, 1, &submitInfo, fences[slotIdx].handle()),
 			"failed to submit user-graphics command buffer!");
 
 		Context::frameCmd = VK_NULL_HANDLE;
 		Context::slotIdx = invalidSlotIdx;
 
-        const auto pendingSemaphore = finishedSemaphores[slotIdx].handle();
+        waitSemaphore = finishedSemaphores[slotIdx].handle();
 
         slotIdx = (slotIdx + 1u) % Constants::MAX_FRAMES_IN_FLIGHT;
+    }
 
-        return pendingSemaphore;
+    VkSemaphore RenderRecorder::getWaitSemaphore() const
+    {
+        return isInternal ? VK_NULL_HANDLE : waitSemaphore;
     }
     
 }

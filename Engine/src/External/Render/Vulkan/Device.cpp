@@ -63,6 +63,15 @@ namespace
         }
         return requiredExtensions.empty();
     }
+
+    std::vector<VkQueueFamilyProperties> getQueueFamilyProperties(VkPhysicalDevice phyDev)
+    {
+        uint32_t queueFamilyCount = 0u;
+        vkGetPhysicalDeviceQueueFamilyProperties(phyDev, &queueFamilyCount, nullptr);
+        auto queueFamilies = std::vector<VkQueueFamilyProperties>(queueFamilyCount);
+        vkGetPhysicalDeviceQueueFamilyProperties(phyDev, &queueFamilyCount, queueFamilies.data());
+        return queueFamilies;
+    }
 } // namespace
     
     Device Device::deviceInstance = Device{};
@@ -276,24 +285,28 @@ namespace
         queueFamilyIndices = findQueueFamilies(physicalDevice);
 
         auto queueCreateInfos = std::vector<VkDeviceQueueCreateInfo>{};
-        auto uniqueQueueFamilies = std::unordered_map<uint32_t, Utils::QueueFamily>{
-            { queueFamilyIndices.graphics->index, *queueFamilyIndices.graphics },
-            { queueFamilyIndices.compute->index, *queueFamilyIndices.compute },
-            { queueFamilyIndices.present->index, *queueFamilyIndices.present } };
+        auto uniqueQueueFamilies = std::vector<Utils::QueueFamily>{ *queueFamilyIndices.graphics, *queueFamilyIndices.compute , *queueFamilyIndices.present };
         
         auto queuesPriorities = std::unordered_map<uint32_t, std::vector<float>>{};
-        for (const auto& [index, queueFamily] : uniqueQueueFamilies)
+        for (const auto& queueFamily : uniqueQueueFamilies)
         {
-            VkDeviceQueueCreateInfo queueCreateInfo = {};
-            queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-            queueCreateInfo.queueFamilyIndex = index;
-            queueCreateInfo.queueCount = queueFamily.count;
+            auto it = std::find_if(
+                queueCreateInfos.begin(),
+                queueCreateInfos.end(),
+                [&queueFamily](const auto& info) { return info.queueFamilyIndex == queueFamily.index; });
+            if (it == queueCreateInfos.end())
+            {
+                it = queueCreateInfos.insert(queueCreateInfos.end(), VkDeviceQueueCreateInfo{});
+            }
 
-            auto& queuePriority = queuesPriorities[index];
-            queuePriority = std::vector<float>(queueFamily.count, queueFamily.priority);
-            queueCreateInfo.pQueuePriorities = queuePriority.data();
-            
-            queueCreateInfos.push_back(queueCreateInfo);
+            it->sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+            it->queueFamilyIndex = queueFamily.index;
+            it->queueCount = std::max(it->queueCount, queueFamily.offset + queueFamily.count);
+
+            auto& queuePriority = queuesPriorities[queueFamily.index];
+            queuePriority.resize(it->queueCount);
+            std::fill_n(queuePriority.begin() + queueFamily.offset, queueFamily.count, queueFamily.priority);
+            it->pQueuePriorities = queuePriority.data();
         }
 
         auto vulkanFeatures = deviceVulkanFeatures();
@@ -320,17 +333,9 @@ namespace
 
         CHECK_VK(vkCreateDevice(physicalDevice, &createInfo, nullptr, &device), "failed to create logical device");
 
-        queueOccupancy[queueFamilyIndices.graphics->index] = std::vector<uint32_t>(queueFamilyIndices.graphics->count);
-        queueOccupancy[queueFamilyIndices.present->index] = std::vector<uint32_t>(queueFamilyIndices.present->count);
-        queueOccupancy[queueFamilyIndices.compute->index] = std::vector<uint32_t>(queueFamilyIndices.compute->count);
-
-        vkGetDeviceQueue(device, queueFamilyIndices.graphics->index, getQueueIdx(queueFamilyIndices.graphics->index), &graphicsQueue);
-        vkGetDeviceQueue(device, queueFamilyIndices.graphics->index, getQueueIdx(queueFamilyIndices.graphics->index), &imGuiQueue);
-        vkGetDeviceQueue(device, queueFamilyIndices.present->index, getQueueIdx(queueFamilyIndices.present->index), &presentQueue);
-        vkGetDeviceQueue(device, queueFamilyIndices.compute->index, getQueueIdx(queueFamilyIndices.compute->index), &computeQueue);
-
-        LOG_DEBUG(
-            "VULKAN", 
+        setupQueues();
+        
+        RT_LOG_DEBUG(
             "Queue families: {{ graphics = {}, present = {}, compute = {}{} }}",
             queueFamilyIndices.graphics->index,
             queueFamilyIndices.present->index,
@@ -379,27 +384,23 @@ namespace
     {
         auto indices = Utils::QueueFamilyIndices{};
 
-        uint32_t queueFamilyCount = 0u;
-        vkGetPhysicalDeviceQueueFamilyProperties(phyDev, &queueFamilyCount, nullptr);
-
-        auto queueFamilies = std::vector<VkQueueFamilyProperties>(queueFamilyCount);
-        vkGetPhysicalDeviceQueueFamilyProperties(phyDev, &queueFamilyCount, queueFamilies.data());
+        auto queueFamilies = getQueueFamilyProperties(phyDev);
 
         constexpr float weight = 1.0f;
-        for (uint32_t i = 0; i < queueFamilyCount; ++i)
+        for (uint32_t i = 0; i < queueFamilies.size(); ++i)
         {
             const auto& queueFamily = queueFamilies[i];
 
             if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
             {
-                indices.graphics = { i, queueFamily.queueCount, weight };
+                indices.graphics = { i, 0, queueFamily.queueCount, weight };
             }
 
             auto presentSupport = VkBool32(false);
             vkGetPhysicalDeviceSurfaceSupportKHR(phyDev, i, surface, &presentSupport);
             if (presentSupport)
             {
-                indices.present = { i, queueFamily.queueCount, weight };
+                indices.present = { i, 0, queueFamily.queueCount, weight };
             }
 
             if (indices.graphics and indices.present)
@@ -408,13 +409,13 @@ namespace
             }
         }
 
-        for (uint32_t i = 0; i < queueFamilyCount; ++i)
+        for (uint32_t i = 0; i < queueFamilies.size(); ++i)
         {
             const auto& queueFamily = queueFamilies[i];
 
             if (queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)
             {
-                indices.compute = { i, queueFamily.queueCount, weight };
+                indices.compute = { i, 0, queueFamily.queueCount, weight };
             }
 
             if (indices.compute and indices.graphics and indices.compute->index != indices.graphics->index)
@@ -489,9 +490,32 @@ namespace
         vkFreeCommandBuffers(device, commandPool, 1, &cmdBuffer);
     }
 
+    void Device::setupQueues()
+    {
+        auto queueFamilies = getQueueFamilyProperties(physicalDevice);
+        queueOccupancy.resize(queueFamilies.size());
+        for (uint32_t i = 0; i < queueFamilies.size(); ++i)
+        {
+            queueOccupancy[i] = std::vector<uint32_t>(queueFamilies[i].queueCount, 0u);
+        }
+
+        const auto& grap = *queueFamilyIndices.graphics;
+        const auto& pres = *queueFamilyIndices.present;
+        const auto& comp = *queueFamilyIndices.compute;
+
+        queueOccupancyMapping[grap.index] = std::span(queueOccupancy[grap.index].begin() + grap.offset, grap.count);
+        queueOccupancyMapping[pres.index] = std::span(queueOccupancy[pres.index].begin() + pres.offset, pres.count);
+        queueOccupancyMapping[comp.index] = std::span(queueOccupancy[comp.index].begin() + comp.offset, comp.count);
+
+        vkGetDeviceQueue(device, grap.index, getQueueIdx(grap.index), &graphicsQueue);
+        vkGetDeviceQueue(device, grap.index, getQueueIdx(grap.index), &imGuiQueue);
+        vkGetDeviceQueue(device, pres.index, getQueueIdx(pres.index), &presentQueue);
+        vkGetDeviceQueue(device, comp.index, getQueueIdx(comp.index), &computeQueue);
+    }
+
     uint32_t Device::getQueueIdx(const uint32_t queueFamilyIndex)
     {
-        auto& occupancy = queueOccupancy[queueFamilyIndex];
+        auto& occupancy = queueOccupancyMapping[queueFamilyIndex];
         auto smallestIt = occupancy.begin();
         for (auto nIt = smallestIt + 1; nIt != occupancy.end(); ++nIt)
         {
