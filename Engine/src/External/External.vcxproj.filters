@@ -71,6 +71,12 @@
     <ClCompile Include="Render\Vulkan\VulkanTexture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Render\Vulkan\CommandBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Render\Vulkan\rendering\RenderRecorder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window\GlfwWindow\GlfwWindow.h">
@@ -131,6 +137,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Render\Vulkan\VulkanTexture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\Vulkan\CommandBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Render\Vulkan\rendering\RenderRecorder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
