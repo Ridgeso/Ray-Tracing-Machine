@@ -521,20 +521,21 @@ public:
 
 		auto timeit = common::Timer{};
 
-		if (not previewTexture and RT::Renderer::beginCompute())
+		if (not previewTexture)
 		{
-			infoUniform.frameIndex = (not previewTexture and accumulation) ? infoUniform.frameIndex + 1 : 1;
-			
-			pipeline->bindSet(0, 0);
-			pipeline->bindSet(1, 0);
+			RT::Renderer::compute([&]
+			{
+				infoUniform.frameIndex = (not previewTexture and accumulation) ? infoUniform.frameIndex + 1 : 1;
+				
+				pipeline->bindSet(0, 0);
+				pipeline->bindSet(1, 0);
 
-			outTexture->barrier(RT::Texture::Access::Write, RT::Texture::Layout::General);
+				outTexture->barrier(RT::Texture::Access::Write, RT::Texture::Layout::General);
 
-			pipeline->dispatch(outTexture->getSize());
+				pipeline->dispatch(outTexture->getSize());
 
-			outTexture->barrier(RT::Texture::Access::Read, RT::Texture::Layout::ShaderRead);
-
-			RT::Renderer::endCompute();
+				outTexture->barrier(RT::Texture::Access::Read, RT::Texture::Layout::ShaderRead);
+			});
 		}
 
 		lastFrameDuration = timeit.Ellapsed();

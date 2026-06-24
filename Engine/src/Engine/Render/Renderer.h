@@ -1,62 +1,55 @@
 #pragma once
-#include "RenderApi.h"
 #include <memory>
+#include <concepts>
 
 namespace RT
 {
 
+	struct RenderApi;
+	
 	class Renderer
 	{
 	public:
-		static void init()
+		static void init();
+
+		static void shutdown();
+
+		static void stop();
+
+		static void waitForFrameReady();
+
+		static void submitUI();
+
+		static bool frame(std::invocable auto func)
 		{
-			renderApi = RenderApi::create();
-			renderApi->init();
+			if (beginFrame())
+			{
+				func();
+				endFrame();
+				return true;
+			}
+			return false;
 		}
 
-		static void shutdown()
+		static bool compute(std::invocable auto func)
 		{
-			renderApi->shutdown();
-			renderApi.reset();
-		}
-
-		static void stop()
-		{
-			renderApi->stop();
-		}
-
-		static void waitForFrameReady()
-		{
-			renderApi->waitForFrameReady();
-		}
-
-		static void beginFrame()
-		{
-			renderApi->beginFrame();
-		}
-
-		static void endFrame()
-		{
-			renderApi->endFrame();
-		}
-
-		static bool beginCompute()
-		{
-			return renderApi->beginCompute();
-		}
-
-		static void endCompute()
-		{
-			renderApi->endCompute();
-		}
-
-		static void submitUI()
-		{
-			renderApi->submitUI();
+			if (beginCompute())
+			{
+				func();
+				endCompute();
+				return true;
+			}
+			return false;
 		}
 
 	private:
-		inline static std::unique_ptr<RenderApi> renderApi = nullptr;
+		static void beginFrame();
+
+		static void endFrame();
+
+		static bool beginCompute();
+	
+		static void endCompute();
 	};
 
 }

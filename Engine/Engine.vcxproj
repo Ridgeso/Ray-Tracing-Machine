@@ -14,6 +14,7 @@
     <ClCompile Include="src\Engine\Render\Buffer.cpp" />
     <ClCompile Include="src\Engine\Render\Mesh.cpp" />
     <ClCompile Include="src\Engine\Render\Pipeline.cpp" />
+    <ClCompile Include="src\Engine\Render\Renderer.cpp" />
     <ClCompile Include="src\Engine\Render\RenderPass.cpp" />
     <ClCompile Include="src\Engine\Render\Texture.cpp" />
     <ClCompile Include="src\Engine\Startup\Startup.cpp" />
